@@ -1,11 +1,9 @@
-apps/frontend/public/logo.png filter=lfs diff=lfs merge=lfs -text
-apps/frontend/public/app-icon.jpg filter=lfs diff=lfs merge=lfs -text
-apps/frontend/public/favicon.png filter=lfs diff=lfs merge=lfs -text
-apps/frontend/public/icon-192.png filter=lfs diff=lfs merge=lfs -text
-apps/frontend/public/icon-512.png filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
+apps/frontend/public/icon-192.png filter=lfs diff=lfs merge=lfs -text
+apps/frontend/public/app-icon.jpg filter=lfs diff=lfs merge=lfs -text
+apps/frontend/public/logo.png filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
 *.webp filter=lfs diff=lfs merge=lfs -text
 *.ico filter=lfs diff=lfs merge=lfs -text
