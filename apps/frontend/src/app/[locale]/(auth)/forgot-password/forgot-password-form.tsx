@@ -45,7 +45,7 @@ export function ForgotPasswordForm() {
 
   // Step 1: Email
   const emailSchema = z.object({
-    email: z.string().email({ message: "بريد إلكتروني غير صحيح" }),
+    email: z.string().email({ message: t("validation.invalidEmail") }),
   });
   const {
     register: registerEmail,
@@ -71,7 +71,7 @@ export function ForgotPasswordForm() {
         onError: (error: any) => {
           toast({
             title: tCommon("error"),
-            description: error?.response?.data?.message || "حدث خطأ",
+            description: error?.response?.data?.message || tCommon("error"),
             type: "error",
           });
         },
@@ -120,8 +120,8 @@ export function ForgotPasswordForm() {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) {
       toast({
-        title: "خطأ",
-        description: "يرجى إدخال الرمز المكون من 6 أرقام",
+        title: tCommon("error"),
+        description: t("validation.enter6Digits"),
         type: "error",
       });
       return;
@@ -136,7 +136,7 @@ export function ForgotPasswordForm() {
         onError: (error: any) => {
           toast({
             title: tCommon("error"),
-            description: error?.response?.data?.message || "الرمز غير صحيح",
+            description: error?.response?.data?.message || t("validation.otpIncorrect"),
             type: "error",
           });
         },
@@ -150,7 +150,7 @@ export function ForgotPasswordForm() {
       {
         onSuccess: (res) => {
           setTimeLeft(600);
-          toast({ title: tCommon("success"), description: t("otpSent"), type: "success" });
+          toast({ title: tCommon("success"), description: t("validation.otpSentSuccess"), type: "success" });
           if (process.env.NODE_ENV === "development" && res?.otp) {
             alert(`OTP (Dev Mode): ${res.otp}`);
           }
@@ -162,11 +162,11 @@ export function ForgotPasswordForm() {
   // Step 3: Reset Password
   const resetSchema = z
     .object({
-      password: z.string().min(6, { message: "كلمة المرور قصيرة جداً" }),
+      password: z.string().min(6, { message: t("validation.passwordMin") }),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-      message: "كلمات المرور غير متطابقة",
+      message: t("validation.passwordsMismatch"),
       path: ["confirmPassword"],
     });
 
@@ -186,14 +186,14 @@ export function ForgotPasswordForm() {
 
   const getPasswordStrength = () => {
     if (!watchPassword) return null;
-    if (watchPassword.length < 6) return { label: "ضعيف", color: "bg-red-500" };
+    if (watchPassword.length < 6) return { label: t("weak"), color: "bg-red-500" };
     if (
       watchPassword.length >= 8 &&
       (/[0-9]/.test(watchPassword) || /[^A-Za-z0-9]/.test(watchPassword))
     ) {
-      return { label: "قوي", color: "bg-green-500" };
+      return { label: t("strong"), color: "bg-green-500" };
     }
-    return { label: "متوسط", color: "bg-yellow-500" };
+    return { label: t("medium"), color: "bg-yellow-500" };
   };
 
   const strength = getPasswordStrength();
@@ -205,15 +205,14 @@ export function ForgotPasswordForm() {
         onSuccess: () => {
           toast({
             title: tCommon("success"),
-            description: "تم تغيير كلمة المرور بنجاح",
+            description: t("validation.passwordChangeSuccess"),
             type: "success",
           });
-          // Router push happens in hook, but let's be explicit
         },
         onError: (error: any) => {
           toast({
             title: tCommon("error"),
-            description: error?.response?.data?.message || "حدث خطأ",
+            description: error?.response?.data?.message || tCommon("error"),
             type: "error",
           });
         },
@@ -248,11 +247,11 @@ export function ForgotPasswordForm() {
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold">{t("forgotPassword")}</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق
+              {t("enterEmailForOtp")}
             </p>
           </div>
           <Input
-            label="البريد الإلكتروني"
+            label={t("email")}
             placeholder="example@email.com"
             type="email"
             leftIcon={<Mail size={18} style={{ direction: "ltr" }} />}
@@ -260,7 +259,7 @@ export function ForgotPasswordForm() {
             {...registerEmail("email")}
           />
           <Button type="submit" fullWidth loading={isForgotPending}>
-            إرسال الرمز
+            {t("sendCode")}
           </Button>
         </form>
       )}
@@ -268,9 +267,9 @@ export function ForgotPasswordForm() {
       {step === 2 && (
         <form onSubmit={onOtpSubmit} className="space-y-6">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold">أدخل رمز التحقق</h2>
+            <h2 className="text-2xl font-bold">{t("enterOtp")}</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              تم إرسال رمز مكون من 6 أرقام إلى <br />
+              {t("activationCodeSent")} <br />
               <span className="font-semibold text-foreground" dir="ltr">{email}</span>
             </p>
           </div>
@@ -297,8 +296,9 @@ export function ForgotPasswordForm() {
           <div className="text-center text-sm font-medium">
             {timeLeft > 0 ? (
               <span className="text-muted-foreground">
-                إعادة الإرسال متاح بعد: {Math.floor(timeLeft / 60)}:
-                {(timeLeft % 60).toString().padStart(2, "0")}
+                {t("resendAvailableIn", {
+                  time: `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, "0")}`
+                })}
               </span>
             ) : (
               <button
@@ -306,13 +306,13 @@ export function ForgotPasswordForm() {
                 onClick={resendOtp}
                 className="text-primary hover:underline"
               >
-                إعادة إرسال الرمز
+                {t("resendCode")}
               </button>
             )}
           </div>
 
           <Button type="submit" fullWidth loading={isVerifyPending}>
-            تحقق
+            {t("verify")}
           </Button>
         </form>
       )}
@@ -320,9 +320,9 @@ export function ForgotPasswordForm() {
       {step === 3 && (
         <form onSubmit={handleResetSubmit(onResetSubmit)} className="space-y-4">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold">كلمة المرور الجديدة</h2>
+            <h2 className="text-2xl font-bold">{t("newPassword")}</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              أدخل كلمة مرور قوية لتأمين حسابك
+              {t("enterNewPassword")}
             </p>
           </div>
 
@@ -339,9 +339,9 @@ export function ForgotPasswordForm() {
                     className={`h-full ${strength.color} transition-all`}
                     style={{
                       width:
-                        strength.label === "ضعيف"
+                        strength.label === t("weak")
                           ? "33%"
-                          : strength.label === "متوسط"
+                          : strength.label === t("medium")
                           ? "66%"
                           : "100%",
                     }}
@@ -349,9 +349,9 @@ export function ForgotPasswordForm() {
                 </div>
                 <span
                   className={`text-xs font-medium ${
-                    strength.label === "ضعيف"
+                    strength.label === t("weak")
                       ? "text-red-500"
-                      : strength.label === "متوسط"
+                      : strength.label === t("medium")
                       ? "text-yellow-500"
                       : "text-green-500"
                   }`}
@@ -371,7 +371,7 @@ export function ForgotPasswordForm() {
           </div>
 
           <Button type="submit" fullWidth loading={isResetPending}>
-            تغيير كلمة المرور
+            {t("changePasswordBtn")}
           </Button>
         </form>
       )}

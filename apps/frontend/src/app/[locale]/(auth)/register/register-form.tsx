@@ -1,7 +1,7 @@
 // apps/frontend/src/app/[locale]/(auth)/register/register-form.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +11,16 @@ import { useRegister, useVerifyEmail } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+
+type RegisterValues = {
+  role: "tenant" | "landlord";
+  name: string;
+  email: string;
+  phone: string;
+  nationalId: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export function RegisterForm() {
   const t = useTranslations("auth");
@@ -35,19 +45,17 @@ export function RegisterForm() {
       role: z.enum(["tenant", "landlord"]),
       name: z
         .string()
-        .regex(/^[\u0600-\u06FFa-zA-Z\s]+$/, { message: "الاسم يجب أن يحتوي على حروف فقط" }),
-      email: z.string().email({ message: "بريد إلكتروني غير صحيح" }),
-      phone: z.string().regex(/^01[0125][0-9]{8}$/, { message: "رقم الهاتف غير صحيح" }),
-      nationalId: z.string().regex(/^[0-9]{14}$/, { message: "الرقم القومي يجب أن يكون 14 رقماً" }),
-      password: z.string().min(6, { message: "كلمة المرور 6 خانات على الأقل" }),
+        .regex(/^[\u0600-\u06FFa-zA-Z\s]+$/, { message: t("validation.nameLetters") }),
+      email: z.string().email({ message: t("validation.invalidEmail") }),
+      phone: z.string().regex(/^01[0125][0-9]{8}$/, { message: t("validation.invalidPhone") }),
+      nationalId: z.string().regex(/^[0-9]{14}$/, { message: t("validation.invalidNationalId") }),
+      password: z.string().min(6, { message: t("validation.passwordMin") }),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-      message: "كلمات المرور غير متطابقة",
+      message: t("validation.passwordsMismatch"),
       path: ["confirmPassword"],
     });
-
-  type RegisterValues = z.infer<typeof registerSchema>;
 
   const {
     register,
@@ -75,7 +83,7 @@ export function RegisterForm() {
       onError: (error: any) => {
         toast({
           title: tCommon("error"),
-          description: error?.response?.data?.message || "حدث خطأ أثناء إنشاء الحساب",
+          description: error?.response?.data?.message || tCommon("error"),
           type: "error",
         });
       },
@@ -84,7 +92,7 @@ export function RegisterForm() {
         setStep(3); // Go to email verification
         toast({
           title: tCommon("success"),
-          description: "تم إنشاء الحساب، يرجى تفعيل البريد الإلكتروني",
+          description: t("validation.registerSuccess"),
           type: "success",
         });
       },
@@ -124,8 +132,8 @@ export function RegisterForm() {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) {
       toast({
-        title: "خطأ",
-        description: "يرجى إدخال الرمز المكون من 6 أرقام",
+        title: tCommon("error"),
+        description: t("validation.enter6Digits"),
         type: "error",
       });
       return;
@@ -137,7 +145,7 @@ export function RegisterForm() {
         onSuccess: () => {
           toast({
             title: tCommon("success"),
-            description: "تم تفعيل الحساب بنجاح، يمكنك تسجيل الدخول الآن",
+            description: t("validation.activateSuccess"),
             type: "success",
           });
           router.push(`/${locale}/login`);
@@ -145,7 +153,7 @@ export function RegisterForm() {
         onError: (error: any) => {
           toast({
             title: tCommon("error"),
-            description: error?.response?.data?.message || "الرمز غير صحيح",
+            description: error?.response?.data?.message || t("validation.otpIncorrect"),
             type: "error",
           });
         },
@@ -172,9 +180,9 @@ export function RegisterForm() {
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Home className="text-primary w-8 h-8" />
             </div>
-            <h3 className="font-bold text-lg mb-2">أنا مستأجر</h3>
+            <h3 className="font-bold text-lg mb-2">{t("iAmTenant")}</h3>
             <p className="text-xs text-muted-foreground text-center">
-              أبحث عن شقة أو سكن يناسبني
+              {t("iAmTenantDesc")}
             </p>
           </button>
 
@@ -193,9 +201,9 @@ export function RegisterForm() {
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Key className="text-primary w-8 h-8" />
             </div>
-            <h3 className="font-bold text-lg mb-2">أنا مؤجر</h3>
+            <h3 className="font-bold text-lg mb-2">{t("iAmLandlord")}</h3>
             <p className="text-xs text-muted-foreground text-center">
-              لدي عقار وأريد عرضه للإيجار
+              {t("iAmLandlordDesc")}
             </p>
           </button>
         </div>
@@ -219,9 +227,9 @@ export function RegisterForm() {
     return (
       <form onSubmit={onOtpSubmit} className="space-y-6 w-full max-w-md">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold">تفعيل الحساب</h2>
+          <h2 className="text-2xl font-bold">{t("activateAccount")}</h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            تم إرسال رمز التفعيل المكون من 6 أرقام إلى <br />
+            {t("activationCodeSent")} <br />
             <span className="font-semibold text-foreground" dir="ltr">{registeredEmail}</span>
           </p>
         </div>
@@ -246,7 +254,7 @@ export function RegisterForm() {
         </div>
 
         <Button type="submit" fullWidth loading={isVerifyPending}>
-          تفعيل الحساب
+          {t("activateAccount")}
         </Button>
       </form>
     );
@@ -255,7 +263,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-sm font-semibold text-primary">الخطوة ٢ من ٢</span>
+        <span className="text-sm font-semibold text-primary">{t("stepOf", { step: 2, total: 2 })}</span>
         <button
           type="button"
           onClick={() => setStep(1)}
@@ -268,7 +276,7 @@ export function RegisterForm() {
       <div className="space-y-1">
         <Input
           label={t("name")}
-          placeholder="الاسم الكامل"
+          placeholder={t("name")}
           leftIcon={<UserIcon size={18} style={{ direction: "ltr" }} />}
           error={errors.name?.message}
           {...register("name")}
@@ -277,7 +285,7 @@ export function RegisterForm() {
 
       <div className="space-y-1">
         <Input
-          label="البريد الإلكتروني"
+          label={t("email")}
           placeholder="example@email.com"
           type="email"
           leftIcon={<Mail size={18} style={{ direction: "ltr" }} />}
@@ -300,7 +308,7 @@ export function RegisterForm() {
       <div className="space-y-1">
         <Input
           label={t("nationalId")}
-          placeholder="14 رقماً"
+          placeholder="14 xxxxxxxxxx"
           type="tel"
           maxLength={14}
           leftIcon={<CreditCard size={18} style={{ direction: "ltr" }} />}

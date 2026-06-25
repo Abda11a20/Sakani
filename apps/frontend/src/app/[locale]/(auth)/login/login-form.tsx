@@ -11,20 +11,10 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-const loginSchema = z.object({
-  identifier: z
-    .string()
-    .min(1, "هذا الحقل مطلوب")
-    .refine(
-      (val) =>
-        /^01[0125][0-9]{8}$/.test(val) ||
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-      "أدخل رقم هاتف أو بريد إلكتروني صحيح"
-    ),
-  password: z.string().min(6, "كلمة المرور قصيرة جداً"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginValues = {
+  identifier: string;
+  password: string;
+};
 
 function isEmail(val: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
@@ -36,6 +26,19 @@ export function LoginForm() {
   const params = useParams();
   const locale = params.locale as string;
   const [showPassword, setShowPassword] = useState(false);
+
+  const loginSchema = z.object({
+    identifier: z
+      .string()
+      .min(1, t("validation.required"))
+      .refine(
+        (val) =>
+          /^01[0125][0-9]{8}$/.test(val) ||
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+        t("validation.invalidPhoneOrEmail")
+      ),
+    password: z.string().min(6, t("validation.passwordMin")),
+  });
 
   const {
     register,
@@ -69,7 +72,7 @@ export function LoginForm() {
       {/* Identifier Field */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-foreground/80">
-          رقم الهاتف أو البريد الإلكتروني
+          {t("phoneOrEmail")}
         </label>
         <div className="relative">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -78,7 +81,7 @@ export function LoginForm() {
           <input
             id="login-identifier"
             type="text"
-            placeholder="01xxxxxxxxx أو example@email.com"
+            placeholder={t("phoneOrEmailPlaceholder")}
             dir="ltr"
             className={`input-field w-full ps-10 ${errors.identifier ? "border-red-500" : ""}`}
             {...register("identifier")}
@@ -135,7 +138,7 @@ export function LoginForm() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            جارٍ تسجيل الدخول...
+            {t("loggingIn")}
           </>
         ) : (
           t("login")
@@ -147,7 +150,7 @@ export function LoginForm() {
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">أو</span>
+          <span className="bg-background px-2 text-muted-foreground">{t("or")}</span>
         </div>
       </div>
 

@@ -201,12 +201,7 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2"
                 onClick={() => setMobileOpen(false)}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                  <Home size={18} className="text-gold" />
-                </span>
-                <span className="font-cairo text-lg font-bold text-primary dark:text-white">
-                  سكني
-                </span>
+                <img src="/logo.png" alt="سكني" className="h-9 w-auto object-contain dark:brightness-0 dark:invert" />
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
