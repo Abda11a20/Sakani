@@ -1,0 +1,292 @@
+/* apps/frontend/src/app/globals.css */
+
+/* ── Google Fonts ── */
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════════════════════
+   CSS Variables — Light Mode
+   ════════════════════════════════════════════════ */
+:root {
+  --background: #f8f9fc;
+  --foreground: #0f1a2e;
+  --primary: #1b4f8a;
+  --primary-dark: #1a3a6b;
+  --primary-light: #2e6bc4;
+  --gold: #d4a847;
+  --gold-dark: #c49535;
+  --gold-light: #e8c06a;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --shadow: rgba(27, 79, 138, 0.08);
+  --radius: 0.75rem;
+}
+
+/* ════════════════════════════════════════════════
+   CSS Variables — Dark Mode
+   ════════════════════════════════════════════════ */
+.dark {
+  --background: #0f1a2e;
+  --foreground: #f8f9fc;
+  --primary: #2e6bc4;
+  --primary-dark: #1b4f8a;
+  --primary-light: #5a8fd4;
+  --gold: #e8c06a;
+  --gold-dark: #d4a847;
+  --gold-light: #f0d48e;
+  --card: #1b2e4a;
+  --border: #2d4a6e;
+  --muted: #8bafd4;
+  --shadow: rgba(0, 0, 0, 0.3);
+}
+
+/* ════════════════════════════════════════════════
+   Base Styles
+   ════════════════════════════════════════════════ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    /* Cairo للـ RTL، Inter للـ LTR */
+    font-family: "Cairo", sans-serif;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* عندما تكون اللغة إنجليزية (LTR) */
+  [dir="ltr"] body {
+    font-family: "Inter", sans-serif;
+  }
+
+  /* scrollbar مخصص */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
+
+  /* تحديد النص */
+  ::selection {
+    background-color: var(--primary);
+    color: white;
+  }
+
+  /* focus styles للـ accessibility */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+/* ════════════════════════════════════════════════
+   Component Utilities
+   ════════════════════════════════════════════════ */
+@layer components {
+  /* الأيقونات تبقى LTR دائماً بغض النظر عن اتجاه الصفحة */
+  .icon-wrapper {
+    direction: ltr;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* بطاقة الـ card */
+  .card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px var(--shadow);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  /* أزرار رئيسية */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white;
+    background-color: var(--primary);
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(27, 79, 138, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* زر الـ gold */
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold;
+    background-color: var(--gold);
+    color: #0f1a2e;
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease;
+  }
+
+  .btn-gold:hover {
+    background-color: var(--gold-dark);
+    transform: translateY(-1px);
+  }
+
+  /* input styles */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl text-sm;
+    background-color: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--foreground);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(27, 79, 138, 0.1);
+  }
+
+  .input-field::placeholder {
+    color: var(--muted);
+  }
+
+  /* badge */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge;
+    background-color: rgba(27, 79, 138, 0.1);
+    color: var(--primary);
+  }
+
+  .badge-gold {
+    @apply badge;
+    background-color: rgba(212, 168, 71, 0.15);
+    color: var(--gold-dark);
+  }
+
+  .badge-success {
+    @apply badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+  }
+
+  .badge-muted {
+    @apply badge;
+    background-color: rgba(100, 116, 139, 0.1);
+    color: var(--muted);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   Animations
+   ════════════════════════════════════════════════ */
+@layer utilities {
+  /* fade in من الأعلى */
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* fade in من الأسفل */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* skeleton shimmer */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 0.3s ease forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.3s ease forwards;
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--border) 25%,
+      var(--card) 50%,
+      var(--border) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius);
+  }
+
+  /* transition smooth على العناصر */
+  .transition-smooth {
+    transition:
+      all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

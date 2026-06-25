@@ -1,0 +1,25 @@
+{
+  "name": "sakani",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build --env-mode=loose",
+    "dev": "turbo run dev --env-mode=loose",
+    "lint": "turbo run lint --env-mode=loose",
+    "dev:backend": "turbo run dev --filter=backend --env-mode=loose",
+    "dev:frontend": "turbo run dev --filter=frontend --env-mode=loose"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "packageManager": "npm@10.9.3",
+  "overrides": {
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}
