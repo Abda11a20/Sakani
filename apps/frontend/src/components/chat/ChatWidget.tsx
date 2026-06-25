@@ -38,6 +38,11 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
   const { user, token } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -231,7 +236,7 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
     }
   };
 
-  if (!user) return null;
+  if (!mounted || !user) return null;
 
   const widgetTitle = title ?? (isRtl ? "الدعم الفني" : "Support Chat");
 

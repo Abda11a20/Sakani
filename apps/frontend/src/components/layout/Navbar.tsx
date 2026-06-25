@@ -24,6 +24,11 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { isInstallable, install } = usePWAInstall();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -34,7 +39,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { href: `/${locale}`, label: t("home"), icon: Home },
     { href: `/${locale}/search`, label: t("search"), icon: Search },
-    ...(user?.role === "landlord"
+    ...(mounted && user?.role === "landlord"
       ? [{ href: `/${locale}/listings/new`, label: t("addListing"), icon: Plus }]
       : []),
   ];
@@ -96,7 +101,7 @@ export const Navbar: React.FC = () => {
             <ThemeToggle />
 
             {/* Auth buttons */}
-            {!user ? (
+            {!mounted || !user ? (
               <div className="hidden md:flex items-center gap-2 ms-2">
                 <Link href={`/${locale}/login`}>
                   <Button variant="outline" size="sm">
@@ -212,7 +217,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* User info in drawer */}
-            {user && (
+            {mounted && user && (
               <div className="border-b border-gray-200 dark:border-gray-800 p-4">
                 <div className="flex items-center gap-3">
                   <Avatar src={null} name={user.name} size="md" verified={isUserVerified(user)} />
@@ -245,7 +250,7 @@ export const Navbar: React.FC = () => {
                 </Link>
               ))}
 
-              {user && (
+              {mounted && user && (
                 <>
                   <Link
                     href={`/${locale}/profile`}
@@ -283,7 +288,7 @@ export const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {!user ? (
+              {!mounted || !user ? (
                 <div className="flex gap-2">
                   <Link href={`/${locale}/login`} className="flex-1" onClick={() => setMobileOpen(false)}>
                     <Button variant="outline" size="md" fullWidth>

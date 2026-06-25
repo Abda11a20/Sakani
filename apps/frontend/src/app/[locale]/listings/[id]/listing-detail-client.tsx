@@ -297,6 +297,11 @@ function RequestViewingModal({
 function ContactCard({ listing, locale }: { listing: Listing; locale: string }) {
   const { user: currentUser } = useAuthStore();
   const [modalOpen, setModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const avgRating = 4.5; // سيكون من الـ API لاحقاً
 
@@ -341,7 +346,7 @@ function ContactCard({ listing, locale }: { listing: Listing; locale: string }) 
         </button>
 
         {/* Contact info (only if logged in) */}
-        {currentUser ? (
+        {mounted && currentUser ? (
           <div className="space-y-2">
             {listing.landlord?.phone && (
               <a
