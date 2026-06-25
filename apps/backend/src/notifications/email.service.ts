@@ -2,27 +2,161 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import axios from 'axios';
+import * as nodemailer from 'nodemailer';
 
+// ── Types ────────────────────────────────────────────────────────────────────
+interface EmailPayload {
+  to: string;
+  subject: string;
+  html: string;
+}
+
+type EmailProvider = 'resend' | 'smtp';
+
+// ── EmailService ─────────────────────────────────────────────────────────────
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
+  private readonly provider: EmailProvider;
+  private readonly resendApiKey: string | undefined;
+  private readonly resendFrom: string;
+  private smtpTransporter: nodemailer.Transporter | null = null;
 
-  constructor(private config: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('EMAIL_HOST') || 'smtp.gmail.com',
-      port: this.config.get<number>('EMAIL_PORT') || 465,
-      secure: true,
-      auth: {
-        user: this.config.get<string>('EMAIL_USER'),
-        pass: this.config.get<string>('EMAIL_APP_PASSWORD'),
-      },
-    });
+  constructor(private readonly config: ConfigService) {
+    this.resendApiKey = this.config.get<string>('RESEND_API_KEY');
+    this.resendFrom = this.config.get<string>('RESEND_FROM') || 'سَكني | Sakani <onboarding@resend.dev>';
+
+    if (this.resendApiKey) {
+      this.provider = 'resend';
+      this.logger.log('📧 Email provider: Resend API');
+    } else {
+      this.provider = 'smtp';
+      this.logger.log('📧 Email provider: SMTP (Nodemailer)');
+      this.smtpTransporter = nodemailer.createTransport({
+        host: this.config.get<string>('EMAIL_HOST') || 'smtp.gmail.com',
+        port: this.config.get<number>('EMAIL_PORT') || 465,
+        secure: true,
+        auth: {
+          user: this.config.get<string>('EMAIL_USER'),
+          pass: this.config.get<string>('EMAIL_APP_PASSWORD'),
+        },
+      });
+    }
   }
 
-  // ── قالب مشترك لتغليف كل الرسائل ─────────────────────────────────────────
+  // ── Public API ─────────────────────────────────────────────────────────────
+
+  /** إرسال كود تفعيل الحساب */
+  async sendEmailVerification(email: string, otp: string): Promise<void> {
+    const body = `
+      <p style="color: #333; font-size: 16px;">مرحباً بك في منصة <strong>سَكني</strong>!</p>
+      <p style="color: #555;">لتفعيل حسابك، أدخل الرمز التالي:</p>
+      <div style="background: #f0f5ff; border: 2px dashed #1B4F8A; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+        <span style="font-size: 36px; font-weight: bold; color: #1B4F8A; letter-spacing: 8px;">${otp}</span>
+      </div>
+      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
+    `;
+    const html = this.wrapTemplate('تفعيل حسابك', body);
+    await this.dispatch({ to: email, subject: 'تفعيل حساب سَكني', html }, otp);
+  }
+
+  /** إرسال كود إعادة تعيين كلمة المرور */
+  async sendPasswordReset(email: string, otp: string): Promise<void> {
+    const body = `
+      <p style="color: #333; font-size: 16px;">تلقينا طلب لإعادة تعيين كلمة المرور لحسابك.</p>
+      <p style="color: #555;">استخدم الرمز التالي لإعادة تعيين كلمة المرور:</p>
+      <div style="background: #fff5f5; border: 2px dashed #e74c3c; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+        <span style="font-size: 36px; font-weight: bold; color: #e74c3c; letter-spacing: 8px;">${otp}</span>
+      </div>
+      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
+      <p style="color: #888; font-size: 13px;">إذا لم تكن قد طلبت هذا، فلا داعي للقلق — حسابك بأمان تام.</p>
+    `;
+    const html = this.wrapTemplate('إعادة تعيين كلمة المرور', body);
+    await this.dispatch({ to: email, subject: 'إعادة تعيين كلمة مرور سَكني', html }, otp);
+  }
+
+  // ── Private: Dispatch (routes to the active provider) ──────────────────────
+
+  private async dispatch(payload: EmailPayload, devOtp?: string): Promise<void> {
+    // في بيئة الاختبار: لا نرسل شيئاً
+    if (process.env.NODE_ENV === 'test') {
+      this.logger.log(`[TEST] Suppressed email to ${payload.to}`);
+      return;
+    }
+
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    try {
+      if (this.provider === 'resend') {
+        await this.sendViaResend(payload);
+      } else {
+        await this.sendViaSmtp(payload);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
+      if (isProduction) {
+        // في الإنتاج: نرمي الخطأ لإلغاء الـ Transaction بالكامل
+        this.logger.error(`❌ Failed to send email to ${payload.to}: ${message}`);
+        throw new Error(`فشل إرسال البريد الإلكتروني: ${message}`);
+      }
+
+      // في التطوير: نطبع الـ OTP في الكونسول ونكمل العملية
+      this.logger.warn(`[DEV] Email to ${payload.to} failed: ${message}`);
+      if (devOtp) {
+        this.logger.warn(
+          `\n\n  ╔════════════════════════════════════════╗` +
+          `\n  ║  🔑 DEV OTP for ${payload.to.padEnd(25)} ║` +
+          `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
+          `\n  ╚════════════════════════════════════════╝\n`,
+        );
+      }
+    }
+  }
+
+  // ── Private: Resend API Transport ──────────────────────────────────────────
+
+  private async sendViaResend(payload: EmailPayload): Promise<void> {
+    const response = await axios.post(
+      'https://api.resend.com/emails',
+      {
+        from: this.resendFrom,
+        to: [payload.to],
+        subject: payload.subject,
+        html: payload.html,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      },
+    );
+
+    this.logger.log(`✅ Email sent via Resend to ${payload.to} | ID: ${response.data?.id}`);
+  }
+
+  // ── Private: SMTP (Nodemailer) Transport ───────────────────────────────────
+
+  private async sendViaSmtp(payload: EmailPayload): Promise<void> {
+    if (!this.smtpTransporter) {
+      throw new Error('SMTP transporter is not configured');
+    }
+
+    const info = await this.smtpTransporter.sendMail({
+      from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+    });
+
+    this.logger.log(`✅ Email sent via SMTP to ${payload.to} | ID: ${info.messageId}`);
+  }
+
+  // ── Private: HTML Email Template ───────────────────────────────────────────
+
   private wrapTemplate(title: string, body: string): string {
     return `
       <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fc; padding: 20px;">
@@ -41,123 +175,5 @@ export class EmailService {
         </div>
       </div>
     `;
-  }
-
-  // ── إرسال كود تفعيل الحساب ───────────────────────────────────────────────
-  async sendEmailVerification(email: string, otp: string): Promise<void> {
-    const body = `
-      <p style="color: #333; font-size: 16px;">مرحباً بك في منصة <strong>سَكني</strong>!</p>
-      <p style="color: #555;">لتفعيل حسابك، أدخل الرمز التالي:</p>
-      <div style="background: #f0f5ff; border: 2px dashed #1B4F8A; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-        <span style="font-size: 36px; font-weight: bold; color: #1B4F8A; letter-spacing: 8px;">${otp}</span>
-      </div>
-      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
-    `;
-    await this.send(email, 'تفعيل حساب سَكني', this.wrapTemplate('تفعيل حسابك', body), otp);
-  }
-
-  // ── إرسال كود إعادة تعيين كلمة المرور ───────────────────────────────────
-  async sendPasswordReset(email: string, otp: string): Promise<void> {
-    const body = `
-      <p style="color: #333; font-size: 16px;">تلقينا طلب لإعادة تعيين كلمة المرور لحسابك.</p>
-      <p style="color: #555;">استخدم الرمز التالي لإعادة تعيين كلمة المرور:</p>
-      <div style="background: #fff5f5; border: 2px dashed #e74c3c; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-        <span style="font-size: 36px; font-weight: bold; color: #e74c3c; letter-spacing: 8px;">${otp}</span>
-      </div>
-      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
-      <p style="color: #888; font-size: 13px;">إذا لم تكن قد طلبت هذا، فلا داعي للقلق — حسابك بأمان تام.</p>
-    `;
-    await this.send(email, 'إعادة تعيين كلمة مرور سَكني', this.wrapTemplate('إعادة تعيين كلمة المرور', body), otp);
-  }
-
-  // ── الدالة الأساسية للإرسال ───────────────────────────────────────────────
-  private async send(to: string, subject: string, html: string, devOtp?: string): Promise<void> {
-    if (process.env.NODE_ENV === 'test') {
-      this.logger.log(`[TEST MODE] Suppressed email to ${to} with subject "${subject}"`);
-      return;
-    }
-
-    const resendApiKey = this.config.get<string>('RESEND_API_KEY');
-
-    if (resendApiKey) {
-      try {
-        const response = await axios.post(
-          'https://api.resend.com/emails',
-          {
-            from: 'سَكني | Sakani <onboarding@resend.dev>',
-            to: [to],
-            subject: subject,
-            html: html,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        this.logger.log(`Email sent via Resend to ${to} | ID: ${response.data.id}`);
-        return;
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-        this.logger.error(`Failed to send email via Resend to ${to}: ${errorMessage}`);
-        
-        // If in development mode, print devOtp to console instead of throwing/failing
-        if (process.env.NODE_ENV !== 'production') {
-          if (devOtp) {
-            this.logger.warn(
-              `\n\n  ╔════════════════════════════════════════╗` +
-              `\n  ║  🔑 DEV OTP for ${to.padEnd(25)} ║` +
-              `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
-              `\n  ╚════════════════════════════════════════╝\n`
-            );
-          }
-          return;
-        }
-        throw new Error(`فشل إرسال البريد الإلكتروني (Resend): ${errorMessage}`);
-      }
-    }
-
-    // fallback to Nodemailer SMTP
-    if (process.env.NODE_ENV !== 'production') {
-      // في بيئة التطوير: حاول الإرسال، وإذا فشل اطبع الـ OTP في الكونسول ولا تفشل العملية
-      try {
-        const info = await this.transporter.sendMail({
-          from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
-          to,
-          subject,
-          html,
-        });
-        this.logger.log(`Email sent to ${to} | ID: ${info.messageId}`);
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.warn(`[DEV] Failed to send email to ${to}: ${message}`);
-        if (devOtp) {
-          this.logger.warn(
-            `\n\n  ╔════════════════════════════════════════╗` +
-            `\n  ║  🔑 DEV OTP for ${to.padEnd(25)} ║` +
-            `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
-            `\n  ╚════════════════════════════════════════╝\n`
-          );
-        }
-        // في التطوير لا نرمي الخطأ حتى لا نوقف عملية التسجيل
-      }
-      return;
-    }
-
-    // في الإنتاج: نرمي الخطأ حتى تتراجع الـ Transaction وينبه المستخدم
-    try {
-      const info = await this.transporter.sendMail({
-        from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
-        to,
-        subject,
-        html,
-      });
-      this.logger.log(`Email sent to ${to} | ID: ${info.messageId}`);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to send email to ${to}: ${message}`);
-      throw new Error(`فشل إرسال البريد الإلكتروني: ${message}`);
-    }
   }
 }
