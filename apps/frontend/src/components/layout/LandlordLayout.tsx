@@ -75,12 +75,9 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
     <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-800">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 gap-2">
-        <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white font-bold">
-          S
-        </div>
-        <span className="text-xl font-bold font-cairo bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
-          سكني لوحة التحكم
-        </span>
+        <Link href={`/${locale}`} className="flex items-center gap-2">
+          <img src="/logo.png" alt="سكني" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />
+        </Link>
       </div>
 
       {/* Nav Items */}
@@ -96,11 +93,11 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 font-cairo",
                 isActive
-                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border-s-4 border-amber-500 pl-3"
+                  ? "bg-[#D4A847]/10 text-[#C49535] dark:text-[#E8C06A] font-bold border-s-4 border-[#D4A847] pl-3"
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"
               )}
             >
-              <Icon size={18} className={cn("shrink-0", isActive ? "text-amber-500" : "text-slate-400")} />
+              <Icon size={18} className={cn("shrink-0", isActive ? "text-[#D4A847]" : "text-slate-400")} />
               <span>{isRtl ? item.label : item.labelEn}</span>
             </Link>
           );
@@ -160,7 +157,9 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
           >
             <Menu size={24} />
           </button>
-          <span className="font-bold text-lg font-cairo">سكني لوحة التحكم</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="سكني" className="h-7 w-auto object-contain dark:brightness-0 dark:invert" />
+          </div>
           <div className="w-10"></div>
         </header>
 

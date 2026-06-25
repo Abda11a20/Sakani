@@ -5,24 +5,29 @@ import React, { useState } from "react";
 import { useLocale } from "next-intl";
 import {
   Users, Shield, ShieldOff, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
-  AlertCircle, Loader2, UserCheck, UserX, Crown, Search, Filter, Ban, X, Eye, Phone, Mail, IdCard, Trash2
+  AlertCircle, Loader2, UserCheck, UserX, Crown, Search, Ban, X, Eye,
+  Phone, Mail, IdCard, Trash2, UserPlus, Lock,
 } from "lucide-react";
 import {
   useAdminUsers, useVerifyUser, useToggleUserStatus,
-  useUpdateUserRole, useAdminDeleteUser, useBanUser, useIdCardUrl
+  useUpdateUserRole, useAdminDeleteUser, useBanUser, useIdCardUrl, useRegisterAdmin,
+  type RegisterAdminPayload,
 } from "@/hooks/useAdmin";
+import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 import Image from "next/image";
 
+// ── Brand color role badges ───────────────────────────────────────────────────
 const roleBadge: Record<string, { label: string; className: string }> = {
-  tenant: { label: "مستأجر", className: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" },
-  landlord: { label: "مُعلِن", className: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300" },
-  admin: { label: "أدمن", className: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" },
-  super_admin: { label: "سوبر أدمن", className: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" },
+  tenant: { label: "مستأجر", className: "bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#2E6BC4]/20 dark:text-[#7BAEE8]" },
+  landlord: { label: "مُعلِن", className: "bg-[#D4A847]/15 text-[#C49535] dark:bg-[#D4A847]/20 dark:text-[#E8C06A]" },
+  admin: { label: "أدمن", className: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" },
+  super_admin: { label: "سوبر أدمن", className: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400" },
 };
 
+// ── ID Card Viewer ────────────────────────────────────────────────────────────
 function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void }) {
   const { data, isLoading, error } = useIdCardUrl(userId, true);
   return (
@@ -30,7 +35,7 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
-            <IdCard size={20} className="text-amber-500" /> بطاقة الهوية
+            <IdCard size={20} className="text-[#D4A847]" /> بطاقة الهوية
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
@@ -38,7 +43,7 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
         </div>
         <div className="p-4 flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-50 dark:bg-slate-900/50 relative">
           {isLoading ? (
-            <div className="flex flex-col items-center text-amber-500 gap-3">
+            <div className="flex flex-col items-center text-[#D4A847] gap-3">
               <Loader2 size={32} className="animate-spin" />
               <p className="text-sm font-cairo font-medium text-slate-600">جاري جلب الرابط الآمن...</p>
             </div>
@@ -58,11 +63,122 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
   );
 }
 
+// ── Create Admin Modal ────────────────────────────────────────────────────────
+function CreateAdminModal({ onClose }: { onClose: () => void }) {
+  const { toast } = useToast();
+  const { mutate: registerAdmin, isPending } = useRegisterAdmin();
+  const [form, setForm] = useState<RegisterAdminPayload>({
+    name: "", phone: "", email: "", password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.phone || !form.email || !form.password) {
+      toast({ type: "error", description: "يرجى تعبئة جميع الحقول" });
+      return;
+    }
+    if (form.password.length < 8) {
+      toast({ type: "error", description: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" });
+      return;
+    }
+    registerAdmin(form, {
+      onSuccess: () => {
+        toast({ type: "success", description: "تم إنشاء حساب الأدمن بنجاح" });
+        onClose();
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.message || err?.message || "فشل في إنشاء الحساب";
+        toast({ type: "error", description: msg });
+      },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#D4A847]/20 flex items-center justify-center">
+              <UserPlus size={18} className="text-[#D4A847]" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white font-cairo">إضافة مسؤول جديد</h3>
+              <p className="text-xs text-slate-400 font-cairo">يتم إنشاؤه بصلاحيات Admin</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">الاسم</label>
+            <input name="name" value={form.name} onChange={handleChange} placeholder="محمد أحمد"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">البريد الإلكتروني</label>
+            <div className="relative">
+              <Mail size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="admin@sakany.com"
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" dir="ltr" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">رقم الهاتف</label>
+            <div className="relative">
+              <Phone size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+              <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="01xxxxxxxxx"
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" dir="ltr" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">كلمة المرور</label>
+            <div className="relative">
+              <Lock size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+              <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="8 أحرف على الأقل"
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold font-cairo text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}
+            >
+              {isPending ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</> : <><UserPlus size={16} /> إنشاء الحساب</>}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const { toast } = useToast();
-  
+  const { user: currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === "super_admin";
+
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,9 +189,10 @@ export default function AdminUsersPage() {
   const [newRole, setNewRole] = useState<string>("tenant");
   const [banModal, setBanModal] = useState<{ id: string; name: string; phone?: string; nationalId?: string } | null>(null);
   const [banReason, setBanReason] = useState("");
-  
+
   const [selectedUser, setSelectedUser] = useState<Omit<User, "nationalIdEnc"> | null>(null);
   const [idCardViewer, setIdCardViewer] = useState<string | null>(null);
+  const [showCreateAdmin, setShowCreateAdmin] = useState(false);
 
   const { data, isLoading, error } = useAdminUsers(page, 10, roleFilter, searchQuery, isActiveFilter, isVerifiedFilter);
   const verifyMutation = useVerifyUser();
@@ -153,7 +270,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6 relative overflow-x-hidden">
-      {/* Header & Filters */}
+      {/* Header */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-cairo">
@@ -163,9 +280,21 @@ export default function AdminUsersPage() {
             {meta ? `${meta.total} مستخدم` : "جاري التحميل..."}
           </p>
         </div>
-        
-        {/* Filters */}
+
         <div className="flex flex-wrap items-center gap-2">
+          {/* Create Admin Button — super_admin only */}
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowCreateAdmin(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-cairo text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+              style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}
+            >
+              <UserPlus size={16} className="text-[#D4A847]" />
+              إضافة مسؤول
+            </button>
+          )}
+
+          {/* Search */}
           <div className="relative">
             <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
             <input
@@ -173,13 +302,15 @@ export default function AdminUsersPage() {
               placeholder="بحث بالاسم أو الهاتف أو البريد..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="pl-3 pr-9 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-amber-400 min-w-[250px]"
+              className="ps-9 pe-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A] min-w-[250px]"
             />
           </div>
+
+          {/* Filters */}
           <select
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
           >
             <option value="all">جميع الأدوار</option>
             <option value="tenant">مستأجر</option>
@@ -189,7 +320,7 @@ export default function AdminUsersPage() {
           <select
             value={isActiveFilter}
             onChange={(e) => { setIsActiveFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
           >
             <option value="all">الحالة: الكل</option>
             <option value="true">نشط</option>
@@ -198,7 +329,7 @@ export default function AdminUsersPage() {
           <select
             value={isVerifiedFilter}
             onChange={(e) => { setIsVerifiedFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
           >
             <option value="all">التحقق: الكل</option>
             <option value="true">محقق</option>
@@ -210,7 +341,7 @@ export default function AdminUsersPage() {
       {/* States */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={28} className="animate-spin text-amber-500" />
+          <Loader2 size={28} className="animate-spin text-[#1B4F8A]" />
         </div>
       )}
 
@@ -250,12 +381,13 @@ export default function AdminUsersPage() {
                       <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm font-cairo shrink-0">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm font-cairo shrink-0"
+                              style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}>
                               {user.name?.charAt(0)}
                             </div>
                             <div>
-                              <p 
-                                className="text-sm font-semibold text-slate-900 dark:text-white font-cairo hover:text-amber-600 dark:hover:text-amber-500 cursor-pointer transition-colors"
+                              <p
+                                className="text-sm font-semibold text-slate-900 dark:text-white font-cairo hover:text-[#1B4F8A] dark:hover:text-[#7BAEE8] cursor-pointer transition-colors"
                                 onClick={() => setSelectedUser(user)}
                               >
                                 {user.name}
@@ -281,7 +413,7 @@ export default function AdminUsersPage() {
                               </span>
                             )}
                             {isVerified ? (
-                              <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-cairo font-medium" title="البريد محقق">
+                              <span className="flex items-center gap-1 text-xs text-[#1B4F8A] dark:text-[#7BAEE8] font-cairo font-medium" title="البريد محقق">
                                 <Shield size={13} /> محقق
                               </span>
                             ) : (
@@ -295,12 +427,12 @@ export default function AdminUsersPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedUser(user)}
-                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1"
+                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#1B4F8A] hover:text-white dark:hover:bg-[#1B4F8A] transition-all flex items-center gap-1"
                             >
                               <Eye size={13} /> التفاصيل
                             </button>
                             <button
-                              onClick={() => setBanModal({ id: user.id, name: user.name, phone: user.phone, nationalId: user.nationalId })}
+                              onClick={() => setBanModal({ id: user.id, name: user.name, phone: user.phone, nationalId: (user as any).nationalId })}
                               disabled={banMutation.isPending || user.role === "super_admin"}
                               className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center gap-1 disabled:opacity-50"
                             >
@@ -351,17 +483,18 @@ export default function AdminUsersPage() {
           )}>
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
-                <UserCheck size={20} className="text-blue-500" /> تفاصيل المستخدم
+                <UserCheck size={20} className="text-[#1B4F8A]" /> تفاصيل المستخدم
               </h3>
               <button onClick={() => setSelectedUser(null)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                 <X size={16} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Profile Header */}
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-3xl font-cairo shadow-md">
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-3xl font-cairo shadow-md"
+                  style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}>
                   {selectedUser.name?.charAt(0)}
                 </div>
                 <div>
@@ -378,16 +511,16 @@ export default function AdminUsersPage() {
                 <div className="flex items-center gap-3">
                   <Mail size={16} className="text-slate-400" />
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo">{selectedUser.email || "غير متوفر"}</span>
-                  {selectedUser.emailVerifiedAt && <Shield size={14} className="text-blue-500 ms-auto" />}
+                  {selectedUser.emailVerifiedAt && <Shield size={14} className="text-[#1B4F8A] ms-auto" />}
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone size={16} className="text-slate-400" />
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo" dir="ltr">{selectedUser.phone || "غير متوفر"}</span>
                 </div>
-                {selectedUser.nationalId && (
+                {(selectedUser as any).nationalId && (
                   <div className="flex items-center gap-3">
                     <IdCard size={16} className="text-slate-400" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo">{selectedUser.nationalId}</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo" dir="ltr">{(selectedUser as any).nationalId}</span>
                   </div>
                 )}
               </div>
@@ -395,11 +528,11 @@ export default function AdminUsersPage() {
               {/* Actions */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 font-cairo uppercase mb-2">إجراءات الإدارة</h4>
-                
+
                 {selectedUser.role === 'landlord' && (
                   <button
                     onClick={() => setIdCardViewer(selectedUser.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold font-cairo bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 transition-colors border border-amber-200 dark:border-amber-800/50 mb-2"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold font-cairo bg-[#D4A847]/10 dark:bg-[#D4A847]/20 text-[#C49535] dark:text-[#E8C06A] hover:bg-[#D4A847]/20 transition-colors border border-[#D4A847]/30 mb-2"
                   >
                     <IdCard size={16} /> عرض بطاقة الهوية
                   </button>
@@ -410,7 +543,7 @@ export default function AdminUsersPage() {
                     <button
                       onClick={() => handleVerify(selectedUser.id)}
                       disabled={verifyMutation.isPending}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-[#1B4F8A]/10 text-[#1B4F8A] hover:bg-[#1B4F8A]/20 dark:text-[#7BAEE8] transition-colors"
                     >
                       <UserCheck size={14} /> توثيق الحساب
                     </button>
@@ -422,19 +555,19 @@ export default function AdminUsersPage() {
                   >
                     {(selectedUser as any).isActive !== false ? <><UserX size={14} /> إيقاف مؤقت</> : <><UserCheck size={14} /> تفعيل</>}
                   </button>
-                  {selectedUser.role !== "super_admin" && (
+                  {selectedUser.role !== "super_admin" && isSuperAdmin && (
                     <button
                       onClick={() => {
                         setRoleModal({ id: selectedUser.id, name: selectedUser.name, currentRole: selectedUser.role });
                         setNewRole(selectedUser.role);
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-[#D4A847]/10 text-[#C49535] hover:bg-[#D4A847]/20 dark:text-[#E8C06A] transition-colors"
                     >
                       <Crown size={14} /> تغيير الدور
                     </button>
                   )}
                   <button
-                    onClick={() => setBanModal({ id: selectedUser.id, name: selectedUser.name, phone: selectedUser.phone, nationalId: selectedUser.nationalId })}
+                    onClick={() => setBanModal({ id: selectedUser.id, name: selectedUser.name, phone: selectedUser.phone, nationalId: (selectedUser as any).nationalId })}
                     disabled={selectedUser.role === "super_admin"}
                     className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
                   >
@@ -460,14 +593,12 @@ export default function AdminUsersPage() {
       {roleModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo">
-              تغيير دور المستخدم
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo">تغيير دور المستخدم</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo">{roleModal.name}</p>
             <select
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
             >
               <option value="tenant">مستأجر</option>
               <option value="landlord">مُعلِن</option>
@@ -477,7 +608,8 @@ export default function AdminUsersPage() {
               <button
                 onClick={handleRoleUpdate}
                 disabled={roleMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-amber-500 hover:bg-amber-600 text-white transition-all disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo text-white transition-all disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}
               >
                 {roleMutation.isPending ? "جاري الحفظ..." : "حفظ"}
               </button>
@@ -500,9 +632,9 @@ export default function AdminUsersPage() {
               <Ban size={20} /> حظر المستخدم
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 font-cairo">
-              سيتم حظر المستخدم <b>{banModal.name}</b> وإضافته إلى القائمة السوداء بناءً على رقمه القومي أو رقم الهاتف.
+              سيتم حظر المستخدم <b>{banModal.name}</b> وإضافته إلى القائمة السوداء.
             </p>
-            
+
             <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
               {banModal.nationalId && (
                 <div className="flex items-center justify-between text-sm font-cairo">
@@ -553,6 +685,11 @@ export default function AdminUsersPage() {
       {/* ID Card Viewer */}
       {idCardViewer && (
         <IdCardViewer userId={idCardViewer} onClose={() => setIdCardViewer(null)} />
+      )}
+
+      {/* Create Admin Modal */}
+      {showCreateAdmin && (
+        <CreateAdminModal onClose={() => setShowCreateAdmin(false)} />
       )}
     </div>
   );

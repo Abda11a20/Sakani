@@ -73,22 +73,10 @@ export const useLogin = () => {
 };
 
 export const useRegister = () => {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: async (data: RegisterPayload) => {
       const response = await api.post("/auth/register", data);
       return response.data;
-    },
-    onSuccess: (_, variables) => {
-      const locale =
-        typeof window !== "undefined"
-          ? window.location.pathname.split("/")[1] || "ar"
-          : "ar";
-      // توجيه المستخدم لصفحة التحقق من الإيميل
-      router.push(
-        `/${locale}/verify-email?email=${encodeURIComponent(variables.email)}`
-      );
     },
   });
 };

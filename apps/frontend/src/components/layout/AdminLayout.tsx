@@ -102,23 +102,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="flex flex-col h-full" style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)" }}>
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-          <Shield size={18} className="text-white" />
-        </div>
-        <div>
-          <span className="text-base font-bold text-white font-cairo block leading-tight">
-            {isRtl ? "لوحة الإدارة" : "Admin Panel"}
-          </span>
-          <span className="text-xs text-amber-400 font-medium font-cairo">
-            {isRtl ? "سكني — النظام" : "Sakany System"}
-          </span>
-        </div>
+        <Link href={`/${locale}`} className="flex items-center gap-2">
+          <img src="/logo.png" alt="سكني" className="h-8 w-auto object-contain brightness-0 invert" />
+        </Link>
       </div>
 
       {/* Admin Badge */}
       {mounted && user && (
         <div className="mx-4 mt-4 mb-2 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm font-cairo shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#D4A847]/20 flex items-center justify-center text-[#D4A847] font-bold text-sm font-cairo shrink-0">
             {user.name?.charAt(0) ?? "A"}
           </div>
           <div className="min-w-0">
@@ -144,7 +136,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 font-cairo group",
                 isActive
-                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/25"
+                  ? "bg-[#1B4F8A] text-white shadow-lg shadow-[#1B4F8A]/20"
                   : "text-slate-400 hover:bg-white/5 hover:text-white"
               )}
             >
@@ -152,7 +144,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 size={18}
                 className={cn(
                   "shrink-0 transition-transform group-hover:scale-110",
-                  isActive ? "text-white" : "text-slate-500 group-hover:text-amber-400"
+                  isActive ? "text-[#D4A847]" : "text-slate-500 group-hover:text-[#D4A847]"
                 )}
               />
               <span className="flex-1">{isRtl ? item.label : item.labelEn}</span>
@@ -233,10 +225,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Menu size={22} />
           </button>
           <div className="flex items-center gap-2">
-            <Shield size={18} className="text-amber-500" />
-            <span className="font-bold text-base font-cairo">
-              {isRtl ? "لوحة الإدارة" : "Admin Panel"}
-            </span>
+            <img src="/logo.png" alt="سكني" className="h-7 w-auto object-contain dark:brightness-0 dark:invert" />
           </div>
           <button
             className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative"

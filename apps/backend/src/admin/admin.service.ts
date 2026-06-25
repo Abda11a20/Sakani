@@ -11,6 +11,7 @@ import { ReviewListingDto } from './dto/review-listing.dto';
 import { BanUserDto } from './dto/ban-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { ListingStatus, UserRole } from '@prisma/client';
+import { decryptAES } from '../auth/auth.service';
 
 @Injectable()
 export class AdminService {
@@ -143,10 +144,20 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    // إزالة الحقول الحساسة
+    // إزالة الحقول الحساسة، مع فك تشفير الرقم القومي للعرض الإداري
     const safeUsers = users.map((user) => {
-      const { passwordHash: _ph, nationalIdEnc: _nid, ...safeUser } = user;
-      return safeUser;
+      const { passwordHash: _ph, nationalIdEnc, ...safeUser } = user;
+      let nationalId: string | null = null;
+      if (nationalIdEnc) {
+        try {
+          // nationalIdEnc format: "hash:encryptedData"
+          const encryptedPart = nationalIdEnc.split(':').slice(1).join(':');
+          nationalId = encryptedPart ? decryptAES(encryptedPart) : null;
+        } catch {
+          nationalId = null; // فك التشفير فشل — نتجاهل بصمت
+        }
+      }
+      return { ...safeUser, nationalId };
     });
 
     return { users: safeUsers, meta: { total, page, lastPage: Math.ceil(total / limit) } };
