@@ -5,9 +5,13 @@ WORKDIR /app
 # نسخ ملفات الباك إند بالكامل من المجلد الداخلي
 COPY apps/backend/ .
 
-# تثبيت الحزم وبناء المشروع الخاص بـ NestJS وقاعدة البيانات
+# تثبيت الحزم بنجاح
 RUN npm install
-RUN npx prisma generate
+
+# توليد ملفات Prisma مع تمرير رابط وهمي مؤقت لتخطي فحص البناء بنجاح
+RUN DATABASE_URL="postgresql://mock_user:mock_pass@localhost:5432/mock_db" npx prisma generate
+
+# بناء المشروع الخاص بـ NestJS
 RUN npm run build
 
 # فتح المنفذ المبرمج عليه الكود داخلياً
