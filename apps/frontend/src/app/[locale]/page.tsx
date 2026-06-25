@@ -44,7 +44,6 @@ async function getFeaturedListings(): Promise<Listing[]> {
     );
     if (!res.ok) return [];
     const json = await res.json();
-    // Handle both { success, data } and direct array
     return Array.isArray(json) ? json : (json?.data?.items ?? json?.data ?? json?.items ?? []);
   } catch {
     return [];
@@ -66,7 +65,8 @@ async function getPopularDistricts(): Promise<District[]> {
 }
 
 // ── Hero Section ─────────────────────────────────────────────
-function HeroSection({ locale }: { locale: string }) {
+async function HeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations("home");
   return (
     <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden">
       {/* Background gradient */}
@@ -101,16 +101,16 @@ function HeroSection({ locale }: { locale: string }) {
               color: "#E8C06A",
             }}
           >
-            🏠 منصة تأجير العقارات الأولى في مصر
+            {t("heroBadge")}
           </span>
 
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-5 font-cairo">
-            ابحث بثقة
+            {t("heroTitleLine1")}
             <br />
-            <span style={{ color: "#D4A847" }}>اسكن بأمان</span>
+            <span style={{ color: "#D4A847" }}>{t("heroTitleLine2")}</span>
           </h1>
           <p className="text-lg md:text-xl text-white/75 max-w-2xl mx-auto leading-relaxed">
-            أكبر منصة لتأجير الشقق والغرف والأسرة في مصر — عقارات موثقة ومراجعة لضمان تجربتك
+            {t("heroSubtitle")}
           </p>
         </div>
 
@@ -128,9 +128,9 @@ function HeroSection({ locale }: { locale: string }) {
               {/* Quick type tabs */}
               <div className="hidden sm:flex gap-1 ps-1">
                 {[
-                  { label: "شقة", icon: Building2 },
-                  { label: "غرفة", icon: DoorOpen },
-                  { label: "سرير", icon: BedDouble },
+                  { label: t("apartment"), icon: Building2 },
+                  { label: t("room"), icon: DoorOpen },
+                  { label: t("bed"), icon: BedDouble },
                 ].map(({ label, icon: Icon }) => (
                   <span
                     key={label}
@@ -147,7 +147,7 @@ function HeroSection({ locale }: { locale: string }) {
                 <input
                   id="hero-search"
                   type="text"
-                  placeholder="ابحث في المنطقة أو المدينة..."
+                  placeholder={t("searchPlaceholder")}
                   className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-sm"
                 />
               </div>
@@ -158,7 +158,7 @@ function HeroSection({ locale }: { locale: string }) {
                 className="shrink-0 px-6 py-3 rounded-xl text-sm font-bold text-[#0F1A2E] transition-all hover:opacity-90 active:scale-95"
                 style={{ background: "#D4A847" }}
               >
-                بحث
+                {t("searchButton")}
               </Link>
             </div>
           </div>
@@ -168,17 +168,17 @@ function HeroSection({ locale }: { locale: string }) {
         <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
           <span className="flex items-center gap-2">
             <Building2 size={16} className="text-yellow-400" />
-            <span>+1000 إعلان</span>
+            <span>{t("statsListings")}</span>
           </span>
           <span className="w-px h-4 bg-white/20 hidden sm:block" />
           <span className="flex items-center gap-2">
             <CheckCircle size={16} className="text-green-400" />
-            <span>مؤجرون موثقون</span>
+            <span>{t("statsVerified")}</span>
           </span>
           <span className="w-px h-4 bg-white/20 hidden sm:block" />
           <span className="flex items-center gap-2">
             <Shield size={16} className="text-blue-400" />
-            <span>بيئة آمنة</span>
+            <span>{t("statsSecurity")}</span>
           </span>
         </div>
       </div>
@@ -187,24 +187,25 @@ function HeroSection({ locale }: { locale: string }) {
 }
 
 // ── How It Works ──────────────────────────────────────────────
-function HowItWorksSection() {
+async function HowItWorksSection() {
+  const t = await getTranslations("home");
   const steps = [
     {
       emoji: "🔍",
-      title: "ابحث",
-      desc: "استخدم الفلاتر للعثور على السكن المناسب بسعر يناسب ميزانيتك",
+      title: t("step1Title"),
+      desc: t("step1Desc"),
       color: "#1B4F8A",
     },
     {
       emoji: "👀",
-      title: "استعرض التفاصيل",
-      desc: "شاهد الصور الحقيقية وقرأ التفاصيل الكاملة وتواصل مع المؤجر",
+      title: t("step2Title"),
+      desc: t("step2Desc"),
       color: "#D4A847",
     },
     {
       emoji: "🏠",
-      title: "اسكن بأمان",
-      desc: "انتقل لسكنك الجديد بثقة كاملة مع ضمان سكني",
+      title: t("step3Title"),
+      desc: t("step3Desc"),
       color: "#22C55E",
     },
   ];
@@ -214,13 +215,13 @@ function HowItWorksSection() {
       <div className="container mx-auto">
         <div className="text-center mb-14">
           <span className="text-sm font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full">
-            كيف يعمل سكني؟
+            {t("howBadge")}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold mt-4 mb-3 text-foreground font-cairo">
-            3 خطوات بسيطة للسكن المثالي
+            {t("howTitle")}
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            نجعل عملية إيجاد السكن أسهل وأأمن — من البحث حتى الانتقال
+            {t("howSubtitle")}
           </p>
         </div>
 
@@ -254,30 +255,31 @@ function HowItWorksSection() {
 }
 
 // ── Featured Listings ─────────────────────────────────────────
-function FeaturedListingsSection({
+async function FeaturedListingsSection({
   listings,
   locale,
 }: {
   listings: Listing[];
   locale: string;
 }) {
+  const t = await getTranslations("home");
   return (
     <section className="py-20 px-4" style={{ background: "var(--card)" }}>
       <div className="container mx-auto">
         <div className="flex items-center justify-between mb-10">
           <div>
             <span className="text-sm font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full">
-              ⭐ مميزة
+              {t("featuredBadge")}
             </span>
             <h2 className="text-3xl font-bold mt-3 text-foreground font-cairo">
-              إعلانات مميزة
+              {t("featuredTitle")}
             </h2>
           </div>
           <Link
             href={`/${locale}/search`}
             className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group"
           >
-            عرض الكل
+            {t("viewAll")}
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform rtl:rotate-180" />
           </Link>
         </div>
@@ -302,7 +304,7 @@ function FeaturedListingsSection({
             className="inline-flex items-center gap-2 btn-primary px-8 py-3 text-base font-semibold rounded-xl"
           >
             <Search size={18} />
-            تصفح كل الإعلانات
+            {t("browseAllBtn")}
           </Link>
         </div>
       </div>
@@ -311,13 +313,14 @@ function FeaturedListingsSection({
 }
 
 // ── Popular Districts ─────────────────────────────────────────
-function PopularDistrictsSection({
+async function PopularDistrictsSection({
   districts,
   locale,
 }: {
   districts: District[];
   locale: string;
 }) {
+  const t = await getTranslations("home");
   const fallbackDistricts: District[] = [
     { name: "المنصورة", governorate: "الدقهلية", count: 85 },
     { name: "مدينة نصر", governorate: "القاهرة", count: 120 },
@@ -334,13 +337,13 @@ function PopularDistrictsSection({
       <div className="container mx-auto">
         <div className="text-center mb-12">
           <span className="text-sm font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full">
-            📍 المناطق
+            {t("districtsBadge")}
           </span>
           <h2 className="text-3xl font-bold mt-4 mb-3 text-foreground font-cairo">
-            المناطق الأكثر طلباً
+            {t("districtsTitle")}
           </h2>
           <p className="text-muted-foreground">
-            اكتشف أفضل المناطق وأكثرها طلباً من المستأجرين
+            {t("districtsSubtitle")}
           </p>
         </div>
 
@@ -357,7 +360,7 @@ function PopularDistrictsSection({
               <h3 className="text-sm font-bold text-foreground mb-1">{district.name}</h3>
               <p className="text-xs text-muted-foreground mb-2">{district.governorate}</p>
               <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                {district.count} إعلان
+                {t("listingCount", { count: district.count })}
               </span>
             </Link>
           ))}
@@ -368,11 +371,12 @@ function PopularDistrictsSection({
 }
 
 // ── Landlord CTA ──────────────────────────────────────────────
-function LandlordSection({ locale }: { locale: string }) {
+async function LandlordSection({ locale }: { locale: string }) {
+  const t = await getTranslations("home");
   const perks = [
-    { icon: TrendingUp, title: "وصول أوسع", desc: "آلاف الباحثين عن سكن يصلون لإعلانك يومياً" },
-    { icon: Shield, title: "مؤجرون موثقون", desc: "نميّزك بشارة التوثيق لزيادة ثقة المستأجرين" },
-    { icon: Star, title: "مجاناً في البداية", desc: "انشر أول إعلان مجاناً واستفد من كل المزايا" },
+    { icon: TrendingUp, title: t("perk1Title"), desc: t("perk1Desc") },
+    { icon: Shield, title: t("perk2Title"), desc: t("perk2Desc") },
+    { icon: Star, title: t("perk3Title"), desc: t("perk3Desc") },
   ];
 
   return (
@@ -386,13 +390,13 @@ function LandlordSection({ locale }: { locale: string }) {
             className="text-sm font-semibold px-4 py-1.5 rounded-full"
             style={{ background: "rgba(212,168,71,0.2)", color: "#E8C06A" }}
           >
-            للمؤجرين
+            {t("landlordBadge")}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold mt-4 mb-3 text-white font-cairo">
-            هل أنت مؤجر؟
+            {t("landlordTitle")}
           </h2>
           <p className="text-white/70 max-w-lg mx-auto">
-            أضف إعلانك الآن وابدأ في الوصول لآلاف المستأجرين الباحثين عن سكن في منطقتك
+            {t("landlordSubtitle")}
           </p>
         </div>
 
@@ -425,13 +429,13 @@ function LandlordSection({ locale }: { locale: string }) {
             style={{ background: "#D4A847", color: "#0F1A2E" }}
           >
             <Home size={18} />
-            أضف إعلانك الآن
+            {t("addListingBtn")}
           </Link>
           <Link
             href={`/${locale}/search`}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-base font-semibold text-white border border-white/20 hover:bg-white/10 transition-colors"
           >
-            استعرض الإعلانات
+            {t("browseListingsBtn")}
           </Link>
         </div>
       </div>
@@ -440,7 +444,8 @@ function LandlordSection({ locale }: { locale: string }) {
 }
 
 // ── Final CTA ─────────────────────────────────────────────────
-function CtaSection({ locale }: { locale: string }) {
+async function CtaSection({ locale }: { locale: string }) {
+  const t = await getTranslations("home");
   return (
     <section className="py-20 px-4 bg-background">
       <div className="container mx-auto max-w-3xl text-center">
@@ -452,10 +457,10 @@ function CtaSection({ locale }: { locale: string }) {
           }}
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground font-cairo">
-            ابدأ رحلتك الآن 🚀
+            {t("ctaTitle")}
           </h2>
           <p className="text-muted-foreground mb-8 text-lg">
-            انضم لآلاف المستخدمين الذين وجدوا سكنهم المثالي عبر سكني
+            {t("ctaSubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -463,14 +468,14 @@ function CtaSection({ locale }: { locale: string }) {
               className="btn-primary inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-base font-bold"
             >
               <Users size={18} />
-              إنشاء حساب مجاني
+              {t("freeAccountBtn")}
             </Link>
             <Link
               href={`/${locale}/search`}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-base font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
             >
               <Search size={18} />
-              تصفح الإعلانات
+              {t("browseAdsBtn")}
             </Link>
           </div>
         </div>
