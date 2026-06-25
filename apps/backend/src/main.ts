@@ -37,7 +37,7 @@ async function bootstrap(): Promise<void> {
   app.use(compression());
 
   // CORS ديناميكي (السماح لـ Localhost في التطوير، والدومينات المحددة في الإنتاج)
-  const allowedOrigins = isProduction 
+  const allowedOrigins = isProduction
     ? [
         process.env.FRONTEND_URL,
         'https://sakani-app-topaz.vercel.app',
