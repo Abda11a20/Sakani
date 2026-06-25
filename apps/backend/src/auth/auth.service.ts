@@ -20,7 +20,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { User, UserRole, VerificationType } from '@prisma/client';
+import { User, UserRole, VerificationType, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -112,21 +112,23 @@ export class AuthService {
     const role: UserRole =
       dto.role === 'landlord' ? UserRole.landlord : UserRole.tenant;
 
-    // إنشاء المستخدم — الحساب غير مفعل حتى يتم التحقق من الإيميل
-    const user = await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        passwordHash,
-        nationalIdEnc,
-        role,
-        emailVerifiedAt: null, // يُفعَّل عند التحقق
-      },
-    });
+    // إنشاء المستخدم وإرسال كود التفعيل داخل Transaction لضمان التراجع في حالة حدوث خطأ
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          phone: dto.phone,
+          passwordHash,
+          nationalIdEnc,
+          role,
+          emailVerifiedAt: null, // يُفعَّل عند التحقق
+        },
+      });
 
-    // إرسال OTP للتحقق من الإيميل
-    await this.sendVerificationCode(user.id, dto.email, VerificationType.EMAIL_VERIFICATION);
+      // إرسال OTP للتحقق من الإيميل داخل الـ Transaction
+      await this.sendVerificationCodeTx(tx, user.id, dto.email, VerificationType.EMAIL_VERIFICATION);
+    });
 
     return { message: 'تم إنشاء الحساب. يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب.' };
   }
@@ -366,6 +368,33 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
     await this.prisma.verificationCode.create({
+      data: { userId, email, type, codeHash, expiresAt },
+    });
+
+    // إرسال الكود بالإيميل
+    if (type === VerificationType.EMAIL_VERIFICATION) {
+      await this.emailService.sendEmailVerification(email, otp);
+    } else if (type === VerificationType.PASSWORD_RESET) {
+      await this.emailService.sendPasswordReset(email, otp);
+    }
+  }
+
+  private async sendVerificationCodeTx(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    email: string,
+    type: VerificationType,
+  ): Promise<void> {
+    // حذف أي كودات قديمة من نفس النوع لنفس المستخدم
+    await tx.verificationCode.deleteMany({
+      where: { userId, type },
+    });
+
+    const otp = generateOtp();
+    const codeHash = hashToken(otp);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    await tx.verificationCode.create({
       data: { userId, email, type, codeHash, expiresAt },
     });
 

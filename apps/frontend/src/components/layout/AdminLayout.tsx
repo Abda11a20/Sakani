@@ -195,7 +195,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div
       className="min-h-screen bg-slate-100 dark:bg-slate-950 flex"
-      style={{ direction: isRtl ? "rtl" : "ltr" }}
+      style={{ direction: "ltr" }}
     >
       {/* Desktop Sidebar — 260px */}
       <aside className="hidden lg:block w-[260px] shrink-0 h-screen sticky top-0">
@@ -214,8 +214,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside
         className={cn(
           "fixed top-0 bottom-0 z-50 w-[260px] transition-transform duration-300 ease-in-out lg:hidden",
-          isOpen ? "translate-x-0" : isRtl ? "translate-x-full" : "-translate-x-full",
-          isRtl ? "right-0" : "left-0"
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          "left-0"
         )}
       >
         {sidebarContent}
