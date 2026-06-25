@@ -37,7 +37,7 @@ export class AuthController {
   // ── POST /auth/register ────────────────────────────────────────────────────
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ default: { limit: 3, ttl: 900000 } }) // 3 per 15 mins
+  @Throttle({ default: { limit: 20, ttl: 900000 } }) // 20 per 15 mins
   async register(
     @Body() dto: RegisterDto,
   ): Promise<{ success: boolean; message: string }> {
@@ -48,7 +48,7 @@ export class AuthController {
   // ── POST /auth/verify-email ────────────────────────────────────────────────
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 600000 } }) // 5 per 10 mins
+  @Throttle({ default: { limit: 20, ttl: 600000 } }) // 20 per 10 mins
   async verifyEmail(
     @Body() dto: VerifyEmailDto,
   ): Promise<{ success: boolean; message: string }> {
