@@ -1,5 +1,5 @@
 // c:\Users\pc\Desktop\Sakany\sakani\apps\backend\src\uploads\uploads.service.ts
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from './s3.service';
@@ -11,6 +11,7 @@ import * as path from 'path';
 export class UploadsService {
   private readonly publicBucket: string;
   private readonly privateBucket: string;
+  private readonly logger = new Logger(UploadsService.name);
 
   constructor(
     private prisma: PrismaService,
@@ -88,14 +89,21 @@ export class UploadsService {
     let key: string;
     let url: string;
 
-    if (provider === 'cloudinary') {
-      const res = await this.uploadToCloudinary(file, 'sakany/listings', 'upload');
-      key = res.publicId;
-      url = res.url;
-    } else {
-      const fileName = this.generateFileName(file.originalname);
-      key = `listings/${listingId}/${fileName}`;
-      url = await this.s3Service.uploadFile(file, this.publicBucket, key);
+    try {
+      if (provider === 'cloudinary') {
+        const res = await this.uploadToCloudinary(file, 'sakany/listings', 'upload');
+        key = res.publicId;
+        url = res.url;
+      } else {
+        const fileName = this.generateFileName(file.originalname);
+        key = `listings/${listingId}/${fileName}`;
+        url = await this.s3Service.uploadFile(file, this.publicBucket, key);
+      }
+    } catch (error: any) {
+      this.logger.error(`Failed to upload listing image to ${provider}: ${error?.message || error}`, error?.stack);
+      throw new InternalServerErrorException(
+        `فشل تحميل الصورة إلى السيرفر. يرجى التحقق من إعدادات التخزين السحابي (${provider})`
+      );
     }
 
     const image = await this.prisma.listingImage.create({

@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isHydrated: boolean;
   // Actions
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isLoading: false,
+  isHydrated: false,
 
   setUser: (user) => {
     if (user) {
@@ -76,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false, isHydrated: true });
     }
   },
 }));

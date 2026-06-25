@@ -26,6 +26,19 @@ export class ListingsService {
       throw new BadRequestException('يجب تحديد عدد الأسرة عندما يكون نوع الوحدة سرير');
     }
 
+    // منع تكرار الإعلانات في وقت قصير جداً (أقل من دقيقة) من نفس المؤجر لتجنب الضغط المتكرر
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const recentListing = await this.prisma.listing.findFirst({
+      where: {
+        landlordId,
+        createdAt: { gte: oneMinuteAgo },
+      },
+    });
+
+    if (recentListing) {
+      throw new BadRequestException('يرجى الانتظار دقيقة واحدة على الأقل بين نشر الإعلانات لتفادي التكرار.');
+    }
+
     const listing = await this.prisma.listing.create({
       data: {
         landlordId,
@@ -42,8 +55,8 @@ export class ListingsService {
         governorate: dto.governorate,
         district: dto.district,
         address: dto.address,
-        lat: dto.lat,
-        lng: dto.lng,
+        lat: dto.lat ?? 30.0444,
+        lng: dto.lng ?? 31.2357,
         amenities: dto.amenities ?? [],
         roommateFeatureEnabled: dto.roommateFeatureEnabled,
         status: ListingStatus.pending_review,
@@ -216,10 +229,13 @@ export class ListingsService {
     return { message: 'تم إيقاف الإعلان بنجاح (نقل إلى paused)' };
   }
 
-  // ── 6. جلب إعلانات المؤجر (كل الحالات) ─────────────────────────────────────
+  // ── 6. جلب إعلانات المؤجر (كل الحالات النشطة والمراجعة والمؤجرة) ──────────────
   async getMyListings(landlordId: string) {
     return this.prisma.listing.findMany({
-      where: { landlordId },
+      where: {
+        landlordId,
+        status: { not: ListingStatus.paused },
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         images: {

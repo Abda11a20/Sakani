@@ -58,7 +58,7 @@ export interface Listing {
   rules?: string;
   includesBills?: boolean;
   securityDeposit?: number;
-  meterType?: string;
+  electricityType?: string;
   createdAt: string;
   updatedAt: string;
 }

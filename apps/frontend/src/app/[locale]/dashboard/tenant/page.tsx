@@ -53,7 +53,8 @@ export default function TenantDashboard() {
 
   // Fetch Requests & Alerts
   const { data: requestsData, isLoading: isRequestsLoading } = useTenantRequests(1);
-  const { data: alerts = [], isLoading: isAlertsLoading } = useMyAlerts();
+  const { data: rawAlerts = [], isLoading: isAlertsLoading } = useMyAlerts();
+  const alerts = rawAlerts || [];
   const { mutate: createAlert, isPending: isCreatingAlert } = useCreateAlert();
 
   // Alert Modal State

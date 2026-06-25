@@ -93,7 +93,8 @@ export default function TenantAlerts() {
   const { user, isLoading: isAuthLoading } = useAuthGuard();
 
   // Queries & Mutations
-  const { data: alerts = [], isLoading: isAlertsLoading } = useMyAlerts();
+  const { data: rawAlerts = [], isLoading: isAlertsLoading } = useMyAlerts();
+  const alerts = rawAlerts || [];
   const { mutate: createAlert, isPending: isCreating } = useCreateAlert();
   const { mutate: updateAlert, isPending: isUpdating } = useUpdateAlert();
   const { mutate: toggleAlert } = useToggleAlert();

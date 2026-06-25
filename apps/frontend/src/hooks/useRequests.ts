@@ -21,10 +21,13 @@ export const useLandlordRequests = (page = 1) => {
       // If the response interceptor returned response.data as the raw array or paginated structure:
       // Let's make sure it handles both.
       const data = response.data;
+      if (data && Array.isArray(data.items)) {
+        return data;
+      }
       if (Array.isArray(data)) {
         return { items: data, total: data.length, pages: 1 };
       }
-      return data || { items: [], total: 0, pages: 1 };
+      return { items: [], total: 0, pages: 1 };
     },
   });
 };
@@ -70,10 +73,13 @@ export const useTenantRequests = (page = 1) => {
         `/requests/my?page=${page}&limit=10`
       );
       const data = response.data;
+      if (data && Array.isArray(data.items)) {
+        return data;
+      }
       if (Array.isArray(data)) {
         return { items: data, total: data.length, pages: 1 };
       }
-      return data || { items: [], total: 0, pages: 1 };
+      return { items: [], total: 0, pages: 1 };
     },
   });
 };

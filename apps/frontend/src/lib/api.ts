@@ -74,6 +74,25 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
+const mapListingTypes = (data: any): any => {
+  if (!data || typeof data !== "object") return data;
+  if (Array.isArray(data)) {
+    return data.map(mapListingTypes);
+  }
+  // مواءمة حقل نوع العقار وحالة طلب المعاينة
+  if (data.unitType && !data.type) {
+    data.type = data.unitType;
+  }
+  
+  // فحص الكائنات المتداخلة
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && typeof data[key] === "object") {
+      data[key] = mapListingTypes(data[key]);
+    }
+  }
+  return data;
+};
+
 // ── Response Interceptor ───────────────────────────────────────────────────────
 api.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -84,7 +103,8 @@ api.interceptors.response.use(
       "success" in response.data
     ) {
       if (response.data.success === true) {
-        response.data = response.data.data ?? response.data;
+        const rawData = response.data.data ?? response.data;
+        response.data = mapListingTypes(rawData);
         return response;
       }
       if (response.data.success === false) {

@@ -68,13 +68,12 @@ const AMENITY_OPTIONS = [
   { key: "security", label: "أمن وحراسة", icon: <Shield size={16} /> },
 ];
 
-// ── Form Schemas per Step ──
 const step1Schema = z.object({
   governorate: z.string().min(1, "المحافظة مطلوبة"),
   district: z.string().min(1, "الحي/المنطقة مطلوبة"),
   address: z.string().min(5, "العنوان التفصيلي يجب أن لا يقل عن 5 أحرف"),
-  lat: z.coerce.number().default(30.0444),
-  lng: z.coerce.number().default(31.2357),
+  lat: z.coerce.number().optional().default(30.0444),
+  lng: z.coerce.number().optional().default(31.2357),
 });
 
 const step2Schema = z.object({
@@ -120,6 +119,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
   const { toast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLocalSubmitting, setIsLocalSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     governorate: initialData?.governorate || "القاهرة",
     district: initialData?.district || "",
@@ -130,7 +130,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
     totalBeds: initialData?.totalBeds || 1,
     genderTarget: initialData?.genderTarget || "mixed",
     amenities: initialData?.amenities || [],
-    electricityType: initialData?.meterType || "modern_meter",
+    electricityType: initialData?.electricityType || "modern_meter",
     description: initialData?.description || "",
     price: initialData?.price || "",
     securityDeposit: initialData?.securityDeposit || 0,
@@ -310,8 +310,10 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocalSubmitting || isSubmitting) return;
     if (!validateStep(4)) return;
 
+    setIsLocalSubmitting(true);
     try {
       // Prepare main request payload
       const payload = {
@@ -363,6 +365,8 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
         description: err.friendlyMessage || "فشل حفظ تفاصيل العقار. يرجى مراجعة المدخلات.",
         type: "error",
       });
+    } finally {
+      setIsLocalSubmitting(false);
     }
   };
 
@@ -448,27 +452,6 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
                 }`}
               />
               {errors.address && <p className="text-xs text-red-500 mt-0.5">{errors.address}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="number"
-                step="any"
-                label="خط العرض (lat)"
-                value={formData.lat}
-                onChange={e => setFormData({ ...formData, lat: parseFloat(e.target.value) || 0 })}
-                error={errors.lat}
-                className="font-sans"
-              />
-              <Input
-                type="number"
-                step="any"
-                label="خط الطول (lng)"
-                value={formData.lng}
-                onChange={e => setFormData({ ...formData, lng: parseFloat(e.target.value) || 0 })}
-                error={errors.lng}
-                className="font-sans"
-              />
             </div>
           </div>
         )}
@@ -807,10 +790,10 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
           ) : (
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLocalSubmitting}
               className="font-cairo flex items-center gap-1.5 px-8 rounded-xl py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold"
             >
-              {isSubmitting ? (
+              {isSubmitting || isLocalSubmitting ? (
                 <>
                   <Spinner size="sm" className="text-white" />
                   <span>جاري حفظ العقار...</span>

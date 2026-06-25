@@ -41,13 +41,16 @@ export default function LandlordDashboard() {
   }
 
   // Calculate statistics
-  const totalListings = listings.length;
-  const activeListings = listings.filter((l) => l.status === "active").length;
-  const totalViews = listings.reduce((sum, item) => sum + (item.views || 0), 0);
-  const pendingRequests = stats?.pending ?? requestsData?.items.filter(r => r.status === "pending").length ?? 0;
+  const landlordListings = listings || [];
+  const totalListings = landlordListings.length;
+  const activeListings = landlordListings.filter((l) => l.status === "active").length;
+  const totalViews = landlordListings.reduce((sum, item) => sum + (item.views || 0), 0);
+  
+  const landlordItems = requestsData?.items || [];
+  const pendingRequests = stats?.pending ?? landlordItems.filter(r => r.status === "pending").length ?? 0;
 
-  const recentRequests = requestsData?.items.slice(0, 5) || [];
-  const recentListings = listings.slice(0, 3) || [];
+  const recentRequests = landlordItems.slice(0, 5);
+  const recentListings = landlordListings.slice(0, 3);
 
   return (
     <LandlordLayout>

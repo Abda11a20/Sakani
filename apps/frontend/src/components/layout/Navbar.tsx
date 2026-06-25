@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
                   >
                     <DropdownMenu.Item asChild>
                       <Link
-                        href={`/${locale}/profile`}
+                        href={`/${locale}/dashboard/profile`}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
                       >
                         <User size={16} />
@@ -141,7 +141,7 @@ export const Navbar: React.FC = () => {
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
                       <Link
-                        href={`/${locale}/dashboard/${user.role}`}
+                        href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
                       >
                         <LayoutDashboard size={16} />
@@ -248,7 +248,7 @@ export const Navbar: React.FC = () => {
               {mounted && user && (
                 <>
                   <Link
-                    href={`/${locale}/profile`}
+                    href={`/${locale}/dashboard/profile`}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
@@ -256,7 +256,7 @@ export const Navbar: React.FC = () => {
                     {locale === "ar" ? "الملف الشخصي" : "Profile"}
                   </Link>
                   <Link
-                    href={`/${locale}/dashboard/${user.role}`}
+                    href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
