@@ -38,7 +38,11 @@ async function bootstrap(): Promise<void> {
 
   // CORS ديناميكي (السماح لـ Localhost في التطوير، والدومينات المحددة في الإنتاج)
   const allowedOrigins = isProduction 
-    ? [process.env.FRONTEND_URL || 'https://sakany.com'] 
+    ? [
+        process.env.FRONTEND_URL,
+        'https://sakani-app-topaz.vercel.app',
+        'https://sakany.com',
+      ].filter(Boolean) as string[]
     : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
   app.enableCors({
