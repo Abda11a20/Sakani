@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── ENUMS ──────────────────────────────────────────────
+
+enum UserRole {
+  tenant
+  landlord
+  admin
+  super_admin
+  provider
+}
+
+enum UserPlan {
+  free
+  premium
+}
+
+enum UnitType {
+  apartment
+  room
+  bed
+}
+
+enum ListingStatus {
+  draft
+  pending_review
+  active
+  rented
+  paused
+  rejected
+}
+
+enum GenderTarget {
+  male
+  female
+  mixed
+}
+
+enum ElectricityType {
+  prepaid_card
+  old_meter
+  modern_meter
+}
+
+enum BedStatus {
+  available
+  rented
+}
+
+enum BedType {
+  single
+  double
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+  completed
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  PHONE_VERIFICATION
+}
+
+enum NotificationType {
+  SYSTEM
+  REQUEST
+  REVIEW
+  PAYMENT
+  CHAT
+  ALERT
+}
+
+// ── MODELS ─────────────────────────────────────────────
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  phone              String    @unique
+  email              String    @unique
+  passwordHash       String?
+  role               UserRole  @default(tenant)
+  plan               UserPlan  @default(free)
+  planExpiresAt      DateTime?
+  nationalIdEnc      String?
+  nationalIdVerified Boolean   @default(false)
+  avatarUrl          String?
+  avatarPublicId     String?
+  idCardPublicId     String?
+  emailVerifiedAt    DateTime?
+  phoneVerifiedAt    DateTime?
+  isActive           Boolean   @default(true)
+  ratingAvg          Float     @default(0)
+  reviewsCount       Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  listings          Listing[]
+  requests          ViewingRequest[]
+  reviewsGiven      Review[]           @relation("ReviewsGiven")
+  reviewsReceived   Review[]           @relation("ReviewsReceived")
+  alerts            Alert[]
+  subscriptions     Subscription[]
+  sentMessages      ChatMessage[]      @relation("SentMessages")
+  receivedMessages  ChatMessage[]      @relation("ReceivedMessages")
+  verificationCodes VerificationCode[]
+  deviceSessions    DeviceSession[]
+  favorites         Favorite[]
+  searchHistory     SearchHistory[]
+  viewedListings    ViewedListing[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+model Listing {
+  id                     String          @id @default(cuid())
+  landlordId             String
+  title                  String
+  description            String?
+  unitType               UnitType
+  price                  Int
+  securityDeposit        Int             @default(0)
+  includesBills          Boolean         @default(false)
+  electricityType        ElectricityType @default(modern_meter)
+  totalBeds              Int?
+  availableBeds          Int?
+  genderTarget           GenderTarget    @default(mixed)
+  governorate            String
+  district               String
+  address                String
+  lat                    Float
+  lng                    Float
+  status                 ListingStatus   @default(draft)
+  amenities              String[]
+  roommateFeatureEnabled Boolean         @default(false)
+  viewCount              Int             @default(0)
+  isFeatured             Boolean         @default(false)
+  rejectionReason        String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  // Relations
+  landlord  User             @relation(fields: [landlordId], references: [id])
+  images    ListingImage[]
+  beds      ListingBed[]
+  requests  ViewingRequest[]
+  reviews   Review[]
+  favorites Favorite[]
+  viewedBy  ViewedListing[]
+
+  @@index([status, governorate, district])
+  @@index([price])
+  @@index([genderTarget])
+  @@index([landlordId])
+  @@map("listings")
+}
+
+model ListingImage {
+  id        String   @id @default(cuid())
+  listingId String
+  s3Key     String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("listing_images")
+}
+
+model ListingBed {
+  id              String    @id @default(cuid())
+  listingId       String
+  bedNumber       Int
+  bedType         BedType   @default(single)
+  status          BedStatus @default(available)
+  currentTenantId String?
+  rentedSince     DateTime?
+  rentedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, bedNumber])
+  @@map("listing_beds")
+}
+
+model ViewingRequest {
+  id            String        @id @default(cuid())
+  tenantId      String
+  listingId     String
+  status        RequestStatus @default(pending)
+  preferredDate DateTime
+  message       String?
+  specialty     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant  User    @relation(fields: [tenantId], references: [id])
+  listing Listing @relation(fields: [listingId], references: [id])
+
+  @@map("viewing_requests")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  tenantId   String
+  landlordId String
+  listingId  String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  tenant   User    @relation("ReviewsGiven", fields: [tenantId], references: [id])
+  landlord User    @relation("ReviewsReceived", fields: [landlordId], references: [id])
+  listing  Listing @relation(fields: [listingId], references: [id])
+
+  @@map("reviews")
+}
+
+model Alert {
+  id           String        @id @default(cuid())
+  tenantId     String
+  governorate  String?
+  district     String?
+  maxPrice     Int?
+  unitType     UnitType?
+  genderTarget GenderTarget?
+  specialty    String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+
+  tenant User @relation(fields: [tenantId], references: [id])
+
+  @@map("alerts")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  plan      UserPlan
+  status    String   @default("active")
+  startedAt DateTime @default(now())
+  expiresAt DateTime
+  paymobRef String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Blacklist {
+  id             String   @id @default(cuid())
+  nationalIdHash String?  @unique
+  phone          String?  @unique
+  reason         String
+  bannedBy       String
+  createdAt      DateTime @default(now())
+
+  @@map("blacklist")
+}
+
+model VerificationCode {
+  id        String           @id @default(cuid())
+  userId    String?
+  email     String?
+  phone     String?
+  type      VerificationType
+  codeHash  String
+  attempts  Int              @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_codes")
+}
+
+model DeviceSession {
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  deviceName       String?
+  ip               String?
+  lastSeen         DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("device_sessions")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model SearchHistory {
+  id           String        @id @default(cuid())
+  userId       String
+  query        String?
+  governorate  String?
+  district     String?
+  minPrice     Int?
+  maxPrice     Int?
+  unitType     UnitType?
+  genderTarget GenderTarget?
+  specialty    String?
+  createdAt    DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("search_history")
+}
+
+model ViewedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  viewCount Int      @default(1)
+  viewedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("viewed_listings")
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  body       String
+  entityType String?
+  entityId   String?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String?
+  action    String
+  entity    String
+  entityId  String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String? // Optional: If null, it means it's a general support message to admin
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User  @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User? @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("chat_messages")
+}
