@@ -1,11 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@api_url",
-    "NEXT_PUBLIC_PUSHER_KEY": "@pusher_key",
-    "NEXT_PUBLIC_PUSHER_CLUSTER": "@pusher_cluster",
-    "NEXT_PUBLIC_APP_URL": "@app_url"
-  }
+  "buildCommand": "next build",
+  "outputDirectory": ".next"
 }
