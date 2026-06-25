@@ -130,6 +130,7 @@ export default async function LocaleLayout({
             ? "font-cairo bg-background text-foreground antialiased"
             : "font-inter bg-background text-foreground antialiased"
         }
+        suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"

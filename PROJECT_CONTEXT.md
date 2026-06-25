@@ -1,329 +1,227 @@
-# Project Context & Changelog
+# دليل مرجع النظام المعماري والتقني لمنصة سَكني (Sakani Platform Reference Guide)
 
-## 📅 إضافات وتعديلات اليوم (إعادة هيكلة نظام المصادقة والأمان)
-
-تم إجراء تحديثات جوهرية على هيكلة النظام وقاعدة البيانات (`Prisma`) لضمان أمان أعلى، وكود أنظف، وقابلية أكبر للتوسع مستقبلاً. إليك ملخص ما تم تغييره:
-
-### 1. 🛡️ نظام التحقق الموحد (Unified Verification System)
-- تم استبدال الجداول المنفصلة السابقة لرموز الـ OTP بجدول واحد موحد `VerificationCode`.
-- الجدول الجديد يدعم أنواعاً متعددة (`EMAIL_VERIFICATION`, `PASSWORD_RESET`، ومستقبلاً `PHONE_VERIFICATION`).
-- الأكواد الآن تُحفظ بشكل مشفر (`Hashed`) في قاعدة البيانات ولا تُحفظ كنص عادي.
-- تم تفعيل نظام تتبع المحاولات الخاطئة (`attempts`) وصلاحية الكود (`expiresAt`).
-
-### 2. 🔐 إدارة الجلسات (Device Sessions)
-- تم إضافة جدول `DeviceSession` للتحكم في الجلسات المتعددة للمستخدم (تسجيل الدخول من عدة أجهزة).
-- تم تفعيل الـ `Refresh Tokens` بشكل آمن، مع ربط كل Token بجلسة وجهاز محدد.
-- عند قيام المستخدم بتغيير كلمة المرور، يتم إغلاق جميع الجلسات المفتوحة (تسجيل خروج من كل الأجهزة) تلقائياً لحماية الحساب.
-
-### 3. 📧 نظام التسجيل وتفعيل الحساب
-- **التسجيل (Register):** أصبح يتطلب بريداً إلكترونياً بشكل إجباري. عند التسجيل، يتم إنشاء الحساب ولكن لا يتم تفعيله، ويُرسل كود (OTP) إلى الإيميل عبر خدمة `Resend`.
-- تم حذف الحقل المنطقي القديم `verified: Boolean` واستبداله بالحقول الأدق `emailVerifiedAt` و `phoneVerifiedAt`.
-- **تسجيل الدخول (Login):** يدعم الآن الدخول بمرونة سواء باستخدام (الإيميل + كلمة المرور) أو (رقم الهاتف + كلمة المرور).
-
-### 4. 🧹 تنظيف الأخطاء وتحسين البنية
-- تم إزالة كل الإشارات للحقل القديم `verified` من جميع الخدمات (مثل `Users`, `Requests`, `Search`, `Admin`) وتحديث المنطق ليعتمد على `emailVerifiedAt`.
-- تم إصلاح خطأ مكتبة `rxjs` في خدمة المدفوعات (`payments.service.ts`) من خلال الاعتماد المباشر على `axiosRef` لضمان توافق الأنواع (Types).
-- تم توحيد الردود القادمة من الـ API (API Responses) لتكون بهيكل ثابت ومنظم `{ success, message, data, meta }`.
-
-### 5. 🖥️ توافق واجهة المستخدم (Frontend)
-- تم تحديث نموذج التسجيل (`RegisterForm`) ليتوافق مع إضافة الإيميل وتوجيه المستخدم لخطوة تأكيد الـ OTP مباشرة من نفس الصفحة المريحة.
-- تم تحديث نموذج تسجيل الدخول (`LoginForm`) ليدعم خانة الهوية (Identifier) التي تقبل هاتف أو إيميل.
-- أوامر البناء (`npm run build`) لكل من الـ Frontend والـ Backend تعمل الآن بكفاءة وبدون أي أخطاء.
-
----
-*ملاحظة: هذا الملف يُستخدم كمرجع سريع لفهم سياق المشروع وأهم التغييرات المعمارية التي طرأت عليه لتسهيل عملية التطوير المستقبلي.*
+منصة **سَكني** هي منصة متكاملة مخصصة لتسهيل عمليات تأجير العقارات والغرف والأسرة للشباب والطلاب في مصر. يوفر هذا المستند مرجعاً تقنياً ومعمارياً شاملاً يغطي كافة التفاصيل البرمجية على مستوى الملفات والمكونات والتقنيات المستخدمة في كل من الواجهة الخلفية (Backend) والواجهة الأمامية (Frontend).
 
 ---
 
-## 🔒 إضافات وتعديلات جلسة التأمين المتقدم (Security Hardening v4 — Enterprise Edition)
+## 1. نظرة عامة على التقنيات المستخدمة (Technology Stack)
 
-تم تطبيق منظومة أمان متكاملة على مستوى الشركات الكبرى (Enterprise-Grade) دون تغيير أي منطق عمل أساسي (Business Logic). كل التعديلات أُضيفت كطبقات فوق البنية الحالية.
+### الواجهة الخلفية (Backend API)
+* **الإطار الأساسي (Core):** NestJS (TypeScript) - هيكلية معيارية مقسمة لـ Modules.
+* **إدارة قاعدة البيانات:** Prisma ORM مع استخدام Driver Adapter `@prisma/adapter-pg` للاتصال بـ PostgreSQL.
+* **قاعدة البيانات:** Neon Serverless PostgreSQL.
+* **المصادقة والأمان:** JSON Web Tokens (JWT) للمصادقة، و `bcrypt` لتشفير كلمات المرور، و `crypto` للتشفير المتماثل للبيانات الحساسة (مثل الرقم القومي).
+* **الحماية من إغراق الطلبات:** `@nestjs/throttler` (Rate Limiting).
+* **إرسال الرسائل الحية (Real-time):** Pusher (قنوات مشفرة وخاصة).
+* **إدارة ورفع الملفات:** Cloudinary API أو AWS S3 (قابل للتغيير ديناميكياً عبر المتغيرات).
+* **التوثيق الإلكتروني:** Swagger / OpenAPI متاح على مسار `/api/docs`.
+* **البريد الإلكتروني:** خدمة Resend API أو SMTP (Nodemailer) لإرسال أكواد الـ OTP وتفعيل الحسابات.
+* **التنبيهات المباشرة:** WhatsApp Cloud API لإرسال الإشعارات والتحذيرات للمستخدمين.
 
-### 1. 🌍 التحقق من متغيرات البيئة (Environment Validation)
-- تم إنشاء ملف `src/env.validation.ts` باستخدام مكتبة `Zod`.
-- عند بدء تشغيل السيرفر، يتم التحقق من وجود جميع المتغيرات الإلزامية (`DATABASE_URL`, `JWT_SECRET`, `RESEND_API_KEY`... إلخ).
-- في حال غياب أي متغير، يتوقف التطبيق فوراً مع رسالة خطأ واضحة (بدلاً من الانهيار الصامت).
-
-### 2. ⚙️ تحديثات السيرفر الجوهرية (`main.ts`)
-- **Graceful Shutdown**: `app.enableShutdownHooks()` لإغلاق الاتصالات مع PostgreSQL بشكل نظيف.
-- **Trust Proxy**: تفعيل `trust proxy` لضمان عمل الـ Rate Limiter خلف Nginx/Render/Railway بشكل صحيح.
-- **API Versioning**: جميع المسارات أصبحت الآن بشكل `/api/v1/...`.
-- **Helmet ديناميكي**: تعطيل CSP في بيئة التطوير (لمنع تعطل Next.js)، وتفعيله الكامل في بيئة الإنتاج.
-- **Compression**: تفعيل `compression` لتقليل حجم الاستجابات وتسريع تحميل البيانات.
-- **CORS ديناميكي**: السماح فقط لدومينات محددة (Localhost في التطوير، الدومين الرسمي في الإنتاج).
-
-### 3. 📖 توثيق API تلقائي (Swagger / OpenAPI)
-- تم تفعيل `@nestjs/swagger` ليكون متاحاً على مسار `/api/docs`.
-- يوثق تلقائياً جميع الـ Endpoints والـ DTOs مع دعم الـ `BearerAuth`.
-
-### 4. ⏱️ تقييد الطلبات المتقدم (Granular Rate Limiting)
-- تم تثبيت `@nestjs/throttler` وإعداده عالمياً (100 طلب/دقيقة لكل IP).
-- تم إنشاء `AuthThrottlerGuard` مخصص يقيّد الطلبات بناءً على **الـ IP + الإيميل/الهاتف** معاً، لمنع هجمات تغيير الـ IP.
-- حدود مخصصة لكل مسار في `auth.controller.ts`:
-  - `Register` & `Forgot Password`: 3 طلبات كل 15 دقيقة.
-  - `Verify OTP` & `Verify Email`: 5 طلبات كل 10 دقائق.
-  - `Login`: 5 طلبات كل دقيقة.
-  - `Refresh Token`: بدون تقييد.
-
-### 5. 🪪 معرّف الطلبات (Request ID Middleware)
-- تم إنشاء `src/common/middlewares/request-id.middleware.ts`.
-- يضيف تلقائياً حقل `X-Request-ID` لكل طلب وارد (مولود بـ `UUID`).
-- يُستخدم في الـ Logs لتتبع أي خطأ وربطه بطلب محدد بسهولة.
-
-### 6. 📋 مراقبة الأخطاء مع حجب البيانات الحساسة (Global Exception Filter)
-- تم إنشاء `src/common/filters/global-exception.filter.ts`.
-- يلتقط جميع أخطاء الـ `500 Internal Server Error` ويسجّلها بهيكل منظم: `Time, UserId, RequestId, IP, Method, Route, StatusCode, Error, Stack`.
-- **Redaction كامل**: يمنع تسجيل أي بيانات حساسة في الـ Logs (`Password`, `OTP`, `JWT`, `Refresh Token`, `National ID`, `Authorization Header`, `Cookies`).
-
-### 7. 🚪 تسجيل الخروج عند تغيير كلمة المرور (Session Invalidation)
-- تم تحديث كل من `resetPassword` و `changePassword` في `auth.service.ts`.
-- عند أي تغيير في كلمة المرور، يتم مسح جميع `DeviceSession` للمستخدم فوراً مما يُجبره على تسجيل الدخول من جديد من كل الأجهزة.
-
-### 8. 📁 حماية رفع الملفات (Upload Security — Magic Bytes)
-- تم ترقية `src/uploads/pipes/file-validation.pipe.ts`.
-- التحقق الآن يعتمد على **Magic Numbers** (التوقيعات الثنائية الحقيقية للملف) وليس فقط امتداد الاسم، مما يمنع هجمات تزوير نوع الملف (File Type Spoofing).
-- الأنواع المسموح بها: `image/jpeg`, `image/png`, `image/webp`.
-- الحد الأقصى للحجم: `5MB`.
-
-### 9. 🏥 نقطة فحص الصحة الحقيقية (Real Health Check)
-- تم إنشاء `src/health/health.controller.ts` و `health.module.ts`.
-- المسار `GET /api/v1/health` ينفذ `SELECT 1` على قاعدة البيانات الفعلية ويقيس زمن الاستجابة (latency).
-- يعيد: `status`, `database.status`, `database.latencyMs`, `uptime`, `version`, `timestamp`.
+### الواجهة الأمامية (Frontend Application)
+* **الإطار الأساسي (Core):** Next.js 14 (App Router) باستخدام TypeScript.
+* **التدويل والترجمة (Localization):** `next-intl` لدعم كامل للغتين العربية والإنجليزية.
+* **التنسيق والمظهر (Styling):** Tailwind CSS مع استخدام Radix UI ومكتبات التحريك.
+* **إدارة الحالات الموزعة (State Management):** Zustand (مع حفظ الحالة تلقائياً في LocalStorage للـ Tokens والمستخدم).
+* **جلب البيانات والتزامن (Data Fetching):** React Query / Tanstack Query للـ Caching وإدارة الاستجابات وطلب الـ APIs.
+* **التعامل مع الـ HTTP:** Axios مع ميزة Response Interceptor لفك تغليف الاستجابات وعلاج أخطاء الـ Token تلقائياً.
+* **نماذج التحقق (Form Validation):** React Hook Form مع Zod كأداة للتحقق من صحة المدخلات.
+* **تحديثات المحادثة الحية:** Pusher JS للاتصال المستمر بقنوات البث الفوري للمحادثات.
 
 ---
 
-### ✅ نتيجة البناء
-- **`npm run build` للـ Backend**: نجح بدون أي أخطاء.
-- **الـ API**: جميع المسارات انتقلت إلى `/api/v1/...`.
-- **Swagger UI**: متاح على `http://localhost:3001/api/docs`.
+## 2. هيكل قاعدة البيانات (Database Schema - Prisma)
 
----
-*ملاحظة: هذا الملف يُستخدم كمرجع سريع لفهم سياق المشروع وأهم التغييرات المعمارية التي طرأت عليه لتسهيل عملية التطوير المستقبلي.*
-
----
-
-## 🖥️ إضافات وتعديلات جلسة الفرونت — تحديثات عاجلة + الصفحات الرئيسية
-
-### PART 1 — تحديث الملفات الموجودة
-
-#### 1. `src/lib/api.ts` — تحديث API Client
-- تغيير `baseURL` من `http://localhost:3001` إلى `http://localhost:3001/api/v1`.
-- إضافة **Response Interceptor** ذكي:
-  - إذا كانت `response.data.success === true` → يستخرج `response.data.data` تلقائياً.
-  - إذا كانت `response.data.success === false` → يرمي `Error` مع الرسالة من الـ API.
-  - يستخرج `friendlyMessage` من كل خطأ API ليُعرض للمستخدم.
-
-#### 2. `src/types/index.ts` — تحديث الأنواع
-- استبدال `verified: boolean` بـ `emailVerifiedAt: string | null` و `phoneVerifiedAt: string | null`.
-- إضافة helper function: `isUserVerified(user) = emailVerifiedAt !== null`.
-- إضافة أنواع جديدة: `UnitType`, `GenderTarget`, `SearchFilters`, `District`, `PaginationMeta`, `PaginatedResponse`.
-- إضافة حقول جديدة للـ `Listing`: `governorate`, `rules`, `includesBills`, `securityDeposit`, `meterType`, `genderTarget`.
-
-#### 3. `src/hooks/useAuth.ts` — تحديث الهوكس
-- **`useLogin`**: يرسل `{ identifier, password }` بدلاً من `{ phone, password }` (يقبل هاتف أو إيميل).
-- **`useRegister`**: يضيف حقل `email` في الـ body ويوجّه لصفحة التحقق من الإيميل بعد التسجيل.
-- **`useMe`**: يعمل hydrate لـ Zustand store بأحدث بيانات المستخدم (`staleTime: 5 min`).
-- **`useLogout`** (جديد): يستدعي `POST /auth/logout` ثم يمسح الـ store والـ localStorage.
-
-#### 4. `src/store/auth.store.ts` — تحديث Store
-- إضافة `clearAuth()` action لمسح كل بيانات المصادقة (token, refresh_token, user).
-
-#### 5. `(auth)/login/login-form.tsx` — تحديث نموذج الدخول
-- حقل **`identifier`** (هاتف أو إيميل) بدلاً من حقل الهاتف فقط.
-- أيقونة ديناميكية: تتغير بين `Phone` و `Mail` حسب ما يكتب المستخدم.
-- Zod validation: يقبل رقم هاتف مصري `01[0125][0-9]{8}` أو `email@domain.com`.
-
-#### 6. `Navbar.tsx` — إصلاح Type Error
-- استبدال `user.isVerified` بـ `isUserVerified(user)` في موضعين (Desktop Avatar + Mobile Drawer).
+يحتوي النظام على الجداول الرئيسية التالية والمعرفة بملف [Prisma Schema](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/prisma/schema.prisma):
+* **`users`:** جدول المستخدمين، يحتوي على الاسم، الهاتف، الإيميل، الرتبة (`UserRole`)، الباقة الحالية (`UserPlan`)، تاريخ تفعيل الحساب، والرقم القومي المشفر.
+* **`listings`:** جدول الإعلانات العقارية (شقة، غرفة، سرير). يحتوي على السعر، التفاصيل، الموقع الإحداثي والجغرافي، وحالة المراجعة (`ListingStatus`).
+* **`listing_images`:** الصور الخاصة بالعقارات.
+* **`listing_beds`:** تفاصيل وحالة الأسرة داخل الإعلانات المخصصة (متاح، محجوز، نوع السرير، تاريخ التأجير).
+* **`viewing_requests`:** طلبات المعاينة المرسلة من المستأجر للمؤجر مع التواريخ المفضلة والحالة.
+* **`reviews`:** التقييمات والتعليقات الممنوحة بين المستأجر والمؤجر وعقارات الملاك.
+* **`alerts`:** التنبيهات الذكية التي يضبطها المستأجر لاستقبال تنبيهات بالبريد/الواتساب عند نشر عقار يطابق فلاتره المفضلة.
+* **`subscriptions`:** باقات الاشتراك الممتازة الخاصة بالدفع والترقية وسجلات Paymob.
+* **`blacklist`:** الحسابات والأرقام القومية وأرقام الهواتف المحظورة من المنصة.
+* **`verification_codes`:** الأكواد المشفرة للتحقق من الإيميل أو استعادة كلمة المرور مع تتبع المحاولات وتواريخ انتهاء الصلاحية.
+* **`device_sessions`:** جلسات الأجهزة النشطة للمستخدم لإتاحة تسجيل الدخول المتعدد وإلغاء الجلسات عند تغيير كلمة المرور.
+* **`chat_messages`:** سجل الرسائل الفورية بين المستخدمين أو مع الدعم الفني.
+* **`notifications`:** الإشعارات الداخلية للمستخدم.
+* **`audit_logs`:** سجل العمليات والتحركات التي يجريها المسؤولون والمشرفون على المنصة.
 
 ---
 
-### PART 2 — Homepage كاملة
-**الملف:** `src/app/[locale]/page.tsx`
+## 3. تفاصيل ملفات الواجهة الخلفية (Backend Structure - File by File)
 
-صفحة رئيسية كاملة من 6 أقسام (Server Component):
-1. **Hero Section**: Gradient `#0F1A2E → #1B4F8A`، عنوان كبير، Search Bar مع Type Tabs (شقة/غرفة/سرير)، إحصائيات.
-2. **How It Works**: 3 خطوات مرقمة مع أيقونات وألوان مختلفة.
-3. **Featured Listings**: يجيب البيانات من `GET /api/v1/listings?limit=6&sortBy=popular` مع `revalidate: 300`. يعرض 6 Skeleton Cards لو لم تُحمّل البيانات.
-4. **Popular Districts**: يجيب من `GET /api/v1/search/popular-districts` مع `revalidate: 600`. يوجّه لـ `/search?district=...` عند الضغط. يعرض مناطق fallback لو API لم يرد.
-5. **Landlord CTA**: خلفية `#0F1A2E → #1B4F8A`، 3 مميزات للمؤجرين، زر "أضف إعلانك".
-6. **Final CTA**: بطاقة مع زر تسجيل وزر بحث.
+تقع ملفات الباك إند داخل مجلد [apps/backend/src](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src):
 
----
+### الملفات الرئيسية
+* **[main.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/main.ts):** نقطة انطلاق التطبيق. يهيئ السيرفر، ويفعل الحماية (Helmet, Dynamic CORS), وضغط الملفات (Compression)، والـ API Versioning (`/api/v1`)، وموثق Swagger.
+* **[app.module.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/app.module.ts):** الموديول الرئيسي الذي يجمع ويفعل كل الموديولات الفرعية للخدمات وإعدادات الـ Throttler والـ Config.
+* **[env.validation.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/env.validation.ts):** ملف فحص متغيرات البيئة قبل الإقلاع باستخدام Zod للتأكد من وجود مفاتيح الاتصال الهامة (`DATABASE_URL`, `JWT_SECRET`, ...).
 
-### PART 3 — صفحة البحث كاملة
-**الملفات:** `search/page.tsx` (Server) + `search/search-client.tsx` (Client)
+### الخدمات والموديولات الفرعية (Modules)
 
-**Architecture:** Server Component يعمل `Suspense` → Client Component تتولى كل المنطق.
+1. **المصادقة والأمان (`auth`)**
+   * **`auth.controller.ts`:** يستقبل طلبات التسجيل، وتفعيل الحساب بـ OTP، تسجيل الدخول، وتجديد الـ Access Token، وتغيير أو إعادة تعيين كلمة المرور. يحتوي على محددات Throttler مخصصة لكل مسار.
+   * **`auth.service.ts`:** المنطق الفعلي للمصادقة. يحتوي على دوال تشفير وفك تشفير البيانات بـ `AES-256-CBC`، وإدارة عمليات التسجيل داخل Prisma Transactions لضمان الاستقرار، والتحقق من صلاحية الجلسات وحذفها.
+   * **`guards/jwt-auth.guard.ts` & `strategies/jwt.strategy.ts`:** للتحقق من الـ Tokens وصلاحيات الوصول للمسارات المحمية.
 
-**الفلاتر (Sidebar):**
-- نوع الوحدة: 3 أزرار كبيرة مع أيقونات.
-- السعر: حقلان من/إلى بـ EGP.
-- المحافظة: Select من 16 محافظة.
-- الحي: Input نص حر.
-- الفئة المستهدفة: Toggle buttons (الجميع/شباب/بنات/عائلات).
-- المميزات: Checkboxes (واي فاي/تكييف/أسانسير/غسالة).
-- موثق فقط: Toggle switch.
-- الترتيب: Select (أحدث/أرخص/أغلى/أكثر مشاهدة).
+2. **المشرفين (`admin`)**
+   * **`admin.controller.ts`:** مسارات المشرفين لمراقبة حالة النظام، توثيق المستخدمين، مراجعة صور الرقم القومي، إغلاق أو مراجعة العقارات، وحظر المستخدمين.
+   * **`admin.service.ts`:** يحتوي على دوال جلب الإحصائيات الشاملة، ورفع وحجب المستخدمين من الدخول، وفحص الهويات، واستعراض سجل التحركات والأعطال.
 
-**المنطق:**
-- **URL Sync**: كل فلتر يُحفظ في URL query params بـ `router.push` (بدون reload).
-- **Debounce 300ms**: لمنع request لكل حرف.
-- **Active Filter Chips**: شرائح للفلاتر المطبقة مع زر X لكل منها.
-- **12 Skeleton Cards**: عند التحميل بدلاً من spinner كامل.
-- **Empty State**: مع زر "مسح الفلاتر".
-- **Pagination**: أرقام الصفحات مع Smart truncation.
-- **Mobile Drawer**: يفتح من الأسفل مع backdrop.
+3. **إدارة العقارات والإعلانات (`listings`)**
+   * **`listings.controller.ts`:** التحكم في إضافة عقار، تعديل التفاصيل، جلب إعلانات مؤجر معين، وتحديث الحالة.
+   * **`listings.service.ts`:** تتولى منطق تخزين العقار إحداثياً وجغرافياً، وربط الصور المرفوعة، والتحكم بالحقوق وحساب المتوسطات للأسرة المتوفرة.
 
----
+4. **إدارة الأسرة (`beds`)**
+   * **`beds.controller.ts`:** تحديث شواغر وحالات الأسرة للمؤجر.
+   * **`beds.service.ts`:** منطق تأجير سرير محدد وإخلاءه وتحديث حالة التوفر فوراً في العقار لتزامن نتائج البحث.
 
-### PART 4 — صفحة الإعلان كاملة
-**الملفات:** `listings/[id]/page.tsx` (Server) + `listings/[id]/listing-detail-client.tsx` (Client)
+5. **طلبات المعاينة (`requests`)**
+   * **`requests.controller.ts`:** إرسال طلبات المعاينة وتعديل حالتها.
+   * **`requests.service.ts`:** التحقق من شروط الطلب (مثال: التأكد من مطابقة فئة المستأجر كـ "شباب" أو "بنات" لنوع العقار المستهدف) وتغيير الحالة مع إرسال إشعارات.
 
-**SEO:** `generateMetadata` يأخذ `title` و `description` من الـ listing. يضع `og:image`.
+6. **البحث المتقدم (`search`)**
+   * **`search.controller.ts`:** معالجة مسارات البحث وقائمة المناطق المميزة.
+   * **`search.service.ts`:** ينفذ استعلامات تصفية معقدة في قاعدة البيانات (مثل فلترة الأسعار، المناطق، التقييمات، والخدمات الإضافية) بدعم الـ Pagination وحفظ سجلات البحث.
 
-**Image Gallery:**
-- Grid: صورة رئيسية كبيرة + 4 صغيرة.
-- **Lightbox Modal**: بالأسهم يسار/يمين والإغلاق.
-- عداد الصور.
+7. **التنبيهات الذكية (`alerts`)**
+   * **`alerts.controller.ts`:** ضبط ومسح فلاتر التنبيهات للمستأجر.
+   * **`alerts.service.ts`:** يقوم بمطابقة كل عقار يتم تفعيله ونشره حديثاً مع قائمة فلاتر المستخدمين الفعالة وإرسال إشعار فوري لهم عبر البريد الإلكتروني أو الواتساب.
 
-**التفاصيل:**
-- عنوان + Badge النوع + Verified badge.
-- السعر الكبير بالجنيه.
-- الوصف + المميزات بأيقونات.
-- الأسرة (لو نوعه `bed`): عداد + badges ملونة (أخضر = متاح، أحمر = محجوز).
-- قواعد البيت بخلفية ذهبية تحذيرية.
-- معلومات إضافية: التأمين + الفواتير.
+8. **المحادثة والدعم (`chat`)**
+   * **`chat.controller.ts`:** جلب رسائل محادثة معينة، وتتبع المحادثات المفتوحة للمشرفين.
+   * **`chat.service.ts`:** منطق حفظ الرسائل وإرسالها حياً عبر قنوات Pusher والتأكد من تحديث حالات القراءة للرسائل.
 
-**التقييمات:**
-- متوسط التقييم + عدد التقييمات.
-- كروت التقييم مع نجوم ملونة.
-- EmptyState لو مفيش تقييمات.
+9. **الملفات المرفوعة (`uploads`)**
+   * **`uploads.controller.ts` & `uploads.service.ts`:** توفير روابط رفع الصور وتخزينها إما محلياً أو على Cloudinary/AWS S3.
+   * **`pipes/file-validation.pipe.ts`:** فحص الملفات المرفوعة عن طريق قراءة التوقيع الثنائي الحقيقي للملف (Magic Numbers) للتأكد من خلوه من البرمجيات الخبيثة والتأكد من امتداده الحقيقي.
 
-**إعلانات مشابهة:** 4 كروت من `GET /search/suggested/:id`.
+10. **المدفوعات والاشتراكات (`payments`)**
+    * **`payments.controller.ts` & `payments.service.ts`:** إدارة عمليات الدفع عبر بوابة Paymob، واستقبال الـ Webhooks، والتأكد من توقيع HMAC، وترقية الحسابات لباقات Premium، والتحقق التلقائي من تاريخ انتهاء الباقات دورياً عبر Cron Jobs.
 
-**Contact Card:**
-- Desktop: sticky على اليمين.
-- Mobile: sticky في الأسفل.
-- يعرض بيانات المؤجر + Avatar + تقييم.
-- زر "طلب معاينة" → يفتح Modal لاختيار التاريخ والوقت.
-- **Request Modal** → `POST /api/v1/requests` مع success state.
-- معلومات التواصل مشروطة بتسجيل الدخول (يوجّه للـ login مع `returnUrl`).
+11. **الخدمات العامة والمشتركة (`common` & `health` & `prisma`)**
+    * **`prisma.service.ts`:** إعداد اتصال Prisma بقاعدة بيانات Neon مع تفعيل Graceful Shutdown.
+    * **`global-exception.filter.ts`:** يلتقط أخطاء الخادم ويسجلها للمطورين بعد إخفاء أي بيانات حساسة (مثل الأرقام القومية أو الباسوردات) لضمان السرية التامة.
+    * **`health.controller.ts`:** قياس مدى اتصال قاعدة البيانات والخادم عبر مسار `/api/v1/health` وتحديد زمن الاستجابة للمراقبة المستمرة.
 
 ---
 
-### PART 5 — لوحة تحكم المؤجر كاملة (Landlord Dashboard)
-**الملفات المضافة:**
-- **الهيكل والصفحة الرئيسية:**
-  - `src/components/layout/LandlordLayout.tsx` — الهيكل المشترك المعتمد على تصميم Sidebar/Drawer مستجيب للهواتف.
-  - `src/app/[locale]/dashboard/landlord/page.tsx` — نظرة عامة تعرض 4 كروت إحصائيات علوية (إجمالي العقارات، النشطة، المعلقة، المشاهدات) وجدول أحدث الطلبات.
-- **إدارة العقارات:**
-  - `src/app/[locale]/dashboard/landlord/listings/page.tsx` — تصفية الإعلانات حسب الحالة، وحذف العقارات بمودال تأكيد.
-  - `src/components/dashboard/ListingForm.tsx` — نموذج متعدد الخطوات (4 خطوات) للإنشاء والتعديل مع zod validation، ومنطقة رفع صور CSS-order-aware.
-  - `src/app/[locale]/dashboard/landlord/listings/add/page.tsx` — إضافة عقار.
-  - `src/app/[locale]/dashboard/landlord/listings/[id]/edit/page.tsx` — تعديل عقار وتعبئة بياناته.
-- **إدارة الطلبات والأسرة:**
-  - `src/app/[locale]/dashboard/landlord/requests/page.tsx` — شريط إحصائيات علوي وتفاصيل الطلبات الواردة وإمكانية قبولها، رفضها، أو إكمالها.
-  - `src/app/[locale]/dashboard/landlord/beds/page.tsx` — اختيار عقارات من نوع "سرير" وإدارة عقود تأجير الأسرة وإخلائها بمودال مخصص.
-- **خطاطيف البيانات (Hooks):**
-  - `src/hooks/useListings.ts` / `useBeds.ts` / `useRequests.ts` / `useUploads.ts` — التفاعل الكامل مع الـ APIs بواسطة React Query وتحديث فوري للواجهات.
+## 4. تفاصيل ملفات الواجهة الأمامية (Frontend Structure - File by File)
+
+تقع الملفات داخل مجلد [apps/frontend/src](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src):
+
+### مسارات وهيكل التطبيق (App Router)
+توجد الصفحات داخل المجلد [app/[locale]](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/[locale]):
+* **`layout.tsx`:** الملف الأساسي لواجهة اللغة. يحتوي على محددات الخطوط (Cairo للعربية و Inter للإنجليزية)، وإعدادات PWA، وتهيئة Themes (وضع مظلم/مضيء)، و `NextIntlClientProvider` لنصوص الترجمة، و `Providers` الأساسية (React Query).
+* **`page.tsx`:** الصفحة الرئيسية للمنصة (أقسام Hero، كيف يعمل الموقع، الإعلانات المميزة، المناطق الشهيرة، دعوات المؤجرين).
+* **`(auth)`:** مجلد يضم صفحة تسجيل الدخول، إنشاء حساب جديد، وتأكيد البريد بـ OTP، وطلب كلمة مرور جديدة.
+* **`listings/[id]/page.tsx`:** صفحة تفاصيل العقار؛ تعرض معرض الصور مع Lightbox، السعر، المميزات، الشروط، التقييمات، ومودال إرسال طلب معاينة.
+* **`search/page.tsx`:** صفحة البحث الكاملة مع شريط الفلاتر الجانبي (تصفية ديناميكية عبر تعديل الـ URL Query Params مباشرة لمنع تحديث الصفحة ودعم النسخ والمشاركة).
+* **`dashboard`:**
+  * **`landlord/`:** لوحة تحكم المالك؛ وتضم عرض الإحصائيات، وإدارة الإعلانات (إضافة عقار وتعديله بنموذج متعدد الخطوات `ListingForm`)، وقبول/رفض طلبات المعاينة، وإدارة شواغر الأسرة.
+  * **`tenant/`:** لوحة تحكم المستأجر؛ إدارة طلبات المعاينة، وإضافة تقييمات، وإعداد التنبيهات التلقائية، واستعراض المفضلة (Wishlist) المخزنة في LocalStorage، وإدارة الاشتراكات عبر Paymob.
+  * **`profile/page.tsx`:** صفحة الملف الشخصي الموحدة لتعديل الاسم، رفع صورة المستخدم، رفع صورة بطاقة الهوية القومية للملاك، وتغيير الباسورد.
+  * **`admin/`:** لوحة تحكم الإدارة الشاملة لإدارة المستخدمين، العقارات المعلقة، تصفح المحظورين، والرد المباشر على رسائل الدعم الفني.
+
+### المكونات والخدمات والخطاطيف (Components & Hooks)
+* **`components/layout/Navbar.tsx`:** شريط التنقل العلوي المستجيب للهواتف مع قائمة تبديل اللغات وتبديل الـ Themes وأيقونة المستخدم.
+* **`components/layout/Footer.tsx`:** تذييل الصفحة وروابط الوصول السريع.
+* **`lib/api.ts`:** إعداد مكتبة Axios الموحدة؛ تتولى دمج الـ Access Token تلقائياً في الترويسات (Headers)، وإدارة عملية تجديد الجلسة تلقائياً عبر `refreshToken` في حال انتهت صلاحية الجلسة لمنع خروج المستخدم، وتعديل هيكلة الأخطاء لإظهار الرسائل الودية للمستخدم.
+* **`store/auth.store.ts`:** مخزن Zustand لحفظ المستخدم الحالي والـ Access Token محلياً والتزامن مع الـ LocalStorage.
+* **`hooks/`:**
+  * `useAuth`: دوال الدخول والخروج والتسجيل.
+  * `useListings` / `useBeds` / `useRequests` / `useProfile` / `useAdmin`: هوكس React Query للتكامل وتزامن البيانات حياً مع الـ API وعمل Caching ذكي ومثالي.
 
 ---
 
-### ✅ نتائج البناء النهائية للجلسة الثانية
+## 5. مصفوفة الصلاحيات والمستخدمين (Roles & Permissions Matrix)
 
-```
-Route                                          Size     First Load JS
-/[locale]/dashboard/landlord                   3.3 kB          199 kB
-/[locale]/dashboard/landlord/beds                6.21 kB         199 kB
-/[locale]/dashboard/landlord/listings            5.66 kB         199 kB
-/[locale]/dashboard/landlord/listings/[id]/edit  818 B           222 kB
-/[locale]/dashboard/landlord/listings/add        701 B           222 kB
-/[locale]/dashboard/landlord/requests            3.85 kB         200 kB
-```
+يتم تخصيص الصلاحيات بناءً على `UserRole` المعرّف في الباك إند بالشكل التالي:
 
-- `npm run build` — **نجح بالكامل وبشكل ناجح ومكتمل** ✅.
-- تم التحقق من سلامة كافة الـ Types وتطابقها مع Backend Prisma schema (بما في ذلك إضافة `totalBeds` و `availableBeds`).
-
----
-
-## 🖥️ إضافات وتعديلات جلسة لوحة تحكم المستأجر (Tenant Dashboard & Shared Profile Page)
-
-### 1. 🛡️ الملف الشخصي المشترك (Shared Profile Page)
-- **المسار:** `src/app/[locale]/dashboard/profile/page.tsx`
-- **الملف الشخصي:** نموذج تعديل الاسم الكامل والتحقق من صحته بواسطة Zod، بالإضافة إلى تثبيت بيانات الاتصال (الهاتف والإيميل).
-- **رفع الصورة الشخصية uploader:** مع كارت تعديل Avatar والتحقق من صيغ الصور (`JPEG`, `PNG`, `WEBP`) والحجم الأقصى (2MB).
-- **رفع وثيقة الهوية (National ID card):** رفع الرقم القومي كملف صور أو PDF (بحد أقصى 10MB) وتحديث حالة التوثيق للمراجعة الفورية من قبل المشرفين.
-- **تحديث كلمة المرور:** نموذج آمن بكلمة المرور الحالية والجديدة وتأكيدها.
-- **تكامل السايدبار للمؤجر:** تم إضافة "ملفي الشخصي" لشريط التنقل الجانبي في لوحة المؤجر (`LandlordLayout.tsx`).
-
-### 2. 🧳 لوحة تحكم المستأجر (Tenant Dashboard)
-- **نظرة عامة (`page.tsx`):** لوحة إحصائيات سريعة للطلبات النشطة والتنبيهات والتقييمات، مع ملخص للطلبات وقسم التنبيهات.
-- **إدارة الطلبات (`requests/page.tsx`):** تصفية طلبات الاستئجار حسب حالتها مع إتاحة إلغائها أو كتابة تقييم تفاعلي (5 نجوم) للمؤجر والعقار.
-- **إدارة التنبيهات الذكية (`alerts/page.tsx`):** صفحة لإعداد فلاتر البحث وإضافة وتعديل التنبيهات وتفعيلها، مع توليد وصف تلقائي للتنبيه (مثل: "شقة شباب في الجيزة أقل من 4000 ج").
-- **المفضلة المحلية (`wishlist/page.tsx`):** جلب وعرض العقارات المحفوظة بـ `localStorage` ديناميكياً وعرضها بـ `ListingCard` بواسطة parallel query fetches.
-- **إدارة الاشتراكات (`subscription/page.tsx`):** عرض باقة المستخدم الحالية (مجانية أو ممتازة)، وترقيتها بواسطة بوابة Paymob المدمجة بالهاتف والاسم، مع عرض سجل كامل للفواتير.
-
-### 3. 🧹 تصحيح الأنماط والـ Types (Type Alignment)
-- **`types/index.ts`:**
-  - تم إضافة حقول `avatarUrl`, `nationalIdVerified`, `nationalIdEnc` لجدول المستخدم `User`.
-  - تم إضافة `"accepted"` لنوع `ViewingRequestStatus` ليطابق قيم الـ Database Enum.
-  - تم إضافة `"images"` لحقل `listing` في `ViewingRequest` لدعم ظهور صور العقار المصغرة في قائمة طلبات المعاينة.
-- **`alerts/page.tsx`:** تم إصلاح توافق الفئة المستهدفة وتصحيح Badge variant.
+| الصلاحية / الميزة | مستأجر (`tenant`) | مؤجر (`landlord`) | مسؤول (`admin`) | مسؤول خارق (`super_admin`) |
+| :--- | :---: | :---: | :---: | :---: |
+| تصفح العقارات والبحث | ✅ | ✅ | ✅ | ✅ |
+| تقديم طلب معاينة عقار | ✅ | ❌ | ✅ | ✅ |
+| إضافة وتعديل إعلانات وعقارات | ❌ | ✅ | ✅ | ✅ |
+| إدارة شواغر الأسرة واستئجارها | ❌ | ✅ | ✅ | ✅ |
+| إعداد تنبيهات ذكية وجديدة | ✅ | ❌ | ✅ | ✅ |
+| تقييم الملاك والعقارات | ✅ | ❌ | ✅ | ✅ |
+| تصفح إحصائيات النظام الشاملة | ❌ | ❌ | ✅ | ✅ |
+| توثيق الحسابات وفحص الهويات | ❌ | ❌ | ✅ | ✅ |
+| حذف الإعلانات أو حظر المستخدمين | ❌ | ❌ | ✅ | ✅ |
+| رفع الحظر عن مستخدم محظور | ❌ | ❌ | ❌ | ✅ |
+| ترقية الحساب لباقات Premium | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
-### ✅ نتائج البناء النهائية للجلسة الثالثة
+## 6. دليل الأخطاء الشائعة وحلها محلياً (Troubleshooting & Local Setup)
 
-```
-Route (app)                                          Size     First Load JS
-/[locale]/dashboard/profile                      7.76 kB         230 kB
-/[locale]/dashboard/tenant                       6.92 kB         200 kB
-/[locale]/dashboard/tenant/alerts                7.09 kB         200 kB
-/[locale]/dashboard/tenant/requests              6.89 kB         200 kB
-/[locale]/dashboard/tenant/subscription          6.82 kB         229 kB
-/[locale]/dashboard/tenant/wishlist              8.03 kB         201 kB
-```
+### 1. مشكلة تكرار الهيكل (Double HTML layout Mismatch)
+* **المظهر:** شاشة بيضاء كاملة بالفرونت إند عند التشغيل.
+* **الحل الدائم:** تعديل [app/layout.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/layout.tsx) ليكون مجرد ممرر للـ `children` فقط:
+  ```tsx
+  export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return children;
+  }
+  ```
+  مع نقل ملفات `error.tsx` و `not-found.tsx` إلى داخل مجلد `[locale]/` لكي ترث الـ layout الصحيح وتتجنب التكرار والتعارض.
 
-- `npm run build` — **نجح بالكامل بنسبة 100% وبدون أي أخطاء** ✅.
+### 2. خطأ الـ 401 Unauthorized عند الربط
+* **السبب:** تداخل الكود؛ الواجهة الأمامية المحلية ترسل `identifier` بينما السيرفر المرفوع أونلاين لم يصله تحديث الكود بعد ويبحث عن حقل `phone`.
+* **الحل:**
+  1. توجيه ملف [.env.local](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/.env.local) في الفرونت إند ليتصل بالباك إند المحلي:
+     `NEXT_PUBLIC_API_URL="http://localhost:3001/api/v1"`
+  2. تشغيل الفرونت والباك معاً محلياً من المجلد الرئيسي للمشروع:
+     `npm run dev`
+  3. استخدام الحساب التجريبي الموثق والموجود بقاعدة البيانات:
+     * **البريد:** `admin@sakani.eg`
+     * **كلمة المرور:** `AdminPassword123!`
+
+---
+
+## 7. التعارضات والمشاكل المكتشفة بين الباك إند والفرونت إند (Discovered Contradictions & Bugs)
+
+أثناء فحص الملفات بالتفصيل، تم التوصل إلى التعارضات البرمجية التالية والتي تمثل أسباباً مباشرة لبعض المشاكل (Bugs) في المنصة:
+
+### 1. تعارض خيارات جنس الإعلان (genderTarget = "family")
+* **الخلل:** في صفحة البحث [search-client.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/[locale]/search/search-client.tsx) يحتوي فلتر الفئة المستهدفة على خيار "عائلات" بقيمة `"family"`.
+* **المشكلة:** الباك إند يعتمد على الـ Enum الخاص بقاعدة البيانات `GenderTarget` والذي يقبل فقط (`male`, `female`, `mixed`).
+* **الأثر:** عند قيام المستخدم بتصفية العقارات بـ "عائلات"، يرفض الباك إند الطلب فوراً بـ `400 Bad Request` وتفشل عملية البحث بالكامل.
+
+### 2. تعارض مسمى نوع عداد الكهرباء (electricityType vs meterType)
+* **الخلل:** قاعدة بيانات الباك إند تسمي الحقل `electricityType` بينما نوع البيانات في الفرونت إند [types/index.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/types/index.ts) يسميه `meterType`.
+* **المشكلة:** عند تحميل بيانات العقار للتعديل في النموذج [ListingForm.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/components/dashboard/ListingForm.tsx)، يبحث النموذج عن `initialData?.meterType` (وهو غير موجود في رد الـ API) فيفشل في تعبئة القيمة الصحيحة.
+* **الأثر:** يُعاد تعيين نوع العداد تلقائياً إلى `"modern_meter"` (الافتراضي) عند حفظ التعديلات لأي عقار بغض النظر عن قيمته الحقيقية.
+
+### 3. تعارض حقل نوع العقار (type vs unitType)
+* **الخلل:** يعتمد الفرونت إند في كروته وصفحاته على حقل `listing.type` لمعرفة ما إذا كان العقار شقة أو غرفة أو سرير، بينما تعيد قاعدة بيانات الباك إند الحقل باسم `unitType` فقط.
+* **المشكلة:** لا يتم عمل مواءمة (Mapping) للبيانات القادمة من الاستعلامات في الفرونت إند.
+* **الأثر:**
+  1. لا تظهر تسميات نوع العقار (شقة/غرفة/سرير) على كروت العقارات (تظهر فارغة).
+  2. تفشل كروت البحث في معرفة ما إذا كانت الوحدة عبارة عن سرير (`listing.type === "bed"`) لعرض عدد الأسرة المتاحة والشاغرة.
+  3. تظهر عناوين وتفاصيل الإعلانات دائماً بكلمة "سرير" كقيمة افتراضية في بعض الشاشات حتى لو كانت العقارات شققاً أو غرفاً.
+
+### 4. تعارض مسميات حالات طلب المعاينة (approved vs accepted)
+* **الخلل:** يعرف الفرونت إند حالة طلب المعاينة باسم `"approved"` (موافق عليه)، بينما يستخدم الباك إند في الـ Enum الخاص بقاعدة البيانات مسمى `"accepted"`.
+* **الأثر:** على الرغم من وجود حماية ومعالجة يدوية في الهوكس واللوحات حالياً للتحويل، إلا أن بقاء هذا الاختلاف قد يسبب مشاكل في أي موديول جديد لا يعالج هذا التضارب يدوياً.
 
 ---
 
-## 🛡️ إضافات وتعديلات لوحة تحكم الإدارة (Admin Dashboard & Chat Support)
+## 8. التحديثات الأخيرة وحالة الرفع والاستضافة (Latest Updates & Deployment Status)
 
-### 1. 📊 الإحصائيات والمراقبة (Dashboard Overview)
-- **ملخص شامل:** تم إضافة صفحة `admin/page.tsx` لعرض 8 كروت إحصائية متقدمة (عدد المستخدمين، الطلبات، الإعلانات النشطة والمعلقة).
-- **Activity Feed:** سجل نشاط حي لأحدث الإعلانات والمستخدمين.
-- **Health Check Widget:** أداة تراقب حالة الخادم وقواعد البيانات وتتحدث تلقائياً كل 30 ثانية.
+### التحديثات المضافة حديثاً:
+1. **نظام الحذف المؤقت للإعلانات (Soft Delete):**
+   * تم تعديل آلية حذف الإعلانات من قبل الملاك ليتم تحويل حالتها إلى `paused` في [listings.service.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/listings/listings.service.ts) لحماية سلامة الجداول المرتبطة وتجنب انهيار قاعدة البيانات.
+   * تم استبعاد هذه الإعلانات من الظهور في قائمة المؤجر وفي نتائج البحث، مما يحقق الإخفاء الفوري والكامل مع الحفاظ على البيانات.
+2. **منع إعادة التوجيه لصفحة تسجيل الدخول (Refresh Redirect):**
+   * تم إدراج متغير حالة `isHydrated` في [auth.store.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/store/auth.store.ts) لمنع خطأ إعادة التوجيه الفوري للـ Login عند تحديث الصفحة قبل تحميل التوكن.
+3. **قيد الحماية من الإرسال المكرر (Double Submit Lock):**
+   * تم تعطيل زر نشر الإعلان فورياً في الفرونت إند عبر حظر `isLocalSubmitting` في [ListingForm.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/components/dashboard/ListingForm.tsx).
+   * تم وضع قيد زمني في الباك إند يمنع إنشاء إعلانين متتاليين لنفس المستخدم خلال 60 ثانية في [listings.service.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/listings/listings.service.ts).
 
-### 2. 👥 إدارة المستخدمين والعقارات (Users & Listings)
-- **إدارة العقارات (`listings/page.tsx`):** جدول مفصل لعرض العقارات مع `Tabs` للفلاتر (الكل، نشط، قيد المراجعة، مؤجر). إمكانية مراجعة بطاقة الهوية عبر (Presigned URL متجدد) وحذف الإعلانات مع نوافذ تأكيدية.
-- **إدارة المستخدمين (`users/page.tsx`):** إضافة فلاتر متقدمة (بحسب الرتبة، التوثيق، وحالة الحظر). يتضمن نافذة (Drawer) لمعلومات المستخدم وخيارات (ترقية/توثيق/تفعيل/حظر/حذف).
-- **المحظورون (`banned/page.tsx`):** نظام حظر يتيح وضع سبب الحظر مع رقم الهاتف أو الرقم القومي. رفع الحظر محمي بصلاحية `super_admin` حصراً، مع `Confirm Modal` لتأكيد الإجراء.
-- **طلبات المعاينة (`requests/page.tsx`):** نظام كامل لتتبع طلبات المعاينة بين المستأجر والمؤجر.
-
-### 3. 💬 نظام المحادثة والدعم المباشر (Real-time Chat)
-- **البنية التحتية (Pusher):** تم تفعيل قنوات البث الحصرية (`private-chat-user-{userId}`) لزيادة الخصوصية، وقناة (`private-support`) مخصصة للمشرفين لاستلام رسائل الدعم الفني.
-- **واجهة المستخدم (`ChatWidget.tsx`):** تكامل مع قراءة عدد الرسائل غير المقروءة (`unread-count`) وتفعيل خاصية تحديد الرسائل كمقروءة (`markAsRead`).
-- **بريد الدعم (`admin/chat/page.tsx`):** صفحة لإدارة كافة رسائل الدعم الواردة للإدارة، مقسمة حسب المستخدم مع خيار التحديث الحي وفتح المحادثة المنبثقة للرد.
-
-### 4. 🧰 تحسينات البنية والكود (Types & Hooks)
-- **توحيد أنواع البيانات:** تم تصحيح توافق `ListingStatus` و `PaginationMeta` بين الباك إند والفرونت إند لمنع أخطاء الـ Build.
-- **نظافة الكود:** تم إضافة كافة الـ Hooks المطلوبة لـ `useAdmin.ts` واستخدامها بالكامل دون أي كود ميت (`Dead Code`) أو `any`.
-
-### ✅ نتائج البناء النهائية للجلسة الرابعة (Admin & Chat)
-
-```
-Route (app)                                          Size     First Load JS
-/[locale]/admin                                  11.1 kB         163 kB
-/[locale]/admin/banned                           6.64 kB         159 kB
-/[locale]/admin/chat                             25 kB           168 kB
-/[locale]/admin/listings                         4.09 kB         165 kB
-/[locale]/admin/requests                         4.45 kB         147 kB
-/[locale]/admin/users                            5.93 kB         167 kB
-```
-
-- `npm run build` — **نجح بالكامل بنسبة 100% وبدون أي أخطاء، وتم حل مشاكل مكتبة date-fns** ✅.
-
----
-*ملاحظة: هذا الملف يُستخدم كمرجع سريع لفهم سياق المشروع وأهم التغييرات المعمارية التي طرأت عليه لتسهيل عملية التطوير المستقبلي.*
+> [!WARNING]
+> **تنبيه هام بشأن الاستضافة والرفع:**
+> لم يتم رفع أو نشر (Deploy) هذه التعديلات الأخيرة على منصات الاستضافة الخارجية حتى الآن (مثل Hugging Face للواجهة الخلفية أو Vercel/Netlify للواجهة الأمامية). 
+> جميع التعديلات الحالية تم اختبارها وبناؤها وتعمل بنجاح تام على البيئة المحلية للتطوير فقط. يرجى مراجعة الاستضافة ورفع التعديلات للإنتاج عند جاهزيتها.

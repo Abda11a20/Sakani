@@ -9,14 +9,14 @@ interface AuthGuardOptions {
 }
 
 export const useAuthGuard = (options?: AuthGuardOptions) => {
-  const { token, user, isLoading: isStoreLoading } = useAuthStore();
+  const { token, user, isHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname?.split("/")[1] || "ar";
 
   const { isLoading: isMeLoading, isError } = useMe();
 
-  const isLoading = isStoreLoading || (!!token && isMeLoading);
+  const isLoading = !isHydrated || (!!token && isMeLoading);
 
   useEffect(() => {
     if (isLoading) return;

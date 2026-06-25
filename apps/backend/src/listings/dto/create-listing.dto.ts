@@ -74,15 +74,15 @@ export class CreateListingDto {
   @IsNotEmpty({ message: 'العنوان التفصيلي مطلوب' })
   address!: string;
 
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
-  @IsNotEmpty({ message: 'خط العرض (lat) مطلوب' })
-  lat!: number;
+  lat?: number;
 
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
-  @IsNotEmpty({ message: 'خط الطول (lng) مطلوب' })
-  lng!: number;
+  lng?: number;
 
   @IsOptional()
   @IsArray()

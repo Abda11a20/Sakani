@@ -31,7 +31,8 @@ export default function LandlordListings() {
   const locale = useLocale();
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
-  const { data: listings = [], isLoading: isListingsLoading } = useMyListings();
+  const { data: rawListings = [], isLoading: isListingsLoading } = useMyListings();
+  const listings = rawListings || [];
   const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
 
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");

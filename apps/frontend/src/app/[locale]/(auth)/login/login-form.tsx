@@ -58,7 +58,9 @@ export function LoginForm() {
   };
 
   const serverError =
-    error instanceof Error ? error.message : null;
+    error && "friendlyMessage" in error
+      ? (error as any).friendlyMessage
+      : error?.message || null;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md">

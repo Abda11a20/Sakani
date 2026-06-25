@@ -27,7 +27,8 @@ export default function LandlordBeds() {
   const { toast } = useToast();
 
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
-  const { data: listings = [], isLoading: isListingsLoading } = useMyListings();
+  const { data: rawListings = [], isLoading: isListingsLoading } = useMyListings();
+  const listings = rawListings || [];
 
   // Selected Listing ID
   const [selectedId, setSelectedId] = useState<string>("");
@@ -46,7 +47,8 @@ export default function LandlordBeds() {
   }, [searchParams, bedListings, selectedId]);
 
   // Fetch beds and stats
-  const { data: beds = [], isLoading: isBedsLoading } = useListingBeds(selectedId);
+  const { data: rawBeds = [], isLoading: isBedsLoading } = useListingBeds(selectedId);
+  const beds = rawBeds || [];
   const { data: stats, isLoading: isStatsLoading } = useListingBedStats(selectedId);
 
   // Mutations

@@ -183,5 +183,29 @@
     "howItWorks": "How it works",
     "contactUs": "Contact Us",
     "rightsReserved": "All rights reserved © {year} Sakani"
+  },
+  "howItWorksPage": {
+    "title": "How Sakani Works?",
+    "subtitle": "Discover the steps to easily rent or list properties safely in Egypt",
+    "forTenants": "For Tenants (Students & Youth)",
+    "forTenantsSubtitle": "Find your perfect university or shared housing in 3 simple steps",
+    "tenantStep1Title": "1. Search for the Right Housing",
+    "tenantStep1Desc": "Browse apartments, rooms, or vacant beds. Use filters for city, price, target category, or study major to find the perfect roommates.",
+    "tenantStep2Title": "2. Request a Viewing",
+    "tenantStep2Desc": "Select your preferred date and time for viewing, and leave a note for the landlord. Your request is immediately sent to the owner.",
+    "tenantStep3Title": "3. Confirm and Get in Touch",
+    "tenantStep3Desc": "Once the owner accepts your request, you can see their phone number and contact details to finalize the agreement and secure your booking.",
+    "forLandlords": "For Landlords & Property Owners",
+    "forLandlordsSubtitle": "Rent out your units, rooms, or beds to students and youth efficiently",
+    "landlordStep1Title": "1. Add Your Property Easily",
+    "landlordStep1Desc": "Specify details, rental price, and listing type (apartment, room, bed). Set the target gender (male or female), and upload high-quality photos.",
+    "landlordStep2Title": "2. Review and Accept Requests",
+    "landlordStep2Desc": "Track viewing requests from students, see their majors and proposed times. Accept to share contact info and start talking directly.",
+    "landlordStep3Title": "3. Manage Beds and Occupancy",
+    "landlordStep3Desc": "Register lease contracts or vacate beds online to automatically update unit vacancy status on the platform with no effort.",
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "Whether you are looking for a place or want to lease your property, Sakani is your ideal destination.",
+    "ctaTenantBtn": "Search for housing",
+    "ctaLandlordBtn": "Add your property"
   }
 }
