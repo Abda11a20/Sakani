@@ -1,10 +1,20 @@
 // apps/frontend/src/components/layout/Footer.tsx
 import React from "react";
 import Link from "next/link";
-import { Share2, Camera, MessageCircle, Phone, Mail, Home } from "lucide-react";
+import { Share2, Camera, MessageCircle, Phone, Mail } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 export const Footer: React.FC = () => {
+  const t = useTranslations("footer");
+  const locale = useLocale();
   const currentYear = new Date().getFullYear();
+
+  const links = [
+    { href: `/${locale}`, label: t("home") },
+    { href: `/${locale}/search`, label: t("search") },
+    { href: `/${locale}/listings/new`, label: t("addListing") },
+    { href: `/${locale}/how-it-works`, label: t("howItWorks") },
+  ];
 
   return (
     <footer className="bg-[#1B3A6B] dark:bg-[#0A1628] text-white">
@@ -13,10 +23,12 @@ export const Footer: React.FC = () => {
           {/* Column 1: Logo + description + social */}
           <div className="space-y-4">
             <div className="flex items-center gap-2" style={{ direction: "ltr" }}>
-              <img src="/logo.png" alt="سكني" className="h-9 w-auto object-contain brightness-0 invert" />
+              <div className="bg-white p-2 rounded-xl inline-block">
+                <img src="/logo.png" alt="سكني" className="h-7 w-auto object-contain" />
+              </div>
             </div>
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
-              ابحث بثقة، اسكن بأمان. منصة تأجير عقارات مصرية تربط المستأجرين بالملاك بكل سهولة وشفافية.
+              {t("description")}
             </p>
             <div className="flex items-center gap-3" style={{ direction: "ltr" }}>
               <a
@@ -52,15 +64,10 @@ export const Footer: React.FC = () => {
           {/* Column 2: Quick links */}
           <div className="space-y-4">
             <h3 className="font-cairo text-base font-semibold text-white">
-              روابط سريعة
+              {t("quickLinks")}
             </h3>
             <ul className="space-y-2">
-              {[
-                { href: "/ar", label: "الرئيسية" },
-                { href: "/ar/search", label: "البحث" },
-                { href: "/ar/listings/new", label: "أضف إعلان" },
-                { href: "/ar/how-it-works", label: "كيف يعمل الموقع" },
-              ].map((link) => (
+              {links.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -76,7 +83,7 @@ export const Footer: React.FC = () => {
           {/* Column 3: Contact */}
           <div className="space-y-4">
             <h3 className="font-cairo text-base font-semibold text-white">
-              تواصل معنا
+              {t("contactUs")}
             </h3>
             <ul className="space-y-3">
               <li>
@@ -106,7 +113,7 @@ export const Footer: React.FC = () => {
         {/* Bottom bar */}
         <div className="mt-10 border-t border-white/10 pt-6 text-center">
           <p className="text-sm text-white/50">
-            جميع الحقوق محفوظة © {currentYear} سكني
+            {t("rightsReserved", { year: currentYear })}
           </p>
         </div>
       </div>

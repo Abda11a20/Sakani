@@ -10,7 +10,9 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default function LoginPage() {
+export default async function LoginPage({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale, namespace: "auth" });
+
   return (
     <div className="min-h-screen flex">
       {/* Right side - Form */}
@@ -19,10 +21,10 @@ export default function LoginPage() {
           <div className="text-center md:text-start">
             <img src="/logo.png" alt="سكني" className="h-16 w-auto mx-auto md:mx-0 mb-6 object-contain dark:brightness-0 dark:invert" />
             <h1 className="text-3xl font-bold tracking-tight text-primary dark:text-gold">
-              أهلاً بك مجدداً
+              {t("welcomeBack")}
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
-              سجل دخولك لمتابعة عقاراتك أو البحث عن سكنك الجديد
+              {t("welcomeBackSubtitle")}
             </p>
           </div>
           <LoginForm />
@@ -33,9 +35,9 @@ export default function LoginPage() {
       <div className="hidden md:flex flex-1 bg-gradient-to-br from-primary to-blue-900 justify-center items-center p-12 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
         <div className="z-10 text-center max-w-lg">
-          <h2 className="text-4xl font-bold mb-4 text-gold">سكني</h2>
+          <h2 className="text-4xl font-bold mb-4 text-gold">{t("login") === "Login" ? "Sakani" : "سكني"}</h2>
           <p className="text-lg text-blue-100">
-            المنصة الأولى لتأجير العقارات في مصر. نوفر لك الأمان والثقة في كل خطوة.
+            {t("sakaniDesc")}
           </p>
         </div>
       </div>
