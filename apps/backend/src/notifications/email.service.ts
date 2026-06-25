@@ -3,6 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 
 @Injectable()
 export class EmailService {
@@ -76,6 +77,48 @@ export class EmailService {
       return;
     }
 
+    const resendApiKey = this.config.get<string>('RESEND_API_KEY');
+
+    if (resendApiKey) {
+      try {
+        const response = await axios.post(
+          'https://api.resend.com/emails',
+          {
+            from: 'سَكني | Sakani <onboarding@resend.dev>',
+            to: [to],
+            subject: subject,
+            html: html,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        this.logger.log(`Email sent via Resend to ${to} | ID: ${response.data.id}`);
+        return;
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        this.logger.error(`Failed to send email via Resend to ${to}: ${errorMessage}`);
+        
+        // If in development mode, print devOtp to console instead of throwing/failing
+        if (process.env.NODE_ENV !== 'production') {
+          if (devOtp) {
+            this.logger.warn(
+              `\n\n  ╔════════════════════════════════════════╗` +
+              `\n  ║  🔑 DEV OTP for ${to.padEnd(25)} ║` +
+              `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
+              `\n  ╚════════════════════════════════════════╝\n`
+            );
+          }
+          return;
+        }
+        throw new Error(`فشل إرسال البريد الإلكتروني (Resend): ${errorMessage}`);
+      }
+    }
+
+    // fallback to Nodemailer SMTP
     if (process.env.NODE_ENV !== 'production') {
       // في بيئة التطوير: حاول الإرسال، وإذا فشل اطبع الـ OTP في الكونسول ولا تفشل العملية
       try {
