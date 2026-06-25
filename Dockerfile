@@ -37,4 +37,4 @@ COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # تشغيل الباك إند
-CMD ["node", "apps/backend/dist/main"]
+CMD ["node", "apps/backend/dist/src/main"]
