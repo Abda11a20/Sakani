@@ -51,12 +51,7 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2 flex-shrink-0"
             style={{ direction: "ltr" }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Home size={18} className="text-gold" />
-            </span>
-            <span className="font-cairo text-xl font-bold text-primary dark:text-white">
-              سكني
-            </span>
+            <img src="/logo.png" alt="سكني" className="h-10 w-auto object-contain dark:brightness-0 dark:invert" />
           </Link>
 
           {/* Center nav links — desktop */}

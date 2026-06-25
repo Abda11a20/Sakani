@@ -42,6 +42,11 @@ export const metadata: Metadata = {
   authors: [{ name: "سكني" }],
   manifest: "/manifest.json",
   themeColor: "#1B4F8A",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/icon-192.png",
+  },
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -100,7 +105,7 @@ export default async function LocaleLayout({
         {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="سكني" />
 

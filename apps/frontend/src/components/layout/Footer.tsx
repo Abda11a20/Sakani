@@ -13,10 +13,7 @@ export const Footer: React.FC = () => {
           {/* Column 1: Logo + description + social */}
           <div className="space-y-4">
             <div className="flex items-center gap-2" style={{ direction: "ltr" }}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-                <Home size={20} className="text-gold" />
-              </span>
-              <span className="font-cairo text-2xl font-bold text-white">سكني</span>
+              <img src="/logo.png" alt="سكني" className="h-9 w-auto object-contain brightness-0 invert" />
             </div>
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
               ابحث بثقة، اسكن بأمان. منصة تأجير عقارات مصرية تربط المستأجرين بالملاك بكل سهولة وشفافية.
