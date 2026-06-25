@@ -30,10 +30,11 @@ export interface AvatarProps
 }
 
 export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, size, src, name, verified, ...props }, ref) => {
-    const getInitials = (name: string) => {
-      const parts = name.trim().split(" ");
-      if (parts.length === 0) return "?";
+  ({ className, size, src, name = "", verified, ...props }, ref) => {
+    const getInitials = (nameStr: string) => {
+      const cleanName = nameStr || "";
+      const parts = cleanName.trim().split(" ");
+      if (parts.length === 0 || !cleanName.trim()) return "?";
       if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     };

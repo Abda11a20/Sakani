@@ -118,9 +118,9 @@ export const Navbar: React.FC = () => {
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button className="ms-2 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
-                    <Avatar src={null} name={user.name} size="sm" verified={isUserVerified(user)} />
+                    <Avatar src={null} name={user?.name || ""} size="sm" verified={isUserVerified(user)} />
                     <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
-                      {user.name}
+                      {user?.name || ""}
                     </span>
                   </button>
                 </DropdownMenu.Trigger>
