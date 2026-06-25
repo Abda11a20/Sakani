@@ -97,7 +97,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      dir={isRtl ? "rtl" : "ltr"}
+      dir="ltr"
       className={`${cairo.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
