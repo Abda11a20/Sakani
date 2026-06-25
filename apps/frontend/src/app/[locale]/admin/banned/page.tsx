@@ -17,7 +17,13 @@ export default function AdminBannedPage() {
   const isRtl = locale === "ar";
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const isSuperAdmin = user?.role === "super_admin";
+  const [mounted, setMounted] = useState(false);
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isSuperAdmin = mounted && user?.role === "super_admin";
 
   const [page, setPage] = useState(1);
   const [showBanForm, setShowBanForm] = useState(false);

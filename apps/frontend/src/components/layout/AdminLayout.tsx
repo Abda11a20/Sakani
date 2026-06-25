@@ -47,6 +47,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user } = useAuthStore();
   const logout = useLogout();
   const isRtl = locale === "ar";
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const menuItems: NavItem[] = [
     {
@@ -111,7 +116,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Admin Badge */}
-      {user && (
+      {mounted && user && (
         <div className="mx-4 mt-4 mb-2 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm font-cairo shrink-0">
             {user.name?.charAt(0) ?? "A"}
