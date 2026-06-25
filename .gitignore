@@ -57,8 +57,9 @@ pnpm-debug.log*
 # ==========================
 # Uploads (Local Only)
 # ==========================
-uploads/
-public/uploads/
+/uploads/
+/apps/backend/uploads/
+/apps/frontend/public/uploads/
 
 # ==========================
 # Operating System
