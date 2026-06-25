@@ -52,7 +52,7 @@ export class EmailService {
       </div>
       <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
     `;
-    await this.send(email, 'تفعيل حساب سَكني', this.wrapTemplate('تفعيل حسابك', body));
+    await this.send(email, 'تفعيل حساب سَكني', this.wrapTemplate('تفعيل حسابك', body), otp);
   }
 
   // ── إرسال كود إعادة تعيين كلمة المرور ───────────────────────────────────
@@ -66,15 +66,43 @@ export class EmailService {
       <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
       <p style="color: #888; font-size: 13px;">إذا لم تكن قد طلبت هذا، فلا داعي للقلق — حسابك بأمان تام.</p>
     `;
-    await this.send(email, 'إعادة تعيين كلمة مرور سَكني', this.wrapTemplate('إعادة تعيين كلمة المرور', body));
+    await this.send(email, 'إعادة تعيين كلمة مرور سَكني', this.wrapTemplate('إعادة تعيين كلمة المرور', body), otp);
   }
 
   // ── الدالة الأساسية للإرسال ───────────────────────────────────────────────
-  private async send(to: string, subject: string, html: string): Promise<void> {
+  private async send(to: string, subject: string, html: string, devOtp?: string): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
       this.logger.log(`[TEST MODE] Suppressed email to ${to} with subject "${subject}"`);
       return;
     }
+
+    if (process.env.NODE_ENV !== 'production') {
+      // في بيئة التطوير: حاول الإرسال، وإذا فشل اطبع الـ OTP في الكونسول ولا تفشل العملية
+      try {
+        const info = await this.transporter.sendMail({
+          from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
+          to,
+          subject,
+          html,
+        });
+        this.logger.log(`Email sent to ${to} | ID: ${info.messageId}`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.warn(`[DEV] Failed to send email to ${to}: ${message}`);
+        if (devOtp) {
+          this.logger.warn(
+            `\n\n  ╔════════════════════════════════════════╗` +
+            `\n  ║  🔑 DEV OTP for ${to.padEnd(25)} ║` +
+            `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
+            `\n  ╚════════════════════════════════════════╝\n`
+          );
+        }
+        // في التطوير لا نرمي الخطأ حتى لا نوقف عملية التسجيل
+      }
+      return;
+    }
+
+    // في الإنتاج: نرمي الخطأ حتى تتراجع الـ Transaction وينبه المستخدم
     try {
       const info = await this.transporter.sendMail({
         from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
@@ -86,7 +114,7 @@ export class EmailService {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Failed to send email to ${to}: ${message}`);
-      // لا نرمي الخطأ للخارج حتى لا يوقف التسجيل إذا فشل الإيميل
+      throw new Error(`فشل إرسال البريد الإلكتروني: ${message}`);
     }
   }
 }

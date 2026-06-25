@@ -51,7 +51,7 @@ export function decryptAES(encryptedText: string): string {
   const [ivHex, dataHex] = encryptedText.split(':');
   if (!ivHex || !dataHex) throw new Error('صيغة النص المشفر غير صحيحة');
   const iv = Buffer.from(ivHex, 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.from(dataHex, 'hex'));
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
   return Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]).toString('utf8');
 }
 

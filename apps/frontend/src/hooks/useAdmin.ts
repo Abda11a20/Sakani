@@ -53,6 +53,13 @@ export interface UpdateRolePayload {
   role: "tenant" | "landlord" | "admin";
 }
 
+export interface RegisterAdminPayload {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+}
+
 // ── Dashboard Stats & Health ──────────────────────────────────────────────────
 
 export const useAdminStats = () => {
@@ -246,6 +253,21 @@ export const useBanUser = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "banned"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+};
+
+export const useRegisterAdmin = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<unknown, Error, RegisterAdminPayload>({
+    mutationFn: async (payload: RegisterAdminPayload) => {
+      const res = await api.post("/admin/register-admin", payload);
+      return res.data;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },

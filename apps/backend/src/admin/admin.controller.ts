@@ -51,9 +51,10 @@ export class AdminController {
   async getAllListings(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('status') status?: ListingStatus,
+    @Query('status') status?: string,
   ) {
-    return this.adminService.getAllListings(page, limit, status);
+    const listingStatus = status as ListingStatus | undefined;
+    return this.adminService.getAllListings(page, limit, listingStatus);
   }
 
   @Patch('listings/:id/review')
@@ -78,12 +79,13 @@ export class AdminController {
   async getAllUsers(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('role') role?: UserRole,
+    @Query('role') role?: string,
     @Query('search') search?: string,
     @Query('isActive') isActive?: string,
     @Query('isVerified') isVerified?: string,
   ) {
-    return this.adminService.getAllUsers(page, limit, role, search, isActive, isVerified);
+    const userRole = role as UserRole | undefined;
+    return this.adminService.getAllUsers(page, limit, userRole, search, isActive, isVerified);
   }
 
   @Patch('users/:id/verify')
