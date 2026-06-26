@@ -1,11 +1,13 @@
-import { IsString, IsOptional } from 'class-validator';
+// apps/backend/src/chat/dto/send-message.dto.ts
+
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class SendMessageDto {
   @IsString()
-  content: string;
+  @IsNotEmpty()
+  conversationId: string;
 
-  // Target user ID — omit to send a support message to all admins
   @IsString()
-  @IsOptional()
-  receiverId?: string;
+  @IsNotEmpty()
+  content: string;
 }

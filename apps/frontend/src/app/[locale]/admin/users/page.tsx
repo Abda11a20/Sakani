@@ -9,7 +9,7 @@ import {
   Phone, Mail, IdCard, Trash2, UserPlus, Lock,
 } from "lucide-react";
 import {
-  useAdminUsers, useVerifyUser, useToggleUserStatus,
+  useAdminUsers, useVerifyUser, useRejectUser, useToggleUserStatus,
   useUpdateUserRole, useAdminDeleteUser, useBanUser, useIdCardUrl, useRegisterAdmin,
   type RegisterAdminPayload,
 } from "@/hooks/useAdmin";
@@ -17,6 +17,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
+import { getIdentityVerificationStatus } from "@/types";
 import Image from "next/image";
 
 // ── Brand color role badges ───────────────────────────────────────────────────
@@ -196,6 +197,7 @@ export default function AdminUsersPage() {
 
   const { data, isLoading, error } = useAdminUsers(page, 10, roleFilter, searchQuery, isActiveFilter, isVerifiedFilter);
   const verifyMutation = useVerifyUser();
+  const rejectMutation = useRejectUser();
   const toggleMutation = useToggleUserStatus();
   const roleMutation = useUpdateUserRole();
   const deleteMutation = useAdminDeleteUser();
@@ -204,9 +206,18 @@ export default function AdminUsersPage() {
   const handleVerify = async (id: string) => {
     try {
       await verifyMutation.mutateAsync(id);
-      toast({ type: "success", description: "تم التحقق من المستخدم بنجاح" });
+      toast({ type: "success", description: "تم توثيق هوية المستخدم بنجاح" });
     } catch {
-      toast({ type: "error", description: "فشل في التحقق من المستخدم" });
+      toast({ type: "error", description: "فشل في توثيق هوية المستخدم" });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await rejectMutation.mutateAsync(id);
+      toast({ type: "success", description: "تم رفض وثيقة هوية المستخدم بنجاح" });
+    } catch {
+      toast({ type: "error", description: "فشل في رفض هوية المستخدم" });
     }
   };
 
@@ -539,14 +550,26 @@ export default function AdminUsersPage() {
                 )}
 
                 <div className="grid grid-cols-2 gap-2">
-                  {!(selectedUser.emailVerifiedAt) && (
-                    <button
-                      onClick={() => handleVerify(selectedUser.id)}
-                      disabled={verifyMutation.isPending}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-[#1B4F8A]/10 text-[#1B4F8A] hover:bg-[#1B4F8A]/20 dark:text-[#7BAEE8] transition-colors"
-                    >
-                      <UserCheck size={14} /> توثيق الحساب
-                    </button>
+                  {selectedUser.identityStatus !== 'VERIFIED' && !selectedUser.nationalIdVerified && (
+                    <>
+                      <button
+                        onClick={() => handleVerify(selectedUser.id)}
+                        disabled={verifyMutation.isPending}
+                        className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:text-green-400 transition-colors border border-green-200 dark:border-green-800"
+                      >
+                        <UserCheck size={14} /> توثيق الهوية
+                      </button>
+                      
+                      {selectedUser.identityStatus === 'PENDING' && (
+                        <button
+                          onClick={() => handleReject(selectedUser.id)}
+                          disabled={rejectMutation.isPending}
+                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 transition-colors border border-red-200 dark:border-red-800"
+                        >
+                          <UserX size={14} /> رفض الهوية
+                        </button>
+                      )}
+                    </>
                   )}
                   <button
                     onClick={() => handleToggle(selectedUser.id, selectedUser.name)}

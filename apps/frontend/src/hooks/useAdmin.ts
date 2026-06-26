@@ -172,6 +172,20 @@ export const useVerifyUser = () => {
   });
 };
 
+export const useRejectUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<unknown, Error, string>({
+    mutationFn: async (userId: string) => {
+      const res = await api.patch(`/admin/users/${userId}/reject`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+};
+
 export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
 
@@ -308,21 +322,47 @@ export const useAdminRequests = (page = 1, limit = 10, status?: string, search?:
 
 // ── Support Chat ──────────────────────────────────────────────────────────────
 
-export interface SupportInboxResponse {
-  messages: any[];
+export interface SupportConversationsResponse {
+  conversations: any[];
   meta: PaginationMeta;
 }
 
 export const useAdminSupport = (page = 1, limit = 30) => {
-  return useQuery<SupportInboxResponse>({
+  return useQuery<SupportConversationsResponse>({
     queryKey: ["admin", "support", page, limit],
-    queryFn: async (): Promise<SupportInboxResponse> => {
-      const res = await api.get<SupportInboxResponse>("/chat/support", {
+    queryFn: async (): Promise<SupportConversationsResponse> => {
+      const res = await api.get<SupportConversationsResponse>("/admin/chat/conversations", {
         params: { page, limit },
       });
       return res.data;
     },
     staleTime: 10_000,
+  });
+};
+
+export const useBlockConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ conversationId, reason }: { conversationId: string; reason: string }) => {
+      const res = await api.post(`/admin/chat/conversations/${conversationId}/block`, { reason });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "support"] });
+    },
+  });
+};
+
+export const useUnblockConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const res = await api.post(`/admin/chat/conversations/${conversationId}/unblock`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "support"] });
+    },
   });
 };
 

@@ -336,35 +336,53 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
       };
 
       // 1. Submit Listing details
-      const listing = await onSubmit(payload);
+      let listing;
+      try {
+        listing = await onSubmit(payload);
+      } catch (err: any) {
+        toast({
+          title: "حدث خطأ",
+          description: err.friendlyMessage || "فشل حفظ تفاصيل العقار. يرجى مراجعة المدخلات.",
+          type: "error",
+        });
+        return;
+      }
 
       // 2. Upload images (only if we have new local files)
       const newFiles = images.filter(img => img.isNew && img.file).map(img => img.file as File);
-      if (newFiles.length > 0) {
-        const formData = new FormData();
-        newFiles.forEach(file => {
-          formData.append("images", file);
-        });
+      let imagesUploaded = true;
 
-        // Use custom api call since we need listingId of newly created listing
-        await api.post(`/uploads/listings/${listing.id}/images`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+      if (newFiles.length > 0) {
+        try {
+          const formData = new FormData();
+          newFiles.forEach(file => {
+            formData.append("images", file);
+          });
+
+          // Use custom api call since we need listingId of newly created listing
+          await api.post(`/uploads/listings/${listing.id}/images`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } catch (uploadErr) {
+          imagesUploaded = false;
+        }
+      }
+
+      if (imagesUploaded) {
+        toast({
+          title: initialData ? "تم تعديل الإعلان" : "تم نشر الإعلان بنجاح",
+          description: initialData ? "تم تعديل تفاصيل العقار بنجاح" : "تم نشر عقارك بنجاح وهو الآن قيد المراجعة.",
+          type: "success",
+        });
+      } else {
+        toast({
+          title: initialData ? "تم التعديل جزئياً" : "تم النشر مع فشل رفع الصور",
+          description: "تم حفظ تفاصيل الإعلان بنجاح، ولكن فشل رفع الصور. يمكنك إضافتها لاحقاً من صفحة التعديل.",
+          type: "warning",
         });
       }
 
-      toast({
-        title: initialData ? "تم تعديل الإعلان" : "تم نشر الإعلان بنجاح",
-        description: initialData ? "تم تعديل تفاصيل العقار بنجاح" : "تم نشر عقارك بنجاح وهو الآن قيد المراجعة.",
-        type: "success",
-      });
-
       router.push(`/${locale}/dashboard/landlord/listings`);
-    } catch (err: any) {
-      toast({
-        title: "حدث خطأ",
-        description: err.friendlyMessage || "فشل حفظ تفاصيل العقار. يرجى مراجعة المدخلات.",
-        type: "error",
-      });
     } finally {
       setIsLocalSubmitting(false);
     }

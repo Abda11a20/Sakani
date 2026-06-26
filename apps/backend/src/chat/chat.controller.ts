@@ -12,64 +12,61 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ChatService } from './chat.service';
-import { SendMessageDto } from './dto/send-message.dto';
+import { ConversationService } from './conversation.service';
+import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, UserRole } from '@prisma/client';
+import { User } from '@prisma/client';
+import { SendMessageDto } from './dto/send-message.dto';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly conversationService: ConversationService,
+    private readonly messageService: MessageService,
+  ) {}
 
-  // ── Send a message (any authenticated user) ───────────────────────────────
-  @Post('send')
+  // ── Get or create own support conversation ────────────────────────────────
+  @Get('support/me')
+  async getSupportConversation(@CurrentUser() user: SafeUser) {
+    return this.conversationService.findOrCreateSupportConversation(user.id);
+  }
+
+  // ── Get paginated messages for a conversation ─────────────────────────────
+  @Get('conversations/:id/messages')
+  async getConversationMessages(
+    @CurrentUser() user: SafeUser,
+    @Param('id') conversationId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
+  ) {
+    return this.messageService.getMessages(conversationId, user.id, page, limit);
+  }
+
+  // ── Send a message to a conversation ──────────────────────────────────────
+  @Post('messages')
   async sendMessage(
     @CurrentUser() user: SafeUser,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.sendMessage(user.id, dto);
+    return this.messageService.sendMessage(user.id, dto.conversationId, dto.content);
   }
 
-  // ── Get DM conversation with another user ─────────────────────────────────
-  @Get('conversation/:userId')
-  async getConversation(
-    @CurrentUser() user: SafeUser,
-    @Param('userId') otherUserId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
-  ) {
-    return this.chatService.getConversation(user.id, otherUserId, page, limit);
-  }
-
-  // ── Get all support messages — admin inbox ─────────────────────────────────
-  @Get('support')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.admin, UserRole.super_admin)
-  async getSupportMessages(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
-  ) {
-    return this.chatService.getSupportMessages(page, limit);
-  }
-
-  // ── Mark all messages from a sender as read ───────────────────────────────
-  @Patch('read/:senderId')
+  // ── Mark conversation as read ─────────────────────────────────────────────
+  @Patch('conversations/:id/read')
   async markAsRead(
     @CurrentUser() user: SafeUser,
-    @Param('senderId') senderId: string,
+    @Param('id') conversationId: string,
   ) {
-    return this.chatService.markAsRead(user.id, senderId);
+    return this.messageService.markAsRead(conversationId, user.id);
   }
 
-  // ── Get unread message count for the current user ─────────────────────────
+  // ── Get total unread count for current user ───────────────────────────────
   @Get('unread-count')
   async getUnreadCount(@CurrentUser() user: SafeUser) {
-    return this.chatService.getUnreadCount(user.id);
+    return this.messageService.getUnreadCount(user.id);
   }
 }

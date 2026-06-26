@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { ListingStatus, Prisma, UnitType } from '@prisma/client';
+import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class SearchService {
@@ -109,10 +110,12 @@ export class SearchService {
           },
           landlord: {
             select: {
-              id: true,
-              name: true,
-              emailVerifiedAt: true,
+              ...userPublicSelect,
               ratingAvg: true,
+              phone: true,
+              _count: {
+                select: { listings: true },
+              },
             },
           },
         },
@@ -177,10 +180,12 @@ export class SearchService {
         },
         landlord: {
           select: {
-            id: true,
-            name: true,
-            emailVerifiedAt: true,
+            ...userPublicSelect,
             ratingAvg: true,
+            phone: true,
+            _count: {
+              select: { listings: true },
+            },
           },
         },
       },

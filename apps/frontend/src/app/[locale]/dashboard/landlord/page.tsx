@@ -248,7 +248,7 @@ export default function LandlordDashboard() {
                   <Card key={listing.id} className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
                     <CardBody className="p-4 flex items-center gap-3">
                       <img
-                        src={listing.images[0] || "/placeholder-listing.jpg"}
+                        src={listing.images[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80"}
                         alt={listing.title}
                         className="w-16 h-16 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 shrink-0"
                         onError={(e) => {

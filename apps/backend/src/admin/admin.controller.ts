@@ -97,6 +97,15 @@ export class AdminController {
     return this.adminService.verifyUser(id, user.id);
   }
 
+  @Patch('users/:id/reject')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async rejectUser(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.adminService.rejectUser(id, user.id);
+  }
+
   @Patch('users/:id/toggle-status')
   @Roles(UserRole.admin, UserRole.super_admin)
   async toggleUserStatus(

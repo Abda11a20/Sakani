@@ -26,6 +26,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useAuthStore } from "@/store/auth.store";
 import { useLogout } from "@/hooks/useAuth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { Spinner } from "@/components/ui";
 
 interface NavItem {
   label: string;
@@ -41,10 +43,10 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const { user, isLoading } = useAuthGuard({ role: "admin" });
   const locale = useLocale();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuthStore();
   const logout = useLogout();
   const isRtl = locale === "ar";
   const [mounted, setMounted] = useState(false);
@@ -52,6 +54,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   const menuItems: NavItem[] = [
     {
@@ -187,7 +197,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div
       className="min-h-screen bg-slate-100 dark:bg-slate-950 flex"
-      style={{ direction: "ltr" }}
+      dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Desktop Sidebar — 260px */}
       <aside className="hidden lg:block w-[260px] shrink-0 h-screen sticky top-0">
@@ -206,8 +216,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside
         className={cn(
           "fixed top-0 bottom-0 z-50 w-[260px] transition-transform duration-300 ease-in-out lg:hidden",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          "left-0"
+          isRtl
+            ? (isOpen ? "translate-x-0" : "translate-x-full")
+            : (isOpen ? "translate-x-0" : "-translate-x-full"),
+          isRtl ? "right-0" : "left-0"
         )}
       >
         {sidebarContent}

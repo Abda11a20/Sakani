@@ -71,6 +71,13 @@ enum VerificationType {
   PHONE_VERIFICATION
 }
 
+enum IdentityStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 enum NotificationType {
   SYSTEM
   REQUEST
@@ -92,7 +99,8 @@ model User {
   plan               UserPlan  @default(free)
   planExpiresAt      DateTime?
   nationalIdEnc      String?
-  nationalIdVerified Boolean   @default(false)
+  nationalIdVerified Boolean        @default(false)
+  identityStatus     IdentityStatus @default(NONE)
   avatarUrl          String?
   avatarPublicId     String?
   idCardPublicId     String?

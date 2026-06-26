@@ -16,7 +16,7 @@ export const useAuthGuard = (options?: AuthGuardOptions) => {
 
   const { isLoading: isMeLoading, isError } = useMe();
 
-  const isLoading = !isHydrated || (!!token && isMeLoading);
+  const isLoading = !isHydrated || (!!token && !isError && (!user || isMeLoading));
 
   useEffect(() => {
     if (isLoading) return;
@@ -28,7 +28,8 @@ export const useAuthGuard = (options?: AuthGuardOptions) => {
       return;
     }
 
-    if (options?.role && user?.role && options.role !== user.role) {
+    const hasRequiredRole = !options?.role || user?.role === options.role || (options.role === "admin" && user?.role === "super_admin");
+    if (user && !hasRequiredRole) {
       if (user.role === "tenant") {
         router.push(`/${locale}/dashboard/tenant`);
       } else if (user.role === "landlord") {

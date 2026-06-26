@@ -14,10 +14,12 @@ import {
   Menu,
   X,
   Home,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useLogout } from "@/hooks/useAuth";
 
 interface LandlordLayoutProps {
   children: React.ReactNode;
@@ -27,6 +29,7 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
   const locale = useLocale();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const logout = useLogout();
 
   const menuItems = [
     {
@@ -113,6 +116,13 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
           <Home size={18} className="text-slate-400" />
           <span>{isRtl ? "الرئيسية" : "Home"}</span>
         </Link>
+        <button
+          onClick={() => logout.mutate()}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-cairo"
+        >
+          <LogOut size={18} />
+          <span>{isRtl ? "تسجيل الخروج" : "Logout"}</span>
+        </button>
         <div className="flex items-center justify-between px-4">
           <ThemeToggle />
           <LanguageSwitcher />
@@ -122,7 +132,7 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex" style={{ direction: "ltr" }}>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex" dir={isRtl ? "rtl" : "ltr"}>
       {/* Desktop Sidebar (Fixed Left/Right depending on Locale) */}
       <aside className="hidden lg:block w-64 shrink-0 h-screen sticky top-0">
         {sidebarContent}
@@ -140,8 +150,10 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
       <aside
         className={cn(
           "fixed top-0 bottom-0 z-50 w-64 bg-white dark:bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          "left-0"
+          isRtl
+            ? (isOpen ? "translate-x-0" : "translate-x-full")
+            : (isOpen ? "translate-x-0" : "-translate-x-full"),
+          isRtl ? "right-0" : "left-0"
         )}
       >
         {sidebarContent}

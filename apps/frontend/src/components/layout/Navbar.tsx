@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button className="ms-2 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
-                    <Avatar src={null} name={user?.name || ""} size="sm" verified={isUserVerified(user)} />
+                    <Avatar src={user?.avatarUrl || null} name={user?.name || ""} size="sm" verified={isUserVerified(user)} />
                     <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
                       {user?.name || ""}
                     </span>
@@ -150,7 +150,7 @@ export const Navbar: React.FC = () => {
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
                       <Link
-                        href={`/${locale}/change-password`}
+                        href={`/${locale}/dashboard/profile`}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
                       >
                         <KeyRound size={16} />
@@ -215,7 +215,7 @@ export const Navbar: React.FC = () => {
             {mounted && user && (
               <div className="border-b border-gray-200 dark:border-gray-800 p-4">
                 <div className="flex items-center gap-3">
-                  <Avatar src={null} name={user.name} size="md" verified={isUserVerified(user)} />
+                  <Avatar src={user.avatarUrl || null} name={user.name} size="md" verified={isUserVerified(user)} />
                   <div className="overflow-hidden">
                     <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{user.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{user.phone}</p>

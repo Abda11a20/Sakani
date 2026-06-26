@@ -22,9 +22,6 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Column 1: Logo + description + social */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2" style={{ direction: "ltr" }}>
-              <img src="/logo.png" alt="سكني" className="h-9 w-auto object-contain brightness-0 invert" />
-            </div>
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
               {t("description")}
             </p>

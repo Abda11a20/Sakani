@@ -1,7 +1,7 @@
 // apps/frontend/src/components/chat/ChatWidget.tsx
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocale } from "next-intl";
 import {
   MessageCircle,
@@ -10,6 +10,7 @@ import {
   Loader2,
   HeadphonesIcon,
   Bot,
+  ShieldAlert,
 } from "lucide-react";
 import Pusher from "pusher-js";
 import { api } from "@/lib/api";
@@ -26,13 +27,13 @@ interface ChatMessage {
 }
 
 interface ChatWidgetProps {
-  /** إذا كانت محادثة دعم خاصة — targetUserId = id المدير */
-  targetUserId?: string;
+  /** معرف غرفة المحادثة إذا تم تحديدها من الخارج (خاص بلوحة الأدمن) */
+  conversationId?: string;
   /** عنوان الـ Widget */
   title?: string;
 }
 
-export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
+export default function ChatWidget({ conversationId: propConversationId, title }: ChatWidgetProps) {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const { user, token } = useAuthStore();
@@ -40,9 +41,14 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [mounted, setMounted] = useState(false);
 
+  const [conversationId, setConversationId] = useState<string | null>(propConversationId || null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockReason, setBlockReason] = useState<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -51,7 +57,16 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
   const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch unread count on mount
+  // Sync prop changes
+  useEffect(() => {
+    if (propConversationId) {
+      setConversationId(propConversationId);
+      // Reset messages when conversation changes
+      setMessages([]);
+    }
+  }, [propConversationId]);
+
+  // Fetch general unread count for current user
   useEffect(() => {
     if (!token || !user) return;
     const fetchUnreadCount = async () => {
@@ -63,7 +78,7 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
       }
     };
     fetchUnreadCount();
-  }, [token, user]);
+  }, [token, user, isOpen]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -74,18 +89,10 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
 
   // Handle Mark as Read when opening the chat
   useEffect(() => {
-    if (isOpen && unreadCount > 0 && user) {
+    if (isOpen && conversationId && user) {
       const markAsRead = async () => {
         try {
-          if (targetUserId) {
-            await api.patch(`/chat/read/${targetUserId}`);
-          } else {
-            // Find unique senders from recent messages
-            const senders = new Set(messages.filter(m => !m.isOwn).map(m => m.senderId));
-            for (const sender of Array.from(senders)) {
-              await api.patch(`/chat/read/${sender}`);
-            }
-          }
+          await api.patch(`/chat/conversations/${conversationId}/read`);
           setUnreadCount(0);
         } catch {
           // ignore
@@ -93,18 +100,56 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
       };
       markAsRead();
     }
-  }, [isOpen, targetUserId, unreadCount, user, messages]);
+  }, [isOpen, conversationId, user]);
 
-  // Build channel name
-  const channelName = useCallback(() => {
-    if (!user) return null;
-    // According to the new backend logic, all personal events arrive here
-    return `private-chat-user-${user.id}`;
-  }, [user]);
-
-  // Connect Pusher when widget opens
+  // Get or Create Support Conversation for User
   useEffect(() => {
-    if (!isOpen || !token || !user) return;
+    if (!isOpen || !token || !user || conversationId) return;
+    
+    const initSupportConversation = async () => {
+      try {
+        const res = await api.get("/chat/support/me");
+        setConversationId(res.data.id);
+        if (res.data.blockedAt) {
+          setIsBlocked(true);
+          setBlockReason(res.data.blockReason);
+        } else {
+          setIsBlocked(false);
+          setBlockReason(null);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    initSupportConversation();
+  }, [isOpen, token, user, conversationId]);
+
+  // Load history when conversation ID is available
+  useEffect(() => {
+    if (!isOpen || !token || !user || !conversationId) return;
+
+    const loadHistory = async () => {
+      try {
+        const res = await api.get(`/chat/conversations/${conversationId}/messages?limit=50`);
+        const history = res.data.messages.map((m: any) => ({
+          id: m.id,
+          content: m.content,
+          senderId: m.sender.id,
+          senderName: m.sender.name,
+          createdAt: m.createdAt,
+          isOwn: m.sender.id === user.id,
+        }));
+        setMessages(history);
+      } catch {
+        // ignore
+      }
+    };
+    loadHistory();
+  }, [isOpen, conversationId, token, user]);
+
+  // Connect Pusher to conversation channel
+  useEffect(() => {
+    if (!isOpen || !token || !user || !conversationId) return;
     if (pusherRef.current) return; // already connected
 
     const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY ?? "";
@@ -122,35 +167,46 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
       },
     });
 
-    const ch = channelName();
-    if (!ch) return;
-
+    const ch = `private-conversation-${conversationId}`;
     const channel = pusherRef.current.subscribe(ch);
     channelRef.current = channel;
 
     channel.bind("pusher:subscription_succeeded", () => setIsConnected(true));
     channel.bind("pusher:subscription_error", () => setIsConnected(false));
 
-    channel.bind("new-message", (data: Omit<ChatMessage, "isOwn">) => {
-      // If we are talking to a specific user, ignore messages from others unless we want to show a badge
-      if (data.senderId === user.id) return; // Own message from another session
+    channel.bind("message.created", (data: any) => {
+      // Ignore own message from another session (will be handled by optimistic updates)
+      if (data.sender.id === user.id) return;
 
-      if (targetUserId && data.senderId !== targetUserId && data.senderId !== user.id) {
-        // Message from someone else
-        setUnreadCount(prev => prev + 1);
-        return;
-      }
-      
-      setMessages((prev) => [
-        ...prev,
-        { ...data, isOwn: data.senderId === user.id },
-      ]);
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === data.id)) return prev;
+        return [
+          ...prev,
+          {
+            id: data.id,
+            content: data.content,
+            senderId: data.sender.id,
+            senderName: data.sender.name,
+            createdAt: data.createdAt,
+            isOwn: false,
+          },
+        ];
+      });
 
       if (isOpen) {
-        // auto mark as read if open
-        api.patch(`/chat/read/${data.senderId}`).catch(() => {});
+        api.patch(`/chat/conversations/${conversationId}/read`).catch(() => {});
       } else {
-        setUnreadCount(prev => prev + 1);
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    channel.bind("conversation.updated", (data: any) => {
+      if (data.blockedAt) {
+        setIsBlocked(true);
+        setBlockReason(data.blockReason);
+      } else {
+        setIsBlocked(false);
+        setBlockReason(null);
       }
     });
 
@@ -162,55 +218,18 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
       channelRef.current = null;
       setIsConnected(false);
     };
-  }, [isOpen, token, user, channelName, targetUserId]);
-
-  // Load history when opening
-  useEffect(() => {
-    if (!isOpen || !token || !user) return;
-    // Load existing messages when opened
-    const loadHistory = async () => {
-      try {
-        if (targetUserId) {
-          const res = await api.get(`/chat/conversation/${targetUserId}?limit=50`);
-          const history = res.data.messages.map((m: any) => ({
-            id: m.id,
-            content: m.content,
-            senderId: m.sender.id,
-            senderName: m.sender.name,
-            createdAt: m.createdAt,
-            isOwn: m.sender.id === user.id,
-          }));
-          setMessages(history);
-        } else {
-          // It's the support widget
-          // Normally we'd load the support thread for this user, but the user is the tenant.
-          // Wait, there's no dedicated endpoint to load user's own support thread?
-          // Let's fallback to just starting fresh or if there's an endpoint:
-          // The backend currently only has GET /chat/support which returns admin inbox!
-          // We don't have a specific endpoint for user's support chat. It's fine to just stay fresh.
-        }
-      } catch {
-        // ignore
-      }
-    };
-    if (messages.length === 0) {
-      loadHistory();
-    }
-  }, [isOpen, targetUserId, token, user, messages.length]);
+  }, [isOpen, token, user, conversationId]);
 
   const handleSend = async () => {
-    if (!input.trim() || isSending || !user) return;
+    if (!input.trim() || isSending || !user || !conversationId) return;
     const content = input.trim();
     setInput("");
     setIsSending(true);
 
     try {
-      if (targetUserId) {
-        await api.post("/chat/send", { receiverId: targetUserId, content });
-      } else {
-        await api.post("/chat/send", { content }); // Without receiverId it goes to support
-      }
-      // Optimistic update — Pusher event will also arrive
+      await api.post("/chat/messages", { conversationId, content });
+      
+      // Optimistic update
       setMessages((prev) => [
         ...prev,
         {
@@ -342,32 +361,43 @@ export default function ChatWidget({ targetUserId, title }: ChatWidgetProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isRtl ? "اكتب رسالتك..." : "Type a message..."}
-              className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-              dir={isRtl ? "rtl" : "ltr"}
-            />
-            <button
-              onClick={handleSend}
-              disabled={isSending || !input.trim()}
-              className="w-9 h-9 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 dark:disabled:bg-slate-700 text-white disabled:text-slate-400 flex items-center justify-center transition-all shrink-0"
-              aria-label="Send"
-            >
-              {isSending ? (
-               <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} className={cn(isRtl && "rotate-180")} />
-              )}
-            </button>
+        {/* Input / Block Status */}
+        {isBlocked ? (
+          <div className="px-4 py-3 bg-red-50 dark:bg-red-950/20 border-t border-slate-100 dark:border-slate-800 flex items-start gap-2 shrink-0">
+            <ShieldAlert className="text-red-500 shrink-0 mt-0.5" size={16} />
+            <p className="text-xs font-semibold text-red-600 dark:text-red-400 font-cairo">
+              {isRtl ? "تم حظر هذه المحادثة من قِبل الإدارة." : "This conversation has been blocked by administration."}
+              {blockReason && <span className="block mt-1 font-normal opacity-90">{isRtl ? `السبب: ${blockReason}` : `Reason: ${blockReason}`}</span>}
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isRtl ? "اكتب رسالتك..." : "Type a message..."}
+                className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                dir={isRtl ? "rtl" : "ltr"}
+                disabled={!conversationId}
+              />
+              <button
+                onClick={handleSend}
+                disabled={isSending || !input.trim() || !conversationId}
+                className="w-9 h-9 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 dark:disabled:bg-slate-700 text-white disabled:text-slate-400 flex items-center justify-center transition-all shrink-0"
+                aria-label="Send"
+              >
+                {isSending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} className={cn(isRtl && "rotate-180")} />
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
