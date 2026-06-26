@@ -34,7 +34,7 @@ export default function LandlordBeds() {
   const [selectedId, setSelectedId] = useState<string>("");
 
   // Get bed listings only
-  const bedListings = listings.filter((l) => l.type === "bed");
+  const bedListings = listings.filter((l) => l.type === "bed" || l.unitType === "bed");
 
   // Sync selected listing from URL if present
   useEffect(() => {

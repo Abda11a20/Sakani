@@ -14,6 +14,7 @@ export interface User {
   idCardPublicId?: string | null;
   nationalIdEnc?: string | null;
   nationalIdVerified?: boolean;
+  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
   // emailVerifiedAt replaces the old boolean "verified"
   emailVerifiedAt: string | null;
   phoneVerifiedAt: string | null;
@@ -21,14 +22,56 @@ export interface User {
   updatedAt: string;
 }
 
+export type IdentityVerificationStatus = 'verified' | 'pending' | 'rejected' | 'unverified';
+
+export const getIdentityVerificationStatus = (user?: {
+  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
+  idCardPublicId?: string | null;
+  nationalIdEnc?: string | null;
+  nationalIdVerified?: boolean | null;
+} | null): IdentityVerificationStatus => {
+  if (!user) return 'unverified';
+  if (user.identityStatus === 'VERIFIED' || user.nationalIdVerified) return 'verified';
+  if (user.identityStatus === 'PENDING') return 'pending';
+  if (user.identityStatus === 'REJECTED') return 'rejected';
+  
+  // Fallbacks for compatibility
+  if (user.identityStatus === 'NONE') return 'unverified';
+  if (user.idCardPublicId || user.nationalIdEnc) {
+    if (user.idCardPublicId === 'REJECTED') return 'rejected';
+    return 'pending';
+  }
+  return 'unverified';
+};
+
 // Helper to check if user is verified
-export const isUserVerified = (user: User): boolean =>
-  user.emailVerifiedAt !== null;
+export const isUserVerified = (user?: {
+  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
+  nationalIdVerified?: boolean | null;
+} | null): boolean =>
+  getIdentityVerificationStatus(user) === 'verified';
 
 export type ListingType = "apartment" | "room" | "bed";
 export type ListingStatus = "draft" | "pending_review" | "active" | "rented" | "paused" | "rejected";
 export type UnitType = "apartment" | "room" | "bed";
 export type GenderTarget = "male" | "female" | "mixed" | "family" | "any";
+
+export interface LandlordPublicInfo {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  emailVerifiedAt?: string | null;
+  phoneVerifiedAt?: string | null;
+  nationalIdVerified?: boolean | null;
+  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
+  createdAt: string;
+  phone?: string;
+  idCardPublicId?: string | null;
+  ratingAvg?: number;
+  _count?: {
+    listings: number;
+  };
+}
 
 export interface Listing {
   id: string;
@@ -50,7 +93,7 @@ export interface Listing {
   isVerified: boolean;
   isFeatured: boolean;
   landlordId: string;
-  landlord?: Pick<User, "id" | "name" | "phone" | "emailVerifiedAt">;
+  landlord?: LandlordPublicInfo;
   beds?: Bed[];
   totalBeds?: number;
   availableBeds?: number;

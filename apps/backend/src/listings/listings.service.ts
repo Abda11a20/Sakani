@@ -12,6 +12,7 @@ import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { ListingStatus, UnitType, Prisma } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
+import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class ListingsService {
@@ -132,10 +133,10 @@ export class ListingsService {
           },
           landlord: {
             select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
-              emailVerifiedAt: true,
+              ...userPublicSelect,
+              _count: {
+                select: { listings: true },
+              },
             },
           },
         },
@@ -166,11 +167,11 @@ export class ListingsService {
         },
         landlord: {
           select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            emailVerifiedAt: true,
-            phone: true, // قد نحتاجه للتواصل بعد قبول الطلب، يمكن إخفاءه هنا إن لزم
+            ...userPublicSelect,
+            phone: true,
+            _count: {
+              select: { listings: true },
+            },
           },
         },
       },

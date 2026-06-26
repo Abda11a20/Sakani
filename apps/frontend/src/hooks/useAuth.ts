@@ -83,19 +83,21 @@ export const useRegister = () => {
 
 export const useMe = () => {
   const { token, setUser } = useAuthStore();
-  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async (): Promise<User> => {
-      const response = await api.get<User>("/auth/me");
-      const user = response.data;
-      // hydrate الـ Zustand store بأحدث بيانات المستخدم
+      const response = await api.get("/auth/me");
+
+      // لأن الـ interceptor يرجع { user: ... }
+      const user = response.data.user;
+
       setUser(user);
+
       return user;
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 دقائق
+    staleTime: 5 * 60 * 1000,
   });
 };
 

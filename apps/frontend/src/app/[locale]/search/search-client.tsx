@@ -457,6 +457,16 @@ export function SearchPageClient({
       // Handle various response shapes
       if (data?.items && data?.meta) {
         setResult(data);
+      } else if (data?.data && Array.isArray(data.data)) {
+        setResult({
+          items: data.data,
+          meta: {
+            total: data.total ?? data.data.length,
+            page: data.page ?? 1,
+            limit: data.limit ?? 12,
+            lastPage: data.totalPages ?? 1
+          }
+        });
       } else if (Array.isArray(data)) {
         setResult({ items: data, meta: { total: data.length, page: 1, limit: 12, lastPage: 1 } });
       } else {

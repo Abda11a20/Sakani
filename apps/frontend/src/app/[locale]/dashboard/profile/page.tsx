@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useProfile";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
+import { getIdentityVerificationStatus } from "@/types";
 import {
   Card,
   CardBody,
@@ -320,16 +321,38 @@ export default function ProfilePage() {
                       <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
                         {user.name}
                       </h3>
-                      {user.nationalIdVerified ? (
-                        <Badge className="bg-green-500 text-white font-bold text-[10px] font-cairo flex items-center gap-1 rounded-full px-2 py-0.5">
-                          <CheckCircle size={10} />
-                          <span>موثق الهوية</span>
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[10px] font-cairo rounded-full px-2 py-0.5">
-                          غير موثق
-                        </Badge>
-                      )}
+                      {(() => {
+                        const status = getIdentityVerificationStatus(user);
+                        if (status === 'verified') {
+                          return (
+                            <Badge className="bg-green-500 text-white font-bold text-[10px] font-cairo flex items-center gap-1 rounded-full px-2 py-0.5">
+                              <CheckCircle size={10} />
+                              <span>موثق الهوية</span>
+                            </Badge>
+                          );
+                        }
+                        if (status === 'pending') {
+                          return (
+                            <Badge className="bg-amber-500 text-white font-bold text-[10px] font-cairo flex items-center gap-1 rounded-full px-2 py-0.5">
+                              <Clock size={10} />
+                              <span>قيد مراجعة الهوية</span>
+                            </Badge>
+                          );
+                        }
+                        if (status === 'rejected') {
+                          return (
+                            <Badge className="bg-red-500 text-white font-bold text-[10px] font-cairo flex items-center gap-1 rounded-full px-2 py-0.5">
+                              <AlertCircle size={10} />
+                              <span>مرفوض الهوية</span>
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[10px] font-cairo rounded-full px-2 py-0.5">
+                            غير موثق
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-slate-400">
                       الدور: {user.role === "landlord" ? "مؤجر عقارات" : "مستأجر"}
@@ -410,40 +433,62 @@ export default function ProfilePage() {
                 </div>
 
                 {/* ID Status Banner */}
-                {user.nationalIdVerified ? (
-                  <div className="flex items-start gap-3 p-4 bg-green-500/10 dark:bg-green-950/20 text-green-700 dark:text-green-400 rounded-2xl border border-green-500/20">
-                    <CheckCircle size={20} className="shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-sm">حسابك موثق بالكامل</h4>
-                      <p className="text-xs mt-1 opacity-90 leading-relaxed">
-                        لقد تمت مراجعة بطاقة الهوية الوطنية وتوثيق حسابك بنجاح. تظهر شارة التوثيق الآن بجوار اسمك للمستخدمين الآخرين.
-                      </p>
+                {(() => {
+                  const status = getIdentityVerificationStatus(user);
+                  if (status === 'verified') {
+                    return (
+                      <div className="flex items-start gap-3 p-4 bg-green-500/10 dark:bg-green-950/20 text-green-700 dark:text-green-400 rounded-2xl border border-green-500/20">
+                        <CheckCircle size={20} className="shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="font-bold text-sm">حسابك موثق بالكامل</h4>
+                          <p className="text-xs mt-1 opacity-90 leading-relaxed">
+                            لقد تمت مراجعة بطاقة الهوية الوطنية وتوثيق حسابك بنجاح. تظهر شارة التوثيق الآن بجوار اسمك للمستخدمين الآخرين.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (status === 'pending') {
+                    return (
+                      <div className="flex items-start gap-3 p-4 bg-amber-500/10 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded-2xl border border-amber-500/20">
+                        <Clock size={20} className="shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="font-bold text-sm">مستنداتك قيد المراجعة</h4>
+                          <p className="text-xs mt-1 opacity-90 leading-relaxed">
+                            تم استلام صورة بطاقة الهوية الخاصة بك بنجاح. يقوم فريق العمل بمراجعتها الآن وسيتم تحديث حالة حسابك خلال 24 ساعة.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (status === 'rejected') {
+                    return (
+                      <div className="flex items-start gap-3 p-4 bg-red-500/10 dark:bg-red-950/20 text-red-700 dark:text-red-400 rounded-2xl border border-red-500/20">
+                        <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="font-bold text-sm">مستندات الهوية مرفوضة</h4>
+                          <p className="text-xs mt-1 opacity-90 leading-relaxed">
+                            لقد تم رفض مستندات الهوية الخاصة بك من قبل فريق المراجعة. يرجى رفع صورة واضحة وصحيحة لبطاقة الرقم القومي أو الهوية الوطنية لإعادة مراجعتها وتفعيل التوثيق.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex items-start gap-3 p-4 bg-blue-500/5 text-blue-700 dark:text-blue-400 rounded-2xl border border-blue-500/10">
+                      <AlertCircle size={20} className="shrink-0 mt-0.5 text-blue-600" />
+                      <div>
+                        <h4 className="font-bold text-sm">مستندات الهوية مطلوبة</h4>
+                        <p className="text-xs mt-1 opacity-90 leading-relaxed">
+                          الرجاء رفع صورة واضحة لبطاقة الرقم القومي الخاصة بك (صيغة JPEG أو PNG أو ملف PDF). تأكد من ظهور البيانات كاملة حتى يتم التوثيق بسرعة.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ) : user.nationalIdEnc ? (
-                  <div className="flex items-start gap-3 p-4 bg-amber-500/10 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded-2xl border border-amber-500/20">
-                    <Clock size={20} className="shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-sm">مستنداتك قيد المراجعة</h4>
-                      <p className="text-xs mt-1 opacity-90 leading-relaxed">
-                        تم استلام صورة بطاقة الهوية الخاصة بك بنجاح. يقوم فريق العمل بمراجعتها الآن وسيتم تحديث حالة حسابك خلال 24 ساعة.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3 p-4 bg-blue-500/5 text-blue-700 dark:text-blue-400 rounded-2xl border border-blue-500/10">
-                    <AlertCircle size={20} className="shrink-0 mt-0.5 text-blue-600" />
-                    <div>
-                      <h4 className="font-bold text-sm">مستندات الهوية مطلوبة</h4>
-                      <p className="text-xs mt-1 opacity-90 leading-relaxed">
-                        الرجاء رفع صورة واضحة لبطاقة الرقم القومي الخاصة بك (صيغة JPEG أو PNG أو ملف PDF). تأكد من ظهور البيانات كاملة حتى يتم التوثيق بسرعة.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Upload Form */}
-                {!user.nationalIdVerified && (
+                {getIdentityVerificationStatus(user) !== 'verified' && (
                   <div className="space-y-4 pt-2">
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">

@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { RequestStatus, ListingStatus, UserRole } from '@prisma/client';
+import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class RequestsService {
@@ -56,12 +57,15 @@ export class RequestsService {
         listing: {
           include: {
             landlord: {
-              select: { id: true, name: true, avatarUrl: true, emailVerifiedAt: true },
+              select: userPublicSelect,
             },
           },
         },
         tenant: {
-          select: { id: true, name: true, avatarUrl: true, phone: true },
+          select: {
+            ...userPublicSelect,
+            phone: true,
+          },
         },
       },
     });
@@ -83,7 +87,7 @@ export class RequestsService {
           listing: {
             include: {
               landlord: {
-                select: { id: true, name: true, avatarUrl: true, emailVerifiedAt: true },
+                select: userPublicSelect,
               },
             },
           },
@@ -108,7 +112,12 @@ export class RequestsService {
         orderBy: { createdAt: 'desc' },
         include: {
           listing: { select: { id: true, title: true, unitType: true } },
-          tenant: { select: { id: true, name: true, avatarUrl: true, phone: true, emailVerifiedAt: true } },
+          tenant: {
+            select: {
+              ...userPublicSelect,
+              phone: true,
+            },
+          },
         },
       }),
       this.prisma.viewingRequest.count({ where }),
@@ -124,10 +133,20 @@ export class RequestsService {
       include: {
         listing: {
           include: {
-            landlord: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+            landlord: {
+              select: {
+                ...userPublicSelect,
+                phone: true,
+              },
+            },
           },
         },
-        tenant: { select: { id: true, name: true, avatarUrl: true, phone: true } },
+        tenant: {
+          select: {
+            ...userPublicSelect,
+            phone: true,
+          },
+        },
       },
     });
 

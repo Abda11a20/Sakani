@@ -4,10 +4,12 @@
 import React from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles } from "lucide-react";
+import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone } from "lucide-react";
 import type { Listing } from "@/types";
+import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
 
@@ -52,6 +54,7 @@ const STATUS_LABELS: Record<string, string> = {
 export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating }) => {
   const locale = useLocale();
   const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
+  const [showPreview, setShowPreview] = React.useState(false);
 
   const availableBeds = listing.beds
     ? listing.beds.filter((b) => b.isAvailable).length
@@ -95,12 +98,38 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         </div>
 
         <div className="absolute end-2 top-2 flex flex-col gap-1.5">
-          {listing.isVerified && (
-            <Badge variant="success" className="gap-1">
-              <CheckCircle size={11} />
-              موثق
-            </Badge>
-          )}
+          {listing.landlord && (() => {
+            const status = getIdentityVerificationStatus(listing.landlord);
+            if (status === 'verified') {
+              return (
+                <Badge variant="success" className="gap-1">
+                  <CheckCircle size={11} />
+                  موثق
+                </Badge>
+              );
+            }
+            if (status === 'pending') {
+              return (
+                <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
+                  <Clock size={11} />
+                  قيد المراجعة
+                </Badge>
+              );
+            }
+            if (status === 'rejected') {
+              return (
+                <Badge className="bg-red-500 hover:bg-red-600 text-white gap-1">
+                  <AlertCircle size={11} />
+                  مرفوض
+                </Badge>
+              );
+            }
+            return (
+              <Badge variant="default" className="gap-1 bg-gray-500/10 text-gray-500 hover:bg-gray-500/20 border-none dark:bg-gray-800 dark:text-gray-400">
+                غير موثق
+              </Badge>
+            );
+          })()}
           {listing.isFeatured && (
             <Badge variant="gold" className="gap-1">
               <Sparkles size={11} />
@@ -178,14 +207,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         {/* Landlord + Rating */}
         {listing.landlord && (
           <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity" onClick={() => setShowPreview(true)}>
               <Avatar
-                src={null}
+                src={listing.landlord.avatarUrl || null}
                 name={listing.landlord.name}
                 size="sm"
-                verified={listing.isVerified}
+                verified={isUserVerified(listing.landlord)}
               />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[90px]">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[90px] hover:text-primary transition-colors">
                 {listing.landlord.name}
               </span>
             </div>
@@ -213,6 +242,104 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
           </span>
         </Link>
       </div>
+
+      {/* Landlord Profile Preview Modal */}
+      {listing.landlord && (
+        <Modal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          title="معاينة الحساب الشخصي للمعلن"
+        >
+          <div className="flex flex-col items-center text-center p-4 space-y-6 font-cairo">
+            <Avatar
+              src={listing.landlord.avatarUrl || null}
+              name={listing.landlord.name}
+              size="lg"
+              verified={isUserVerified(listing.landlord)}
+            />
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
+                {listing.landlord.name}
+                {isUserVerified(listing.landlord) && (
+                  <CheckCircle className="text-blue-500 fill-blue-500 dark:text-blue-400 dark:fill-blue-400 shrink-0" size={18} />
+                )}
+              </h3>
+              
+              <div className="flex justify-center pt-1">
+                {(() => {
+                  const status = getIdentityVerificationStatus(listing.landlord);
+                  if (status === 'verified') {
+                    return (
+                      <Badge className="bg-green-500 text-white font-bold text-xs flex items-center gap-1 rounded-full px-2.5 py-0.5">
+                        <CheckCircle size={12} />
+                        <span>موثق الهوية</span>
+                      </Badge>
+                    );
+                  }
+                  if (status === 'pending') {
+                    return (
+                      <Badge className="bg-amber-500 text-white font-bold text-xs flex items-center gap-1 rounded-full px-2.5 py-0.5">
+                        <Clock size={12} />
+                        <span>قيد مراجعة الهوية</span>
+                      </Badge>
+                    );
+                  }
+                  if (status === 'rejected') {
+                    return (
+                      <Badge className="bg-red-500 text-white font-bold text-xs flex items-center gap-1 rounded-full px-2.5 py-0.5">
+                        <AlertCircle size={12} />
+                        <span>مرفوض الهوية</span>
+                      </Badge>
+                    );
+                  }
+                  return (
+                    <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs rounded-full px-2.5 py-0.5">
+                      لم يوثق الهوية
+                    </Badge>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-2 gap-4 text-start">
+              <div className="space-y-1">
+                <span className="text-xs text-slate-400 block">عضو منذ</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <Calendar size={14} className="text-slate-400" />
+                  {new Date(listing.landlord.createdAt).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long' })}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-slate-400 block">عدد الإعلانات</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <Building2 size={14} className="text-slate-400" />
+                  {listing.landlord._count?.listings ?? 1} إعلان
+                </span>
+              </div>
+            </div>
+
+            {listing.landlord.phone && (
+              <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col gap-2">
+                <a
+                  href={`tel:${listing.landlord.phone}`}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-primary text-white hover:bg-primary/95 transition-all shadow-md"
+                >
+                  <Phone size={16} /> اتصل بالمعلن
+                </a>
+                <a
+                  href={`https://wa.me/${listing.landlord.phone.replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition-all shadow-md"
+                >
+                  <MessageSquare size={16} /> مراسلة عبر واتساب
+                </a>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

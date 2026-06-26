@@ -10,8 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReviewListingDto } from './dto/review-listing.dto';
 import { BanUserDto } from './dto/ban-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { ListingStatus, UserRole } from '@prisma/client';
+import { ListingStatus, UserRole, IdentityStatus } from '@prisma/client';
 import { decryptAES } from '../auth/auth.service';
+import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class AdminService {
@@ -30,7 +31,10 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         include: {
           landlord: {
-            select: { id: true, name: true, phone: true, avatarUrl: true, emailVerifiedAt: true },
+            select: {
+              ...userPublicSelect,
+              phone: true,
+            },
           },
           images: { orderBy: { order: 'asc' } },
         },
@@ -169,7 +173,25 @@ export class AdminService {
 
     return this.prisma.user.update({
       where: { id: userId },
-      data: { emailVerifiedAt: new Date(), phoneVerifiedAt: new Date(), nationalIdVerified: true },
+      data: {
+        emailVerifiedAt: user.emailVerifiedAt || new Date(),
+        phoneVerifiedAt: user.phoneVerifiedAt || new Date(),
+        nationalIdVerified: true,
+        identityStatus: IdentityStatus.VERIFIED,
+      },
+    });
+  }
+
+  async rejectUser(userId: string, adminId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('المستخدم غير موجود');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        nationalIdVerified: false,
+        identityStatus: IdentityStatus.REJECTED,
+      },
     });
   }
 

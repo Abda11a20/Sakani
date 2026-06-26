@@ -67,6 +67,10 @@ export const useUploadAvatar = () => {
       return response.data;
     },
     onSuccess: (data) => {
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUser({ ...currentUser, avatarUrl: data.url });
+      }
       queryClient.invalidateQueries({ queryKey: ["users", "profile"] });
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },

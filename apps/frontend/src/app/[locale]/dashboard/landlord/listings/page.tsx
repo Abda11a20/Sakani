@@ -163,7 +163,7 @@ export default function LandlordListings() {
                   {/* Listing Image & Badges */}
                   <div className="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0">
                     <img
-                      src={item.images[0] || "/placeholder-listing.jpg"}
+                      src={item.images[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80"}
                       alt={item.title}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                       onError={(e) => {

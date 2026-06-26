@@ -72,6 +72,13 @@ enum VerificationType {
   PHONE_VERIFICATION
 }
 
+enum IdentityStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 enum NotificationType {
   SYSTEM
   REQUEST
@@ -93,7 +100,8 @@ model User {
   plan               UserPlan  @default(free)
   planExpiresAt      DateTime?
   nationalIdEnc      String?
-  nationalIdVerified Boolean   @default(false)
+  nationalIdVerified Boolean        @default(false)
+  identityStatus     IdentityStatus @default(NONE)
   avatarUrl          String?
   avatarPublicId     String?
   idCardPublicId     String?
@@ -113,7 +121,7 @@ model User {
   alerts            Alert[]
   subscriptions     Subscription[]
   sentMessages      ChatMessage[]      @relation("SentMessages")
-  receivedMessages  ChatMessage[]      @relation("ReceivedMessages")
+  conversationParticipants ConversationParticipant[]
   verificationCodes VerificationCode[]
   deviceSessions    DeviceSession[]
   favorites         Favorite[]
@@ -383,16 +391,68 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-model ChatMessage {
-  id         String   @id @default(cuid())
-  senderId   String
-  receiverId String? // Optional: If null, it means it's a general support message to admin
-  content    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+enum ConversationType {
+  PRIVATE
+  SUPPORT
+}
 
-  sender   User  @relation("SentMessages", fields: [senderId], references: [id])
-  receiver User? @relation("ReceivedMessages", fields: [receiverId], references: [id])
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum ParticipantRole {
+  USER
+  SUPPORT
+}
+
+model Conversation {
+  id             String             @id @default(cuid())
+  type           ConversationType   @default(PRIVATE)
+  status         ConversationStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  // Moderation fields
+  blockedAt      DateTime?
+  blockedBy      String?
+  blockReason    String?
+
+  // Intelligent last message indicators (simplified as scalars)
+  lastMessageId  String?
+  lastMessageAt  DateTime?
+
+  participants   ConversationParticipant[]
+  messages       ChatMessage[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  role           ParticipantRole @default(USER)
+  joinedAt       DateTime        @default(now())
+  lastReadAt     DateTime        @default(now())
+  isMuted        Boolean         @default(false)
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
 }
