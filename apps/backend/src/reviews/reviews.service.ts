@@ -2,11 +2,15 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { RequestStatus, UserRole } from '@prisma/client';
+import { NotificationType, RequestStatus, UserRole } from '@prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(tenantId: string, dto: CreateReviewDto) {
     // 1. Verify tenant has a request in "completed" state for this listing
@@ -37,40 +41,54 @@ export class ReviewsService {
     // Get landlordId from the listing
     const listing = await this.prisma.listing.findUnique({
       where: { id: dto.listingId },
-      select: { landlordId: true },
+      select: { id: true, title: true, landlordId: true },
     });
 
     if (!listing) {
       throw new NotFoundException('الإعلان غير موجود');
     }
 
-    // 3. Create the review
-    const review = await this.prisma.review.create({
-      data: {
-        tenantId,
-        landlordId: listing.landlordId,
-        listingId: dto.listingId,
-        rating: dto.rating,
-        comment: dto.comment,
-      },
-    });
+    const review = await this.prisma.$transaction(async (tx) => {
+      const createdReview = await tx.review.create({
+        data: {
+          tenantId,
+          landlordId: listing.landlordId,
+          listingId: dto.listingId,
+          rating: dto.rating,
+          comment: dto.comment,
+        },
+      });
 
-    // 4. Calculate average rating and update landlord
-    const allReviews = await this.prisma.review.aggregate({
-      where: { landlordId: listing.landlordId },
-      _avg: { rating: true },
-      _count: { rating: true },
-    });
+      const allReviews = await tx.review.aggregate({
+        where: { landlordId: listing.landlordId },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
 
-    const averageRating = allReviews._avg.rating || 0;
-    const totalReviews = allReviews._count.rating || 0;
+      const averageRating = allReviews._avg.rating || 0;
+      const totalReviews = allReviews._count.rating || 0;
 
-    await this.prisma.user.update({
-      where: { id: listing.landlordId },
-      data: {
-        ratingAvg: averageRating,
-        reviewsCount: totalReviews,
-      },
+      await tx.user.update({
+        where: { id: listing.landlordId },
+        data: {
+          ratingAvg: averageRating,
+          reviewsCount: totalReviews,
+        },
+      });
+
+      await this.notificationService.createUnique(
+        {
+          userId: listing.landlordId,
+          type: NotificationType.REVIEW,
+          title: 'New review',
+          body: `You received a new review on "${listing.title}".`,
+          entityType: 'review.created',
+          entityId: createdReview.id,
+        },
+        tx,
+      );
+
+      return createdReview;
     });
 
     return review;
@@ -103,6 +121,18 @@ export class ReviewsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async getMyReviews(tenantId: string) {
+    return this.prisma.review.findMany({
+      where: { tenantId },
+      include: {
+        listing: {
+          select: { id: true, title: true, unitType: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async getLandlordReviews(landlordId: string, page: number = 1, limit: number = 10) {

@@ -117,7 +117,7 @@ export const useReviewListing = () => {
   });
 };
 
-export const useAdminDeleteListing = () => {
+export const useAdminPermanentDeleteListing = () => {
   const queryClient = useQueryClient();
 
   return useMutation<unknown, Error, string>({
@@ -127,7 +127,93 @@ export const useAdminDeleteListing = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "listings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "deleted-listings"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+};
+
+// ── Soft Delete Hooks ─────────────────────────────────────────────────────────
+
+export interface DeletedListingsFilters {
+  page?: number;
+  limit?: number;
+  deletedByRole?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface DeletedListingsResponse {
+  listings: (Listing & {
+    landlord?: Pick<User, "id" | "name" | "phone" | "avatarUrl" | "emailVerifiedAt">;
+    images?: Array<{ id: string; url: string; order: number }>;
+    _count?: { images: number };
+  })[];
+  meta: PaginationMeta;
+}
+
+export const useDeletedAdminListings = (filters: DeletedListingsFilters = {}) => {
+  const { page = 1, limit = 10, deletedByRole, search, from, to } = filters;
+
+  return useQuery<DeletedListingsResponse>({
+    queryKey: ["admin", "deleted-listings", page, limit, deletedByRole, search, from, to],
+    queryFn: async (): Promise<DeletedListingsResponse> => {
+      const params: Record<string, any> = { page, limit };
+      if (deletedByRole && deletedByRole !== "all") params.deletedByRole = deletedByRole;
+      if (search) params.search = search;
+      if (from) params.from = from;
+      if (to) params.to = to;
+
+      const res = await api.get<DeletedListingsResponse>("/admin/deleted-listings", { params });
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+};
+
+export const useSoftDeleteListing = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<unknown, Error, { id: string; reason?: string }>({
+    mutationFn: async ({ id, reason }) => {
+      const res = await api.patch(`/admin/listings/${id}/soft-delete`, { reason });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "listings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "deleted-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+};
+
+export const useRestoreListing = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<unknown, Error, string>({
+    mutationFn: async (id: string) => {
+      const res = await api.patch(`/admin/listings/${id}/restore`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "listings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "deleted-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+};
+
+export const useDeleteListingImages = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<unknown, Error, string>({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/admin/listings/${id}/images`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "deleted-listings"] });
     },
   });
 };
@@ -365,4 +451,55 @@ export const useUnblockConversation = () => {
     },
   });
 };
+
+// ── Admin Rentals Hook ───────────────────────────────────────────────────────
+
+export interface AdminRentalsResponse {
+  data: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    listing: {
+      id: string;
+      title: string;
+      unitType: string;
+      price: number;
+      governorate: string;
+      district: string;
+      images: Array<{ url: string }>;
+      landlord: {
+        id: string;
+        name: string;
+        phone: string;
+        avatarUrl: string | null;
+        email: string;
+      };
+    };
+    tenant: {
+      id: string;
+      name: string;
+      phone: string;
+      avatarUrl: string | null;
+      email: string;
+    };
+  }>;
+  meta: PaginationMeta;
+}
+
+export const useAdminRentals = (page = 1, limit = 10, search?: string, from?: string, to?: string) => {
+  return useQuery<AdminRentalsResponse>({
+    queryKey: ["admin", "rentals", page, limit, search, from, to],
+    queryFn: async (): Promise<AdminRentalsResponse> => {
+      const params: Record<string, any> = { page, limit };
+      if (search) params.search = search;
+      if (from) params.from = from;
+      if (to) params.to = to;
+      const res = await api.get<AdminRentalsResponse>("/rental-history/admin", { params });
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+};
+
 

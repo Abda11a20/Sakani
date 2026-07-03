@@ -114,20 +114,21 @@ model User {
   updatedAt          DateTime  @updatedAt
 
   // Relations
-  listings          Listing[]
-  requests          ViewingRequest[]
-  reviewsGiven      Review[]           @relation("ReviewsGiven")
-  reviewsReceived   Review[]           @relation("ReviewsReceived")
-  alerts            Alert[]
-  subscriptions     Subscription[]
-  sentMessages      ChatMessage[]      @relation("SentMessages")
+  listings                 Listing[]
+  requests                 ViewingRequest[]
+  currentListingRentals    Listing[]                 @relation("ListingCurrentTenant")
+  reviewsGiven             Review[]                  @relation("ReviewsGiven")
+  reviewsReceived          Review[]                  @relation("ReviewsReceived")
+  alerts                   Alert[]
+  subscriptions            Subscription[]
+  sentMessages             ChatMessage[]             @relation("SentMessages")
   conversationParticipants ConversationParticipant[]
-  verificationCodes VerificationCode[]
-  deviceSessions    DeviceSession[]
-  favorites         Favorite[]
-  searchHistory     SearchHistory[]
-  viewedListings    ViewedListing[]
-  notifications     Notification[]
+  verificationCodes        VerificationCode[]
+  deviceSessions           DeviceSession[]
+  favorites                Favorite[]
+  searchHistory            SearchHistory[]
+  viewedListings           ViewedListing[]
+  notifications            Notification[]
 
   @@map("users")
 }
@@ -154,24 +155,38 @@ model Listing {
   amenities              String[]
   roommateFeatureEnabled Boolean         @default(false)
   viewCount              Int             @default(0)
+  currentTenantId        String?
+  rentedSince            DateTime?
+  rentedUntil            DateTime?
   isFeatured             Boolean         @default(false)
   rejectionReason        String?
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
+  // ── Soft Delete ────────────────────────────────────────────────────────────
+  isDeleted          Boolean       @default(false)
+  deletedAt          DateTime?
+  deletedById        String?
+  deletedByRole      UserRole?
+  deletedReason      String?
+  statusBeforeDelete ListingStatus?
+
   // Relations
-  landlord  User             @relation(fields: [landlordId], references: [id])
-  images    ListingImage[]
-  beds      ListingBed[]
-  requests  ViewingRequest[]
-  reviews   Review[]
-  favorites Favorite[]
-  viewedBy  ViewedListing[]
+  landlord      User             @relation(fields: [landlordId], references: [id])
+  currentTenant User?            @relation("ListingCurrentTenant", fields: [currentTenantId], references: [id])
+  images        ListingImage[]
+  beds          ListingBed[]
+  requests      ViewingRequest[]
+  reviews       Review[]
+  favorites     Favorite[]
+  viewedBy      ViewedListing[]
 
   @@index([status, governorate, district])
   @@index([price])
   @@index([genderTarget])
   @@index([landlordId])
+  @@index([currentTenantId])
+  @@index([isDeleted])
   @@map("listings")
 }
 
@@ -186,6 +201,22 @@ model ListingImage {
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@map("listing_images")
+}
+
+model ListingAuditLog {
+  id                   String   @id @default(cuid())
+  listingId            String
+  listingTitleSnapshot String
+  actorId              String
+  actorRole            UserRole
+  actorName            String
+  action               String
+  detail               String?
+  createdAt            DateTime @default(now())
+
+  @@index([listingId])
+  @@index([actorId])
+  @@map("listing_audit_logs")
 }
 
 model ListingBed {
@@ -408,23 +439,23 @@ enum ParticipantRole {
 }
 
 model Conversation {
-  id             String             @id @default(cuid())
-  type           ConversationType   @default(PRIVATE)
-  status         ConversationStatus @default(ACTIVE)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id            String             @id @default(cuid())
+  type          ConversationType   @default(PRIVATE)
+  status        ConversationStatus @default(ACTIVE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   // Moderation fields
-  blockedAt      DateTime?
-  blockedBy      String?
-  blockReason    String?
+  blockedAt     DateTime?
+  blockedBy     String?
+  blockReason   String?
 
   // Intelligent last message indicators (simplified as scalars)
-  lastMessageId  String?
-  lastMessageAt  DateTime?
+  lastMessageId String?
+  lastMessageAt DateTime?
 
-  participants   ConversationParticipant[]
-  messages       ChatMessage[]
+  participants  ConversationParticipant[]
+  messages      ChatMessage[]
 
   @@map("conversations")
 }
@@ -437,8 +468,8 @@ model ConversationParticipant {
   lastReadAt     DateTime        @default(now())
   isMuted        Boolean         @default(false)
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([conversationId, userId])
   @@map("conversation_participants")

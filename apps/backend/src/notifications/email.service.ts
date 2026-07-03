@@ -78,6 +78,16 @@ export class EmailService {
 
   // ── Private: Dispatch (routes to the active provider) ──────────────────────
 
+  async sendPasswordChangedConfirmation(email: string): Promise<void> {
+    const body = `
+      <p style="color: #333; font-size: 16px;">Your Sakani password was changed successfully.</p>
+      <p style="color: #555;">If this was you, no further action is needed.</p>
+      <p style="color: #e74c3c; font-size: 13px;">If this was not you, please contact support immediately.</p>
+    `;
+    const html = this.wrapTemplate('Password changed', body);
+    await this.dispatch({ to: email, subject: 'Your Sakani password was changed', html });
+  }
+
   private async dispatch(payload: EmailPayload, devOtp?: string): Promise<void> {
     // في بيئة الاختبار: لا نرسل شيئاً
     if (process.env.NODE_ENV === 'test') {

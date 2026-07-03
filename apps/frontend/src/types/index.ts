@@ -18,6 +18,7 @@ export interface User {
   // emailVerifiedAt replaces the old boolean "verified"
   emailVerifiedAt: string | null;
   phoneVerifiedAt: string | null;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,9 +52,9 @@ export const isUserVerified = (user?: {
 } | null): boolean =>
   getIdentityVerificationStatus(user) === 'verified';
 
-export type ListingType = "apartment" | "room" | "bed";
+export type ListingType = "apartment" | "bed";
 export type ListingStatus = "draft" | "pending_review" | "active" | "rented" | "paused" | "rejected";
-export type UnitType = "apartment" | "room" | "bed";
+export type UnitType = "apartment" | "bed";
 export type GenderTarget = "male" | "female" | "mixed" | "family" | "any";
 
 export interface LandlordPublicInfo {
@@ -94,16 +95,28 @@ export interface Listing {
   isFeatured: boolean;
   landlordId: string;
   landlord?: LandlordPublicInfo;
+  currentTenantId?: string | null;
+  currentTenant?: Pick<User, "id" | "name" | "phone"> | null;
   beds?: Bed[];
   totalBeds?: number;
   availableBeds?: number;
-  views: number;
+  viewCount: number;
+  views?: number;
+  rentedSince?: string | null;
+  rentedUntil?: string | null;
   rules?: string;
   includesBills?: boolean;
   securityDeposit?: number;
   electricityType?: string;
   createdAt: string;
   updatedAt: string;
+  // ── Soft Delete ───────────────────────────────────────────────────────────
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedById?: string | null;
+  deletedByRole?: string | null;
+  deletedReason?: string | null;
+  statusBeforeDelete?: string | null;
 }
 
 export interface Bed {
@@ -111,8 +124,10 @@ export interface Bed {
   listingId: string;
   bedNumber: number;
   isAvailable: boolean;
+  currentTenantId?: string | null;
+  currentTenant?: Pick<User, "id" | "name"> | null;
   tenantId?: string;
-  tenant?: Pick<User, "id" | "name">;
+  tenant?: Pick<User, "id" | "name"> | null;
 }
 
 export type ViewingRequestStatus = "pending" | "accepted" | "approved" | "rejected" | "completed";
@@ -120,12 +135,12 @@ export type ViewingRequestStatus = "pending" | "accepted" | "approved" | "reject
 export interface ViewingRequest {
   id: string;
   listingId: string;
-  listing?: Pick<Listing, "id" | "title" | "address" | "images">;
+  listing?: Pick<Listing, "id" | "title" | "address" | "images" | "unitType" | "type">;
   tenantId: string;
   tenant?: Pick<User, "id" | "name" | "phone">;
-  requestedDate: string;
+  preferredDate: string;
   status: ViewingRequestStatus;
-  notes?: string;
+  message?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -150,6 +165,26 @@ export interface Alert {
   genderTarget?: GenderTarget;
   specialty?: string;
   isActive: boolean;
+  createdAt: string;
+}
+
+export type NotificationType =
+  | "SYSTEM"
+  | "REQUEST"
+  | "REVIEW"
+  | "PAYMENT"
+  | "CHAT"
+  | "ALERT";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  entityType?: string | null;
+  entityId?: string | null;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -215,6 +250,19 @@ export interface DashboardStats {
   totalRequests: number;
   pendingRequests: number;
   bannedUsers: number;
+  archivedListings: number;
+}
+
+export interface ListingAuditLog {
+  id: string;
+  listingId: string;
+  listingTitleSnapshot: string;
+  actorId: string;
+  actorRole: string;
+  actorName: string;
+  action: "soft_delete" | "restore" | "delete_images" | "permanent_delete";
+  detail?: string | null;
+  createdAt: string;
 }
 
 export interface UserFilters {
@@ -241,4 +289,65 @@ export interface BannedUser {
   bannedBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Rental History ────────────────────────────────────────────────────────────
+// Source: ViewingRequest WHERE status = 'completed'
+// NOTE: ViewingRequest is the primary source for the current implementation.
+// As the system evolves (contract termination, renewal, multiple tenants over
+// time), a dedicated RentalContract model should be introduced.
+// NOTE: updatedAt is used as a `completedAt` proxy until a dedicated field exists.
+
+export interface RentalHistoryListing {
+  id: string;
+  title: string;
+  unitType: UnitType;
+  price: number;
+  governorate: string;
+  district: string;
+  images: { url: string }[];
+  landlord?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    phone?: string | null;
+  };
+}
+
+export interface RentalHistoryItem {
+  /** The ViewingRequest ID — useful for debugging / audit trails */
+  id: string;
+  status: "completed";
+  createdAt: string;
+  /** updatedAt is used as completedAt proxy until a dedicated field is introduced */
+  updatedAt: string;
+  listing: RentalHistoryListing;
+  /** Present in landlord history */
+  tenant?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    phone?: string | null;
+  };
+}
+
+export interface RentalHistoryMeta {
+  total: number;
+  page: number;
+  limit: number;
+  lastPage: number;
+}
+
+export interface RentalHistoryResponse {
+  data: RentalHistoryItem[];
+  meta: RentalHistoryMeta;
+}
+
+export interface RentalHistoryQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  from?: string;
+  to?: string;
+  sort?: "asc" | "desc";
 }

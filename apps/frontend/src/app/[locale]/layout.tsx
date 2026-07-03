@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: "%s | سكني",
   },
   description:
-    "منصة تأجير عقارات مصرية — ابحث عن شقق وغرف وأسرة بسهولة وأمان",
+    "منصة تأجير عقارات مصرية — ابحث عن شقق وأسرة بسهولة وأمان",
   keywords: ["تأجير", "شقق", "عقارات", "مصر", "سكن", "إيجار", "sakani", "rent Egypt"],
   authors: [{ name: "سكني" }],
   manifest: "/manifest.json",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "سكني — Sakani",
     title: "سكني — ابحث بثقة، اسكن بأمان",
-    description: "منصة تأجير عقارات مصرية — ابحث عن شقق وغرف وأسرة بسهولة وأمان",
+    description: "منصة تأجير عقارات مصرية — ابحث عن شقق وأسرة بسهولة وأمان",
     locale: "ar_EG",
     images: [
       {
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "سكني — ابحث بثقة، اسكن بأمان",
-    description: "منصة تأجير عقارات مصرية — ابحث عن شقق وغرف وأسرة بسهولة وأمان",
+    description: "منصة تأجير عقارات مصرية — ابحث عن شقق وأسرة بسهولة وأمان",
     images: ["/og-image.png"],
   },
 };

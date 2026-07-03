@@ -25,6 +25,13 @@ export class ReviewsController {
     return this.reviewsService.create(req.user.id, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.tenant)
+  @Get('my')
+  async getMyReviews(@Req() req: RequestWithUser) {
+    return this.reviewsService.getMyReviews(req.user.id);
+  }
+
   @Get('listing/:listingId')
   async getListingReviews(
     @Param('listingId') listingId: string,

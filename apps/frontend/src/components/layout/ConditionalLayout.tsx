@@ -5,8 +5,6 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import ChatWidget from "@/components/chat/ChatWidget";
-import { useAuthStore } from "@/store/auth.store";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -14,23 +12,16 @@ interface ConditionalLayoutProps {
 
 /**
  * لوحة التحكم والأدمن لها تخطيطات خاصة بها.
- * هذا المكون يخفي الـ Navbar والـ Footer العاميين عند مسارات التحكم والأدمن
- * ويقوم بدمج نافذة الدعم الفني العائمة.
+ * هذا المكون يخفي الـ Navbar والـ Footer العاميين عند مسارات التحكم والأدمن.
  */
 export default function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
-  const { user } = useAuthStore();
 
   // Admin and Dashboard pages have their own layout — skip global nav/footer
   const isDashboardOrAdminRoute = pathname ? /(\/admin|\/dashboard)($|\/)/.test(pathname) : false;
 
   if (isDashboardOrAdminRoute) {
-    return (
-      <>
-        {children}
-        {user && user.role !== "admin" && user.role !== "super_admin" && <ChatWidget />}
-      </>
-    );
+    return <>{children}</>;
   }
 
   return (
@@ -38,7 +29,6 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
-      {user && user.role !== "admin" && user.role !== "super_admin" && <ChatWidget />}
     </div>
   );
 }

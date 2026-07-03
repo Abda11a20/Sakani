@@ -93,4 +93,28 @@ export class UploadsController {
   ) {
     return this.uploadsService.uploadAvatar(req.user.id, file);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('chat')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadChatAttachment(
+    @Req() req: RequestWithUser,
+    @UploadedFile(
+      new FileValidationPipe({
+        maxSize: 10 * 1024 * 1024, // 10MB
+        allowedTypes: [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.uploadsService.uploadChatAttachment(req.user.id, file);
+  }
 }

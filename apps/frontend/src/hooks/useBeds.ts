@@ -15,13 +15,19 @@ export interface RentBedPayload {
   endDate: string;
 }
 
-export const useListingBeds = (listingId: string | null | undefined) => {
+export const useListingBeds = (listingId: string | null | undefined, isLandlord = false) => {
   return useQuery<Bed[]>({
-    queryKey: ["listings", listingId, "beds"],
+    queryKey: ["listings", listingId, "beds", isLandlord],
     queryFn: async (): Promise<Bed[]> => {
       if (!listingId) return [];
-      const response = await api.get<Bed[]>(`/listings/${listingId}/beds`);
-      return response.data;
+      const endpoint = isLandlord
+        ? `/listings/${listingId}/beds/all`
+        : `/listings/${listingId}/beds`;
+      const response = await api.get<any[]>(endpoint);
+      return response.data.map((bed: any) => ({
+        ...bed,
+        isAvailable: bed.status === "available",
+      }));
     },
     enabled: !!listingId,
   });
@@ -42,15 +48,22 @@ export const useListingBedStats = (listingId: string | null | undefined) => {
 export const useRentBed = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Bed, Error, { bedId: string; data: RentBedPayload }>({
-    mutationFn: async ({ bedId, data }): Promise<Bed> => {
-      const response = await api.patch<Bed>(`/beds/${bedId}/rent`, data);
+  return useMutation<any, Error, { bedId: string; data: RentBedPayload }>({
+    mutationFn: async ({ bedId, data }): Promise<any> => {
+      const response = await api.patch<any>(`/beds/${bedId}/rent`, {
+        tenantId: data.tenantId,
+        rentedSince: data.startDate,
+        rentedUntil: data.endDate,
+      });
       return response.data;
     },
     onSuccess: (data) => {
+      const bed = data?.bed || data;
       queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["listings", data.listingId] });
-      queryClient.invalidateQueries({ queryKey: ["listings", data.listingId, "beds"] });
+      if (bed?.listingId) {
+        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId] });
+        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId, "beds"] });
+      }
     },
   });
 };
@@ -58,15 +71,18 @@ export const useRentBed = () => {
 export const useVacateBed = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Bed, Error, string>({
-    mutationFn: async (bedId): Promise<Bed> => {
-      const response = await api.patch<Bed>(`/beds/${bedId}/vacate`);
+  return useMutation<any, Error, string>({
+    mutationFn: async (bedId): Promise<any> => {
+      const response = await api.patch<any>(`/beds/${bedId}/vacate`);
       return response.data;
     },
     onSuccess: (data) => {
+      const bed = data?.bed || data;
       queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["listings", data.listingId] });
-      queryClient.invalidateQueries({ queryKey: ["listings", data.listingId, "beds"] });
+      if (bed?.listingId) {
+        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId] });
+        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId, "beds"] });
+      }
     },
   });
 };

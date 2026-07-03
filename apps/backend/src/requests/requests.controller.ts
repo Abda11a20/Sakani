@@ -16,6 +16,8 @@ import {
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
+import { FinalizeBedRentalDto } from './dto/finalize-bed-rental.dto';
+import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -69,6 +71,15 @@ export class RequestsController {
   }
 
   // ── 5. جلب تفاصيل طلب واحد (Tenant | Landlord | Admin) ───────────────────
+  @Get('listing/:listingId/contact-access')
+  @Roles(UserRole.tenant)
+  async getListingContactAccess(
+    @Param('listingId') listingId: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.requestsService.getListingContactAccess(user.id, listingId);
+  }
+
   @Get(':id')
   async getRequestDetails(
     @Param('id') id: string,
@@ -89,6 +100,26 @@ export class RequestsController {
   }
 
   // ── 7. إلغاء الطلب (Tenant فقط) ──────────────────────────────────────────
+  @Patch(':id/finalize-bed-rental')
+  @Roles(UserRole.landlord)
+  async finalizeBedRental(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+    @Body() dto: FinalizeBedRentalDto,
+  ) {
+    return this.requestsService.finalizeBedRental(id, user.id, dto);
+  }
+
+  @Patch(':id/finalize-unit-rental')
+  @Roles(UserRole.landlord)
+  async finalizeUnitRental(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+    @Body() dto: FinalizeUnitRentalDto,
+  ) {
+    return this.requestsService.finalizeUnitRental(id, user.id, dto);
+  }
+
   @Delete(':id')
   @Roles(UserRole.tenant)
   async cancelRequest(

@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: SearchPageProps): Promise<Met
     title: locale === "ar" ? "سكني — نتائج البحث" : "Sakani — Search Results",
     description:
       locale === "ar"
-        ? "ابحث في آلاف الإعلانات عن شقق وغرف وأسرة في مصر"
-        : "Search thousands of listings for apartments, rooms and beds in Egypt",
+        ? "ابحث في آلاف الإعلانات عن شقق وأسرة في مصر"
+        : "Search thousands of listings for apartments and beds in Egypt",
   };
 }
 

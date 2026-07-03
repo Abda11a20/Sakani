@@ -16,6 +16,7 @@ import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -53,14 +54,34 @@ export class ListingsController {
   }
 
   // ── 4. عرض تفاصيل إعلان وزيادة عدد المشاهدات (للعامة) ────────────────────
+  @Post(':id/view')
+  @UseGuards(OptionalJwtAuthGuard)
+  async incrementViewCount(
+    @Param('id') id: string,
+    @CurrentUser() user?: SafeUser | null,
+  ) {
+    return this.listingsService.incrementViewCount(id, user?.id);
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    // زيادة المشاهدات أولاً في الخلفية (أو ننتظره حسب الحاجة)
-    await this.listingsService.incrementViewCount(id);
-    return this.listingsService.findOne(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user?: SafeUser | null,
+  ) {
+    const includeDeleted =
+      user?.role === UserRole.admin || user?.role === UserRole.super_admin;
+    return this.listingsService.findOne(id, includeDeleted);
   }
 
   // ── 5. تعديل الإعلان (للمؤجر صاحبه فقط) ──────────────────────────────────
+  @Patch(':id/vacate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.landlord)
+  async vacateUnit(@Param('id') id: string, @CurrentUser() user: SafeUser) {
+    return this.listingsService.vacateUnit(id, user.id);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)

@@ -9,7 +9,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RentBedDto } from './dto/rent-bed.dto';
 import { UpdateBedDto } from './dto/update-bed.dto';
-import { BedStatus, ListingStatus } from '@prisma/client';
+import { BedStatus, ListingStatus, Prisma } from '@prisma/client';
+import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class BedsService {
@@ -28,12 +29,38 @@ export class BedsService {
     // العامة يشوفوا فقط الأسرة المتاحة، المالك يشوف كل الأسرة
     const statusFilter = isLandlord ? undefined : BedStatus.available;
 
-    return this.prisma.listingBed.findMany({
+    const beds = await this.prisma.listingBed.findMany({
       where: {
         listingId,
         ...(statusFilter && { status: statusFilter }),
       },
       orderBy: { bedNumber: 'asc' },
+    });
+
+    const tenantIds = beds
+      .map((bed) => bed.currentTenantId)
+      .filter((tenantId): tenantId is string => Boolean(tenantId));
+
+    if (tenantIds.length === 0) {
+      return beds;
+    }
+
+    const tenants = await this.prisma.user.findMany({
+      where: { id: { in: tenantIds } },
+      select: userPublicSelect,
+    });
+    const tenantsById = new Map(tenants.map((tenant) => [tenant.id, tenant]));
+
+    return beds.map((bed) => {
+      const currentTenant = bed.currentTenantId
+        ? tenantsById.get(bed.currentTenantId) ?? null
+        : null;
+
+      return {
+        ...bed,
+        currentTenant,
+        tenant: currentTenant,
+      };
     });
   }
 
@@ -60,9 +87,14 @@ export class BedsService {
   }
 
   // ── 3. تأجير سرير (Landlord فقط) ───────────────────────────────────────────
-  async rentBed(bedId: string, landlordId: string, dto: RentBedDto) {
+  async rentBed(
+    bedId: string,
+    landlordId: string,
+    dto: RentBedDto,
+    client?: Prisma.TransactionClient,
+  ) {
     // 1. استخدام Transaction لضمان سلامة البيانات
-    return this.prisma.$transaction(async (tx) => {
+    const rentBed = async (tx: Prisma.TransactionClient) => {
       // التحقق من وجود السرير والإعلان
       const bed = await tx.listingBed.findUnique({
         where: { id: bedId },
@@ -102,20 +134,36 @@ export class BedsService {
       };
 
       // 4. إذا أصبح availableBeds = 0، تحويل الإعلان لـ rented
-      if (newAvailableBeds === 0) {
-        listingUpdateData.status = ListingStatus.rented;
-      }
+      listingUpdateData.status = newAvailableBeds === 0
+        ? ListingStatus.rented
+        : ListingStatus.active;
 
-      await tx.listing.update({
+      const updatedListing = await tx.listing.update({
         where: { id: bed.listingId },
         data: listingUpdateData,
       });
 
+      const currentTenant = await tx.user.findUnique({
+        where: { id: dto.tenantId },
+        select: userPublicSelect,
+      });
+
       return {
         message: 'تم تأجير السرير بنجاح',
-        bed: updatedBed,
+        bed: {
+          ...updatedBed,
+          currentTenant,
+          tenant: currentTenant,
+        },
+        listing: updatedListing,
       };
-    });
+    };
+
+    if (client) {
+      return rentBed(client);
+    }
+
+    return this.prisma.$transaction(rentBed);
   }
 
   // ── 4. إخلاء سرير (Landlord فقط) ───────────────────────────────────────────

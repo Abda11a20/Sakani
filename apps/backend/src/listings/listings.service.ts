@@ -10,21 +10,28 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
-import { ListingStatus, UnitType, Prisma } from '@prisma/client';
-import { AlertsService } from '../alerts/alerts.service';
+import { ListingStatus, UnitType, Prisma, UserRole } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class ListingsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly alertsService: AlertsService,
   ) {}
 
   // ── 1. إنشاء إعلان ──────────────────────────────────────────────────────────
   async create(landlordId: string, dto: CreateListingDto) {
-    if (dto.unitType === UnitType.bed && (!dto.totalBeds || dto.totalBeds < 1)) {
-      throw new BadRequestException('يجب تحديد عدد الأسرة عندما يكون نوع الوحدة سرير');
+    if (dto.unitType === UnitType.room) {
+throw new BadRequestException('نوع الوحدة غير مدعوم'); 
+   }
+
+    if (
+      dto.unitType === UnitType.bed &&
+      (!dto.totalBeds || dto.totalBeds < 1)
+    ) {
+      throw new BadRequestException(
+        'يجب تحديد عدد الأسرة عندما يكون نوع الوحدة سرير',
+      );
     }
 
     // منع تكرار الإعلانات في وقت قصير جداً (أقل من دقيقة) من نفس المؤجر لتجنب الضغط المتكرر
@@ -33,11 +40,14 @@ export class ListingsService {
       where: {
         landlordId,
         createdAt: { gte: oneMinuteAgo },
+        isDeleted: false,
       },
     });
 
     if (recentListing) {
-      throw new BadRequestException('يرجى الانتظار دقيقة واحدة على الأقل بين نشر الإعلانات لتفادي التكرار.');
+      throw new BadRequestException(
+        'يرجى الانتظار دقيقة واحدة على الأقل بين نشر الإعلانات لتفادي التكرار.',
+      );
     }
 
     const listing = await this.prisma.listing.create({
@@ -75,8 +85,6 @@ export class ListingsService {
     });
 
     // Fire-and-forget: notify matched alerts (no await — don't block response)
-    void this.alertsService.checkAndNotify(listing.id);
-
     return listing;
   }
 
@@ -99,9 +107,14 @@ export class ListingsService {
 
     const where: Prisma.ListingWhereInput = {
       status: ListingStatus.active,
+      unitType: { in: [UnitType.apartment, UnitType.bed] },
+      isDeleted: false,
     };
 
-    if (unitType) where.unitType = unitType;
+    if (unitType) {
+      where.unitType =
+        unitType === UnitType.room ? { in: [] } : unitType;
+    }
     if (governorate) where.governorate = governorate;
     if (district) where.district = district;
     if (genderTarget) where.genderTarget = genderTarget;
@@ -155,7 +168,7 @@ export class ListingsService {
   }
 
   // ── 3. عرض تفاصيل إعلان واحد ──────────────────────────────────────────────
-  async findOne(id: string) {
+  async findOne(id: string, includeDeleted = false) {
     const listing = await this.prisma.listing.findUnique({
       where: { id },
       include: {
@@ -168,7 +181,6 @@ export class ListingsService {
         landlord: {
           select: {
             ...userPublicSelect,
-            phone: true,
             _count: {
               select: { listings: true },
             },
@@ -181,6 +193,11 @@ export class ListingsService {
       throw new NotFoundException('الإعلان غير موجود');
     }
 
+    // Soft-deleted listings are invisible to everyone except admin
+    if (listing.isDeleted && !includeDeleted) {
+      throw new NotFoundException('هذا الإعلان لم يعد متاحاً');
+    }
+
     return listing;
   }
 
@@ -190,6 +207,10 @@ export class ListingsService {
 
     if (!listing) {
       throw new NotFoundException('الإعلان غير موجود');
+    }
+
+    if (listing.isDeleted) {
+      throw new NotFoundException('هذا الإعلان لم يعد متاحاً');
     }
 
     if (listing.landlordId !== landlordId) {
@@ -210,31 +231,63 @@ export class ListingsService {
     });
   }
 
-  // ── 5. حذف الإعلان (Soft Delete) ──────────────────────────────────────────
+  // ── 5. حذف الإعلان (Soft Delete للمؤجر) ──────────────────────────────────
   async remove(id: string, landlordId: string) {
-    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    const listing = await this.prisma.listing.findUnique({
+      where: { id },
+      include: {
+        landlord: { select: { name: true } },
+      },
+    });
 
     if (!listing) {
       throw new NotFoundException('الإعلان غير موجود');
+    }
+
+    if (listing.isDeleted) {
+      throw new NotFoundException('الإعلان محذوف بالفعل');
     }
 
     if (listing.landlordId !== landlordId) {
       throw new ForbiddenException('ليس لديك صلاحية لحذف هذا الإعلان');
     }
 
-    await this.prisma.listing.update({
-      where: { id },
-      data: { status: ListingStatus.paused },
+    await this.prisma.$transaction(async (tx) => {
+      // Soft delete
+      await tx.listing.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById: landlordId,
+          deletedByRole: UserRole.landlord,
+          statusBeforeDelete: listing.status,
+        },
+      });
+
+      // Write audit log
+      await tx.listingAuditLog.create({
+        data: {
+          listingId: id,
+          listingTitleSnapshot: listing.title,
+          actorId: landlordId,
+          actorRole: UserRole.landlord,
+          actorName: listing.landlord?.name ?? 'مؤجر',
+          action: 'soft_delete',
+          detail: 'حذف من قبل المؤجر',
+        },
+      });
     });
 
-    return { message: 'تم إيقاف الإعلان بنجاح (نقل إلى paused)' };
+    return { message: 'تم حذف الإعلان بنجاح' };
   }
 
-  // ── 6. جلب إعلانات المؤجر (كل الحالات النشطة والمراجعة والمؤجرة) ──────────────
+  // ── 6. جلب إعلانات المؤجر ──────────────────────────────────────────────────
   async getMyListings(landlordId: string) {
     return this.prisma.listing.findMany({
       where: {
         landlordId,
+        isDeleted: false,
         status: { not: ListingStatus.paused },
       },
       orderBy: { createdAt: 'desc' },
@@ -243,18 +296,98 @@ export class ListingsService {
           orderBy: { order: 'asc' },
           take: 1,
         },
+        currentTenant: {
+          select: userPublicSelect,
+        },
       },
     });
   }
 
-  // ── 7. زيادة عدد المشاهدات ───────────────────────────────────────────────
-  async incrementViewCount(id: string) {
+  // ── 7. إخلاء الوحدة ──────────────────────────────────────────────────────
+  async vacateUnit(id: string, landlordId: string) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('العقار غير موجود');
+    }
+
+    if (listing.isDeleted) {
+      throw new NotFoundException('هذا الإعلان لم يعد متاحاً');
+    }
+
+    if (listing.landlordId !== landlordId) {
+      throw new ForbiddenException('ليس لديك صلاحية لإدارة هذا العقار');
+    }
+
+    if (listing.unitType === UnitType.bed) {
+      throw new BadRequestException(
+        'استخدم إدارة الأسرة لإخلاء إعلانات الأسرة',
+      );
+    }
+
+    if (listing.status !== ListingStatus.rented || !listing.currentTenantId) {
+      throw new BadRequestException('هذا العقار غير مؤجر حالياً');
+    }
+
+    const updatedListing = await this.prisma.listing.update({
+      where: { id },
+      data: {
+        status: ListingStatus.active,
+        currentTenantId: null,
+        rentedSince: null,
+        rentedUntil: null,
+      },
+    });
+
+    return {
+      message: 'تم إخلاء العقار بنجاح',
+      listing: updatedListing,
+    };
+  }
+
+  // ── 8. زيادة عدد المشاهدات ──────────────────────────────────────────────
+  async incrementViewCount(id: string, userId?: string) {
+    if (!userId) {
+      return;
+    }
+
     try {
-      await this.prisma.listing.update({
+      const listing = await this.prisma.listing.findUnique({
         where: { id },
-        data: { viewCount: { increment: 1 } },
+        select: { id: true, landlordId: true, viewCount: true, isDeleted: true },
+      });
+
+      if (!listing || listing.isDeleted) {
+        return;
+      }
+
+      if (listing.landlordId === userId) {
+        return { id: listing.id, viewCount: listing.viewCount };
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.viewedListing.create({
+          data: { listingId: id, userId },
+        });
+
+        return tx.listing.update({
+          where: { id },
+          data: { viewCount: { increment: 1 } },
+          select: { id: true, viewCount: true },
+        });
       });
     } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        return this.prisma.listing.findUnique({
+          where: { id },
+          select: { id: true, viewCount: true },
+        });
+      }
       // نتجاهل الخطأ إن لم يكن الإعلان موجوداً لتجنب مشكلة أثناء الـ View
     }
   }

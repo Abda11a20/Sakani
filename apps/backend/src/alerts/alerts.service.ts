@@ -9,11 +9,17 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
-import { Prisma } from '@prisma/client';
+import { ListingStatus, NotificationType, Prisma } from '@prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
+
+type AlertClient = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class AlertsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(tenantId: string, dto: CreateAlertDto) {
     // Verify at least one filter is set
@@ -106,11 +112,17 @@ export class AlertsService {
     });
   }
 
-  async checkAndNotify(listingId: string): Promise<string[]> {
+  async checkAndNotify(
+    listingId: string,
+    client: AlertClient = this.prisma,
+  ): Promise<string[]> {
     // 1. Get the listing details
-    const listing = await this.prisma.listing.findUnique({
+    const listing = await client.listing.findUnique({
       where: { id: listingId },
       select: {
+        id: true,
+        status: true,
+        isDeleted: true,
         governorate: true,
         district: true,
         price: true,
@@ -120,7 +132,8 @@ export class AlertsService {
     });
 
     if (!listing) return [];
-
+    if (listing.isDeleted) return [];
+    if (listing.status !== ListingStatus.active) return [];
     // 2. Build dynamic where clause for matching alerts
     const where: Prisma.AlertWhereInput = {
       isActive: true,
@@ -160,16 +173,39 @@ export class AlertsService {
             { genderTarget: listing.genderTarget },
           ],
         },
+        // specialty: listings do not currently expose a specialty field
+        {
+          OR: [
+            { specialty: null },
+            { specialty: '' },
+          ],
+        },
       ],
     };
 
-    const matchingAlerts = await this.prisma.alert.findMany({
+    const matchingAlerts = await client.alert.findMany({
       where,
       select: { tenantId: true },
     });
 
     // Return unique tenantIds
     const tenantIds = [...new Set(matchingAlerts.map((a) => a.tenantId))];
+    await Promise.all(
+      tenantIds.map((tenantId) =>
+        this.notificationService.createUnique(
+          {
+            userId: tenantId,
+            type: NotificationType.ALERT,
+            title: 'New matching listing',
+            body: 'A new listing matching your saved alert is now available.',
+            entityType: 'listing',
+            entityId: listing.id,
+          },
+          client,
+        ),
+      ),
+    );
+
     return tenantIds;
   }
 }

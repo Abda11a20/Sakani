@@ -10,7 +10,7 @@ import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
-import { cn } from "@/lib/utils";
+import { cn, getImageUrl } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
 
 interface ListingCardProps {
@@ -35,7 +35,6 @@ const AMENITY_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   apartment: "شقة",
-  room: "غرفة",
   bed: "سرير",
 };
 
@@ -77,7 +76,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
       <div className="relative h-[200px] overflow-hidden bg-gray-100 dark:bg-gray-800">
         {listing.images && listing.images.length > 0 ? (
           <img
-            src={listing.images[0]}
+            src={getImageUrl(listing.images[0])}
             alt={listing.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

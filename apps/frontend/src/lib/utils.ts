@@ -28,3 +28,13 @@ export function formatDate(
     { year: "numeric", month: "long", day: "numeric" }
   );
 }
+
+/**
+ * استخراج رابط الصورة بشكل آمن يدعم كلاً من السلسلة النصية وكائنات صور العقار (ListingImage)
+ */
+export function getImageUrl(img: any): string {
+  if (!img) return "";
+  if (typeof img === "object" && img.url) return img.url;
+  return String(img);
+}
+

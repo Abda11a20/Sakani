@@ -33,6 +33,8 @@ export class SearchService {
     // ── Build where clause ─────────────────────────────────────────────────────
     const where: Prisma.ListingWhereInput = {
       status: ListingStatus.active,
+      unitType: { in: [UnitType.apartment, UnitType.bed] },
+      isDeleted: false,
     };
 
     // Full-text search across multiple fields
@@ -45,7 +47,10 @@ export class SearchService {
       ];
     }
 
-    if (unitType) where.unitType = unitType;
+    if (unitType) {
+      where.unitType =
+        unitType === UnitType.room ? { in: [] } : unitType;
+    }
 
     if (governorate) {
       where.governorate = { contains: governorate, mode: 'insensitive' };
@@ -144,7 +149,7 @@ export class SearchService {
   async getPopularDistricts() {
     const results = await this.prisma.listing.groupBy({
       by: ['district', 'governorate'],
-      where: { status: ListingStatus.active },
+      where: { status: ListingStatus.active, isDeleted: false },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
@@ -171,6 +176,7 @@ export class SearchService {
         district: listing.district,
         unitType: listing.unitType,
         status: ListingStatus.active,
+        isDeleted: false,
       },
       take: 4,
       include: {
@@ -195,6 +201,7 @@ export class SearchService {
   async getPriceStats(governorate?: string, district?: string) {
     const where: Prisma.ListingWhereInput = {
       status: ListingStatus.active,
+      isDeleted: false,
     };
 
     if (governorate) {

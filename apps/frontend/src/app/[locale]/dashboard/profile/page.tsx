@@ -61,7 +61,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   
   // Guard role options: none (shared)
-  const { user: guardUser, isLoading: isAuthLoading } = useAuthGuard();
+  const { user: guardUser, isLoading: isAuthLoading } = useAuthGuard({ role: ["tenant", "landlord"] });
   
   // React Query Profile Data
   const { data: userProfile, isLoading: isProfileLoading } = useProfile();

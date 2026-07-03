@@ -18,7 +18,6 @@ import {
   WashingMachine,
   Zap,
   Shield,
-  SquareEqual,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -77,7 +76,7 @@ const step1Schema = z.object({
 });
 
 const step2Schema = z.object({
-  unitType: z.enum(["apartment", "room", "bed"]),
+  unitType: z.enum(["apartment", "bed"]),
   totalBeds: z.coerce.number().optional(),
   genderTarget: z.enum(["mixed", "male", "female"]),
   amenities: z.array(z.string()),
@@ -149,11 +148,15 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
   useEffect(() => {
     if (initialData?.images) {
       setImages(
-        initialData.images.map((url, idx) => ({
-          id: String(idx), // we will need ID for delete, but for existing we just use index or we can find from API listing images if available
-          url,
-          isNew: false,
-        }))
+        initialData.images.map((img: any, idx) => {
+          const imgUrl = typeof img === "object" && img !== null ? img.url : img;
+          const imgId = typeof img === "object" && img !== null ? img.id : String(idx);
+          return {
+            id: imgId,
+            url: imgUrl,
+            isNew: false,
+          };
+        })
       );
     }
   }, [initialData]);
@@ -485,11 +488,10 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
             {/* Unit Type Cards */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo">نوع الوحدة</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { value: "apartment", label: "شقة كاملة", desc: "تأجير الشقة بالكامل للمستأجر" },
-                  { value: "room", label: "غرفة خاصة", desc: "غرفة مستقلة داخل شقة مشتركة" },
-                  { value: "bed", label: "سرير", desc: "سرير داخل غرفة مشتركة" },
+                  { value: "bed", label: "سرير", desc: "سرير في سكن مشترك" },
                 ].map(type => (
                   <div
                     key={type.value}
@@ -503,7 +505,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       formData.unitType === type.value ? "bg-amber-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                     }`}>
-                      {type.value === "apartment" ? <Building size={20} /> : type.value === "room" ? <SquareEqual size={20} /> : <Building size={20} />}
+                      {type.value === "apartment" ? <Building size={20} /> : <Building size={20} />}
                     </div>
                     <span className="font-bold text-sm font-cairo text-slate-800 dark:text-slate-200">{type.label}</span>
                     <span className="text-xs text-slate-500 font-cairo">{type.desc}</span>
@@ -517,7 +519,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
               <Input
                 type="number"
                 min={1}
-                label="عدد الأسرة الإجمالي في الغرفة"
+                label="عدد الأسرة الإجمالي"
                 placeholder="أدخل عدد الأسرة الكلي"
                 value={formData.totalBeds}
                 onChange={e => setFormData({ ...formData, totalBeds: parseInt(e.target.value) || 1 })}
@@ -765,7 +767,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
               <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
                 <div>
                   <h4 className="font-bold text-sm font-cairo text-slate-800 dark:text-slate-200">تفعيل ميزة شريك السكن؟</h4>
-                  <p className="text-xs text-slate-500 font-cairo mt-0.5">تمكين البحث المباشر للطلاب والشباب للغرف المشتركة.</p>
+                  <p className="text-xs text-slate-500 font-cairo mt-0.5">تمكين البحث المباشر للطلاب والشباب للسكن المشترك.</p>
                 </div>
                 <input
                   type="checkbox"

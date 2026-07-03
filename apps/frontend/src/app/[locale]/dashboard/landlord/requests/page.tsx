@@ -35,6 +35,8 @@ export default function LandlordRequests() {
     action: "accepted" | "rejected" | "completed";
   } | null>(null);
 
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+
   const isLoading = isAuthLoading || isRequestsLoading || isStatsLoading;
 
   if (isLoading || !user) {
@@ -171,126 +173,171 @@ export default function LandlordRequests() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             {filteredItems.map((req) => (
               <Card
                 key={req.id}
-                className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                onClick={() => setSelectedRequest(req)}
+                className="cursor-pointer border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
               >
-                <CardBody className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    {/* Left side: Tenant Info + Message */}
-                    <div className="space-y-4 flex-1">
-                      <div className="flex items-start gap-4">
-                        <Avatar
-                          name={req.tenant?.name || "مستأجر"}
-                          src={null}
-                          size="md"
-                        />
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 font-cairo">
-                              {req.tenant?.name || "مستأجر غير معروف"}
-                            </h3>
-                            {getStatusBadge(req.status)}
-                          </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo">
-                            طلب معاينة لعقار: <span className="font-semibold text-amber-600 dark:text-amber-400">{req.listing?.title || "غير محدد"}</span>
-                          </p>
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 font-cairo">
-                            <Clock size={11} />
-                            <span>تاريخ تقديم الطلب: {new Date(req.createdAt).toLocaleDateString("ar-EG")}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Details Strip */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                          <Calendar size={16} className="text-amber-500 shrink-0" />
-                          <div className="text-xs font-cairo">
-                            <p className="text-slate-400 font-medium">موعد المعاينة المفضل</p>
-                            <p className="font-bold mt-0.5">
-                              {req.requestedDate
-                                ? new Date(req.requestedDate).toLocaleDateString("ar-EG")
-                                : "غير محدد"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {req.tenant?.phone && ((req.status as string) === "accepted" || req.status === "approved" || req.status === "completed") && (
-                          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                            <User size={16} className="text-amber-500 shrink-0" />
-                            <div className="text-xs font-cairo">
-                              <p className="text-slate-400 font-medium">رقم الهاتف للتواصل</p>
-                              <a href={`tel:${req.tenant.phone}`} className="font-bold text-amber-500 hover:underline block mt-0.5 font-sans">
-                                {req.tenant.phone}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Notes / Message */}
-                      {req.notes && (
-                        <div className="flex gap-2 text-slate-600 dark:text-slate-400 text-sm bg-slate-50/50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/40">
-                          <MessageSquare size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                          <p className="font-cairo leading-relaxed">{req.notes}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right side: Action Buttons */}
-                    <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 dark:border-slate-800/50 pt-4 lg:pt-0 lg:ps-6">
-                      {req.status === "pending" && (
-                        <>
-                          <Button
-                            onClick={() => setModalAction({ requestId: req.id, action: "accepted" })}
-                            className="flex-1 lg:w-32 bg-green-600 hover:bg-green-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-3 rounded-xl"
-                          >
-                            <CheckCircle size={16} />
-                            <span>قبول</span>
-                          </Button>
-                          <Button
-                            onClick={() => setModalAction({ requestId: req.id, action: "rejected" })}
-                            variant="outline"
-                            className="flex-1 lg:w-32 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/10 font-bold font-cairo flex items-center justify-center gap-1.5 py-3 rounded-xl"
-                          >
-                            <XCircle size={16} />
-                            <span>رفض</span>
-                          </Button>
-                        </>
-                      )}
-
-                      {((req.status as string) === "accepted" || (req.status as string) === "approved") && (
-                        <Button
-                          onClick={() => setModalAction({ requestId: req.id, action: "completed" })}
-                          className="w-full lg:w-36 bg-amber-500 hover:bg-amber-600 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-3 rounded-xl shadow-sm"
-                        >
-                          <PlayCircle size={16} />
-                          <span>إكمال وتأكيد</span>
-                        </Button>
-                      )}
-
-                      {req.status === "completed" && (
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-bold font-cairo text-sm py-2">
-                          <CheckCircle size={16} />
-                          <span>تمت المعاينة بنجاح</span>
-                        </div>
-                      )}
-
-                      {req.status === "rejected" && (
-                        <div className="flex items-center gap-1 text-slate-400 font-cairo text-sm py-2">
-                          <XCircle size={16} />
-                          <span>تم رفض الطلب</span>
-                        </div>
-                      )}
-                    </div>
+                <CardBody className="p-4 sm:p-5 flex flex-col items-center text-center gap-3">
+                  <Avatar
+                    name={req.tenant?.name || "مستأجر"}
+                    src={(req.tenant as any)?.avatarUrl || (req.tenant as any)?.image || null}
+                    size="lg"
+                  />
+                  
+                  <div className="space-y-1 w-full">
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 font-cairo line-clamp-1">
+                      {req.tenant?.name || "مستأجر غير معروف"}
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-cairo line-clamp-2 px-1 h-8 sm:h-auto">
+                      {req.listing?.title || "عقار غير محدد"}
+                    </p>
+                  </div>
+                  
+                  <div className="mt-1">
+                    {getStatusBadge(req.status)}
                   </div>
                 </CardBody>
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Request Details Modal */}
+        {selectedRequest && (
+          <Modal
+            isOpen={true}
+            onClose={() => setSelectedRequest(null)}
+            title="تفاصيل الطلب"
+          >
+            <div className="p-4 sm:p-6 space-y-5 font-cairo">
+              {/* Header */}
+              <div className="flex items-center gap-4">
+                <Avatar
+                  name={selectedRequest.tenant?.name || "مستأجر"}
+                  src={(selectedRequest.tenant as any)?.avatarUrl || (selectedRequest.tenant as any)?.image || null}
+                  size="xl"
+                />
+                <div>
+                  <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
+                    {selectedRequest.tenant?.name || "مستأجر غير معروف"}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {getStatusBadge(selectedRequest.status)}
+                    <span className="text-xs text-slate-400">
+                      تاريخ: {new Date(selectedRequest.createdAt).toLocaleDateString("ar-EG")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Listing Title */}
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">العقار المطلوب</p>
+                <p className="font-bold text-amber-600 dark:text-amber-400 text-sm sm:text-base">
+                  {selectedRequest.listing?.title || "غير محدد"}
+                </p>
+              </div>
+
+              {/* Grid details */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-slate-500">
+                    <Calendar size={14} className="sm:w-4 sm:h-4 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium">موعد المعاينة</span>
+                  </div>
+                  <p className="font-bold text-xs sm:text-sm">
+                    {selectedRequest.preferredDate
+                      ? new Date(selectedRequest.preferredDate).toLocaleDateString("ar-EG")
+                      : "غير محدد"}
+                  </p>
+                </div>
+
+                {selectedRequest.tenant?.phone && ((selectedRequest.status as string) === "accepted" || selectedRequest.status === "approved" || selectedRequest.status === "completed") ? (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-slate-500">
+                      <User size={14} className="sm:w-4 sm:h-4 shrink-0" />
+                      <span className="text-[10px] sm:text-xs font-medium">رقم الهاتف</span>
+                    </div>
+                    <a href={`tel:${selectedRequest.tenant.phone}`} className="font-bold text-amber-500 hover:underline text-xs sm:text-sm font-sans block" style={{ direction: "ltr", textAlign: "right" }}>
+                      {selectedRequest.tenant.phone}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 opacity-50 flex flex-col items-center justify-center text-center">
+                    <User size={14} className="text-slate-400 mb-1" />
+                    <span className="text-[10px] sm:text-xs font-medium text-slate-500">يظهر بعد القبول</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Message */}
+              {selectedRequest.notes && (
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1.5">رسالة المستأجر</p>
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                    {selectedRequest.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+                {selectedRequest.status === "pending" && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedRequest(null);
+                        setModalAction({ requestId: selectedRequest.id, action: "accepted" });
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm"
+                    >
+                      قبول الطلب
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedRequest(null);
+                        setModalAction({ requestId: selectedRequest.id, action: "rejected" });
+                      }}
+                      variant="outline"
+                      className="flex-1 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/10 font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm"
+                    >
+                      رفض الطلب
+                    </Button>
+                  </div>
+                )}
+
+                {((selectedRequest.status as string) === "accepted" || (selectedRequest.status as string) === "approved") && (
+                  <Button
+                    onClick={() => {
+                      const req = selectedRequest;
+                      setSelectedRequest(null);
+                      setModalAction({ requestId: req.id, action: "completed" });
+                    }}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-sm text-xs sm:text-sm"
+                  >
+                    إكمال وتأكيد المعاينة
+                  </Button>
+                )}
+
+                {selectedRequest.status === "completed" && (
+                  <div className="flex items-center justify-center gap-1.5 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded-xl text-sm">
+                    <CheckCircle size={16} />
+                    <span>تمت المعاينة بنجاح</span>
+                  </div>
+                )}
+
+                {selectedRequest.status === "rejected" && (
+                  <div className="flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-sm">
+                    <XCircle size={16} />
+                    <span>تم رفض الطلب</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Modal>
         )}
 
         {/* Action Confirmation Modal */}

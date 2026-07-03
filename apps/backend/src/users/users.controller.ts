@@ -56,22 +56,22 @@ export class UsersController {
     return this.usersService.getPublicProfile(id);
   }
 
-  // ── 5. Admin: List All Users ─────────────────────────────────────────────────
-  @Get('admin/users')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.admin, UserRole.super_admin)
-  async getAllUsers(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-  ) {
-    return this.usersService.getAllUsers(page, limit);
-  }
+  // ── 5. Admin: List All Users (Commented out to avoid collision with admin/users route in admin.controller.ts) ─────────
+  // @Get('admin/users')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(UserRole.admin, UserRole.super_admin)
+  // async getAllUsers(
+  //   @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  //   @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  // ) {
+  //   return this.usersService.getAllUsers(page, limit);
+  // }
 
-  // ── 6. Admin: Toggle User Active Status ────────────────────────────────
-  @Patch('admin/users/:id/status')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.admin, UserRole.super_admin)
-  async toggleUserStatus(@Param('id') id: string) {
-    return this.usersService.toggleUserStatus(id);
-  }
+  // ── 6. Admin: Toggle User Active Status (Commented out to avoid collision with toggle-status route in admin.controller.ts) ──
+  // @Patch('admin/users/:id/status')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(UserRole.admin, UserRole.super_admin)
+  // async toggleUserStatus(@Param('id') id: string) {
+  //   return this.usersService.toggleUserStatus(id);
+  // }
 }

@@ -33,6 +33,11 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('يجب تسجيل الدخول أولاً');
     }
 
+    console.log("requiredRoles:", requiredRoles);
+    console.log("user:", request.user);
+    console.log("user.role:", request.user?.role);
+    console.log("typeof role:", typeof request.user?.role);
+
     const hasRole = requiredRoles.includes(user.role);
 
     if (!hasRole) {
@@ -42,3 +47,4 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 }
+

@@ -4,8 +4,10 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { useMe } from "./useAuth";
 
+type UserRole = "tenant" | "landlord" | "admin" | "super_admin";
+
 interface AuthGuardOptions {
-  role?: "tenant" | "landlord" | "admin" | "super_admin";
+  role?: UserRole | UserRole[];
 }
 
 export const useAuthGuard = (options?: AuthGuardOptions) => {
@@ -28,7 +30,17 @@ export const useAuthGuard = (options?: AuthGuardOptions) => {
       return;
     }
 
-    const hasRequiredRole = !options?.role || user?.role === options.role || (options.role === "admin" && user?.role === "super_admin");
+    const requiredRoles = options?.role
+      ? Array.isArray(options.role)
+        ? options.role
+        : [options.role]
+      : [];
+
+    const hasRequiredRole =
+      requiredRoles.length === 0 ||
+      (user && requiredRoles.includes(user.role as any)) ||
+      (user && requiredRoles.includes("admin") && user.role === "super_admin");
+
     if (user && !hasRequiredRole) {
       if (user.role === "tenant") {
         router.push(`/${locale}/dashboard/tenant`);

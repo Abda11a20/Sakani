@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Home, Search, Plus, LogOut, User, LayoutDashboard, KeyRound, Download, Menu, X } from "lucide-react";
+import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
 import { isUserVerified } from "@/types";
@@ -50,13 +51,17 @@ export const Navbar: React.FC = () => {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#1B2E4A]/90 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo — always left */}
+          {/* Logo — app icon for unified branding */}
           <Link
             href={`/${locale}`}
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex items-center gap-2.5 flex-shrink-0"
             style={{ direction: "ltr" }}
           >
-            <img src="/logo.png" alt="سكني" className="h-10 w-auto object-contain dark:brightness-0 dark:invert" />
+            <img
+              src="/icon-192.png"
+              alt="سكني"
+              className="h-9 w-9 object-contain rounded-xl shadow-sm"
+            />
           </Link>
 
           {/* Center nav links — desktop */}
@@ -80,8 +85,8 @@ export const Navbar: React.FC = () => {
             ))}
           </nav>
 
-          {/* Right actions — always right, direction ltr */}
-          <div className="flex items-center gap-1" style={{ direction: "ltr" }}>
+          {/* Actions — End (Left in RTL, Right in LTR) */}
+          <div className="flex items-center gap-1.5">
             {/* PWA Install */}
             {isInstallable && (
               <button
@@ -96,11 +101,18 @@ export const Navbar: React.FC = () => {
               </button>
             )}
 
-            {/* Language & Theme */}
-            <LanguageSwitcher />
-            <ThemeToggle />
+            {/* Language & Theme — HIDDEN on mobile (shown in drawer instead) */}
+            <div className="hidden xl:flex items-center gap-1">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
 
-            {/* Auth buttons */}
+            {/* Notification Bell — only for authenticated users */}
+            {mounted && user && (
+              <NotificationDropdown />
+            )}
+
+            {/* Auth buttons or Avatar */}
             {!mounted || !user ? (
               <div className="hidden md:flex items-center gap-2 ms-2">
                 <Link href={`/${locale}/login`}>
@@ -117,7 +129,7 @@ export const Navbar: React.FC = () => {
             ) : (
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <button className="ms-2 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+                  <button className="ms-1 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
                     <Avatar src={user?.avatarUrl || null} name={user?.name || ""} size="sm" verified={isUserVerified(user)} />
                     <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
                       {user?.name || ""}
@@ -130,33 +142,39 @@ export const Navbar: React.FC = () => {
                     align="end"
                     sideOffset={8}
                   >
-                    <DropdownMenu.Item asChild>
-                      <Link
-                        href={`/${locale}/dashboard/profile`}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
-                      >
-                        <User size={16} />
-                        {locale === "ar" ? "الملف الشخصي" : "Profile"}
-                      </Link>
-                    </DropdownMenu.Item>
+                    {user.role !== "admin" && user.role !== "super_admin" && (
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          href={`/${locale}/dashboard/profile`}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
+                        >
+                          <User size={16} />
+                          {locale === "ar" ? "الملف الشخصي" : "Profile"}
+                        </Link>
+                      </DropdownMenu.Item>
+                    )}
                     <DropdownMenu.Item asChild>
                       <Link
                         href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
                       >
                         <LayoutDashboard size={16} />
-                        {locale === "ar" ? "لوحة التحكم" : "Dashboard"}
+                        {user.role === "admin" || user.role === "super_admin"
+                          ? (locale === "ar" ? "لوحة الإدارة" : "Admin Panel")
+                          : (locale === "ar" ? "لوحة التحكم" : "Dashboard")}
                       </Link>
                     </DropdownMenu.Item>
-                    <DropdownMenu.Item asChild>
-                      <Link
-                        href={`/${locale}/dashboard/profile`}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
-                      >
-                        <KeyRound size={16} />
-                        {locale === "ar" ? "تغيير كلمة المرور" : "Change Password"}
-                      </Link>
-                    </DropdownMenu.Item>
+                    {user.role !== "admin" && user.role !== "super_admin" && (
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          href={`/${locale}/dashboard/profile`}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
+                        >
+                          <KeyRound size={16} />
+                          {locale === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+                        </Link>
+                      </DropdownMenu.Item>
+                    )}
                     <DropdownMenu.Separator className="my-1 h-px bg-gray-200 dark:bg-gray-800" />
                     <DropdownMenu.Item asChild>
                       <button
@@ -172,9 +190,9 @@ export const Navbar: React.FC = () => {
               </DropdownMenu.Root>
             )}
 
-            {/* Mobile hamburger — always rightmost */}
+            {/* Mobile hamburger — ALWAYS LAST CHILD so it goes to the far edge */}
             <button
-              className="ms-1 flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors md:hidden focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors md:hidden focus:outline-none focus:ring-2 focus:ring-primary shrink-0 ms-1"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
@@ -198,10 +216,15 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 p-4" style={{ direction: "ltr" }}>
               <Link
                 href={`/${locale}`}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2.5"
                 onClick={() => setMobileOpen(false)}
               >
-                <img src="/logo.png" alt="سكني" className="h-9 w-auto object-contain dark:brightness-0 dark:invert" />
+                <img
+                  src="/icon-192.png"
+                  alt="سكني"
+                  className="h-8 w-8 object-contain rounded-xl shadow-sm"
+                />
+                <span className="text-sm font-black text-gray-800 dark:text-white">سكني</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -247,21 +270,25 @@ export const Navbar: React.FC = () => {
 
               {mounted && user && (
                 <>
-                  <Link
-                    href={`/${locale}/dashboard/profile`}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <span style={{ direction: "ltr" }}><User size={18} /></span>
-                    {locale === "ar" ? "الملف الشخصي" : "Profile"}
-                  </Link>
+                  {user.role !== "admin" && user.role !== "super_admin" && (
+                    <Link
+                      href={`/${locale}/dashboard/profile`}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <span style={{ direction: "ltr" }}><User size={18} /></span>
+                      {locale === "ar" ? "الملف الشخصي" : "Profile"}
+                    </Link>
+                  )}
                   <Link
                     href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     <span style={{ direction: "ltr" }}><LayoutDashboard size={18} /></span>
-                    {locale === "ar" ? "لوحة التحكم" : "Dashboard"}
+                    {user.role === "admin" || user.role === "super_admin"
+                      ? (locale === "ar" ? "لوحة الإدارة" : "Admin Panel")
+                      : (locale === "ar" ? "لوحة التحكم" : "Dashboard")}
                   </Link>
                 </>
               )}

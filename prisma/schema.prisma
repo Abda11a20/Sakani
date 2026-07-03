@@ -40,6 +40,7 @@ enum GenderTarget {
   male
   female
   mixed
+  family
 }
 
 enum ElectricityType {
@@ -120,13 +121,14 @@ model User {
   alerts            Alert[]
   subscriptions     Subscription[]
   sentMessages      ChatMessage[]      @relation("SentMessages")
-  receivedMessages  ChatMessage[]      @relation("ReceivedMessages")
+  conversationParticipants ConversationParticipant[]
   verificationCodes VerificationCode[]
   deviceSessions    DeviceSession[]
   favorites         Favorite[]
   searchHistory     SearchHistory[]
   viewedListings    ViewedListing[]
   notifications     Notification[]
+  currentListingRentals Listing[]        @relation("ListingCurrentTenant")
 
   @@map("users")
 }
@@ -153,25 +155,57 @@ model Listing {
   amenities              String[]
   roommateFeatureEnabled Boolean         @default(false)
   viewCount              Int             @default(0)
+  currentTenantId        String?
+  rentedSince            DateTime?
+  rentedUntil            DateTime?
   isFeatured             Boolean         @default(false)
   rejectionReason        String?
+  // ── Soft Delete ─────────────────────────────────────────
+  isDeleted              Boolean         @default(false)
+  deletedAt              DateTime?
+  deletedById            String?
+  deletedByRole          UserRole?
+  deletedReason          String?
+  statusBeforeDelete     ListingStatus?
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
   // Relations
-  landlord  User             @relation(fields: [landlordId], references: [id])
-  images    ListingImage[]
-  beds      ListingBed[]
-  requests  ViewingRequest[]
-  reviews   Review[]
-  favorites Favorite[]
-  viewedBy  ViewedListing[]
+  landlord      User             @relation(fields: [landlordId], references: [id])
+  currentTenant User?            @relation("ListingCurrentTenant", fields: [currentTenantId], references: [id])
+  images        ListingImage[]
+  beds          ListingBed[]
+  requests      ViewingRequest[]
+  reviews       Review[]
+  favorites     Favorite[]
+  viewedBy      ViewedListing[]
+  auditLogs     ListingAuditLog[]
 
   @@index([status, governorate, district])
   @@index([price])
   @@index([genderTarget])
   @@index([landlordId])
+  @@index([currentTenantId])
+  @@index([isDeleted])
   @@map("listings")
+}
+
+model ListingAuditLog {
+  id                   String   @id @default(cuid())
+  listingId            String
+  listingTitleSnapshot String
+  actorId              String
+  actorRole            UserRole
+  actorName            String
+  action               String   // soft_delete | restore | delete_images | permanent_delete
+  detail               String?
+  createdAt            DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([actorId])
+  @@map("listing_audit_logs")
 }
 
 model ListingImage {
@@ -390,16 +424,68 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-model ChatMessage {
-  id         String   @id @default(cuid())
-  senderId   String
-  receiverId String? // Optional: If null, it means it's a general support message to admin
-  content    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+enum ConversationType {
+  PRIVATE
+  SUPPORT
+}
 
-  sender   User  @relation("SentMessages", fields: [senderId], references: [id])
-  receiver User? @relation("ReceivedMessages", fields: [receiverId], references: [id])
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum ParticipantRole {
+  USER
+  SUPPORT
+}
+
+model Conversation {
+  id             String             @id @default(cuid())
+  type           ConversationType   @default(PRIVATE)
+  status         ConversationStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  // Moderation fields
+  blockedAt      DateTime?
+  blockedBy      String?
+  blockReason    String?
+
+  // Intelligent last message indicators (simplified as scalars)
+  lastMessageId  String?
+  lastMessageAt  DateTime?
+
+  participants   ConversationParticipant[]
+  messages       ChatMessage[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  role           ParticipantRole @default(USER)
+  joinedAt       DateTime        @default(now())
+  lastReadAt     DateTime        @default(now())
+  isMuted        Boolean         @default(false)
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
 }

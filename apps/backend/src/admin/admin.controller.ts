@@ -57,6 +57,20 @@ export class AdminController {
     return this.adminService.getAllListings(page, limit, listingStatus);
   }
 
+  // ── Deleted Listings (Archive) ─────────────────────────────────────────────
+  @Get('deleted-listings')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async getDeletedListings(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('deletedByRole') deletedByRole?: string,
+    @Query('search') search?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.adminService.getDeletedListings(page, limit, deletedByRole, search, from, to);
+  }
+
   @Patch('listings/:id/review')
   @Roles(UserRole.admin, UserRole.super_admin)
   async reviewListing(
@@ -67,10 +81,41 @@ export class AdminController {
     return this.adminService.reviewListing(id, user.id, dto);
   }
 
+  @Patch('listings/:id/soft-delete')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async softDeleteListing(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+    @Body('reason') reason?: string,
+  ) {
+    return this.adminService.softDeleteListing(id, user.id, reason);
+  }
+
+  @Patch('listings/:id/restore')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async restoreListing(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.adminService.restoreListing(id, user.id);
+  }
+
+  @Delete('listings/:id/images')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async deleteListingImages(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.adminService.deleteListingImages(id, user.id);
+  }
+
   @Delete('listings/:id')
   @Roles(UserRole.admin, UserRole.super_admin)
-  async deleteListingPermanently(@Param('id') id: string) {
-    return this.adminService.deleteListingPermanently(id);
+  async deleteListingPermanently(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.adminService.deleteListingPermanently(id, user.id);
   }
 
   // ── Users ────────────────────────────────────────────────────────────────

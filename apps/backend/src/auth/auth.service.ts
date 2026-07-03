@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
+import { NotificationService } from '../notifications/notifications.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -20,7 +21,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { User, UserRole, VerificationType, Prisma } from '@prisma/client';
+import { NotificationType, User, UserRole, VerificationType, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -80,6 +81,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ── User Registration ──────────────────────────────────────────────────────
@@ -277,6 +279,19 @@ export class AuthService {
       }),
     ]);
 
+    await this.notificationService.createUnique({
+      userId: user.id,
+      type: NotificationType.SYSTEM,
+      title: 'Password reset successful',
+      body: 'Your password was reset successfully.',
+      entityType: 'security.password.reset',
+      entityId: user.id,
+    });
+
+    if (user.email) {
+      await this.emailService.sendPasswordChangedConfirmation(user.email);
+    }
+
     return { message: 'تم تغيير كلمة المرور بنجاح' };
   }
 
@@ -307,6 +322,19 @@ export class AuthService {
       this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
       this.prisma.deviceSession.deleteMany({ where: { userId } }),
     ]);
+
+    await this.notificationService.createUnique({
+      userId: user.id,
+      type: NotificationType.SYSTEM,
+      title: 'Password changed',
+      body: 'Your password was changed successfully.',
+      entityType: 'security.password.changed',
+      entityId: user.id,
+    });
+
+    if (user.email) {
+      await this.emailService.sendPasswordChangedConfirmation(user.email);
+    }
 
     return { message: 'تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مرة أخرى.' };
   }

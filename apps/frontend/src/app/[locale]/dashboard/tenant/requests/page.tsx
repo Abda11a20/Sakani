@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
-import { useCreateReview } from "@/hooks/useReviews";
+import { useCreateReview, useMyReviews } from "@/hooks/useReviews";
 import TenantLayout from "@/components/layout/TenantLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
@@ -18,19 +18,24 @@ import {
   XCircle,
   HelpCircle,
   MessageSquare,
+  Eye,
 } from "lucide-react";
 import { useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
+import { getImageUrl } from "@/lib/utils";
 
 type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
 
 export default function TenantRequests() {
   const locale = useLocale();
+  const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard();
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
   const [page, setPage] = useState(1);
 
   // Queries & Mutations
   const { data: requestsData, isLoading: isRequestsLoading } = useTenantRequests(page);
+  const { data: myReviews = [], isLoading: isReviewsLoading } = useMyReviews();
   const { mutate: cancelRequest, isPending: isCancelling } = useCancelRequest();
   const { mutate: createReview, isPending: isSubmittingReview } = useCreateReview();
 
@@ -46,7 +51,7 @@ export default function TenantRequests() {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
 
-  const isLoading = isAuthLoading || isRequestsLoading;
+  const isLoading = isAuthLoading || isRequestsLoading || isReviewsLoading;
 
   if (isLoading || !user) {
     return (
@@ -57,6 +62,7 @@ export default function TenantRequests() {
   }
 
   const items = requestsData?.items || [];
+  const reviewedListingIds = new Set(myReviews.map((review) => review.listingId));
 
   const filteredItems = items.filter((req) => {
     if (activeTab === "all") return true;
@@ -187,6 +193,7 @@ export default function TenantRequests() {
               const isAccepted = req.status === "accepted" || req.status === "approved";
               const isCompleted = req.status === "completed";
               const isRejected = req.status === "rejected";
+              const hasReviewed = reviewedListingIds.has(req.listingId);
 
               return (
                 <Card
@@ -200,7 +207,7 @@ export default function TenantRequests() {
                         <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800">
                           {req.listing?.images?.[0] ? (
                             <img
-                              src={req.listing.images[0]}
+                              src={getImageUrl(req.listing.images[0])}
                               alt={req.listing.title}
                               className="w-full h-full object-cover"
                             />
@@ -224,7 +231,7 @@ export default function TenantRequests() {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 font-cairo">
                             <span className="flex items-center gap-1">
                               <Calendar size={11} className="text-amber-500" />
-                              <span>تاريخ المعاينة: {new Date(req.requestedDate).toLocaleDateString("ar-EG")}</span>
+                              <span>تاريخ المعاينة: {new Date(req.preferredDate).toLocaleDateString("ar-EG")}</span>
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock size={11} className="text-slate-400" />
@@ -233,10 +240,10 @@ export default function TenantRequests() {
                           </div>
 
                           {/* Notes */}
-                          {req.notes && (
+                          {req.message && (
                             <div className="flex gap-1.5 text-slate-600 dark:text-slate-400 text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80 mt-2">
                               <MessageSquare size={13} className="text-slate-400 shrink-0 mt-0.5" />
-                              <p className="font-cairo truncate">{req.notes}</p>
+                              <p className="font-cairo truncate">{req.message}</p>
                             </div>
                           )}
                         </div>
@@ -244,6 +251,14 @@ export default function TenantRequests() {
 
                       {/* Right: Actions */}
                       <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 dark:border-slate-800/50 pt-4 lg:pt-0 lg:ps-6 justify-end">
+                        <Button
+                          onClick={() => router.push(`/${locale}/listings/${req.listingId}`)}
+                          className="flex-1 lg:w-32 bg-blue-600 hover:bg-blue-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
+                        >
+                          <Eye size={13} />
+                          <span>{locale === "ar" ? "عرض الإعلان" : "View Listing"}</span>
+                        </Button>
+
                         {isPending && (
                           <Button
                             onClick={() => setCancelModalId(req.id)}
@@ -268,7 +283,7 @@ export default function TenantRequests() {
                           </div>
                         )}
 
-                        {(isCompleted || isAccepted) && req.listing && (
+                        {isCompleted && req.listing && !hasReviewed && (
                           <Button
                             onClick={() => setReviewModalListing({ id: req.listingId, title: req.listing?.title || "" })}
                             className="flex-1 lg:w-32 bg-amber-500 hover:bg-amber-600 text-white font-bold font-cairo flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs"
@@ -276,6 +291,13 @@ export default function TenantRequests() {
                             <Star size={13} />
                             <span>كتابة تقييم</span>
                           </Button>
+                        )}
+
+                        {isCompleted && hasReviewed && (
+                          <div className="text-center font-cairo text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 bg-amber-500/10 py-1.5 px-3 rounded-full">
+                            <Star size={12} />
+                            <span>تم إضافة التقييم</span>
+                          </div>
                         )}
                       </div>
                     </div>

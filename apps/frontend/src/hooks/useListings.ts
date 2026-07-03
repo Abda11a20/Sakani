@@ -67,3 +67,26 @@ export const useDeleteListing = () => {
     },
   });
 };
+
+export const useVacateUnit = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, string>({
+    mutationFn: async (id): Promise<any> => {
+      const response = await api.patch<any>(`/listings/${id}/vacate`);
+      return response.data;
+    },
+    onSuccess: (data, id) => {
+      const listing = data?.listing;
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listings", id] });
+      queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
+      if (listing?.id) {
+        queryClient.setQueryData(["listings", listing.id], listing);
+        queryClient.setQueryData<Listing[]>(["listings", "my"], (current) =>
+          current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
+        );
+      }
+    },
+  });
+};

@@ -35,6 +35,16 @@ export const useListingReviews = (listingId: string | null | undefined) => {
   });
 };
 
+export const useMyReviews = () => {
+  return useQuery<Review[]>({
+    queryKey: ["reviews", "my"],
+    queryFn: async (): Promise<Review[]> => {
+      const response = await api.get<Review[]>("/reviews/my");
+      return response.data;
+    },
+  });
+};
+
 export const useCreateReview = () => {
   const queryClient = useQueryClient();
 
@@ -45,6 +55,7 @@ export const useCreateReview = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "listing", variables.listingId] });
+      queryClient.invalidateQueries({ queryKey: ["reviews", "my"] });
       queryClient.invalidateQueries({ queryKey: ["listings", variables.listingId] });
       queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
@@ -60,6 +71,7 @@ export const useDeleteReview = () => {
     },
     onSuccess: (_, { listingId }) => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "listing", listingId] });
+      queryClient.invalidateQueries({ queryKey: ["reviews", "my"] });
       queryClient.invalidateQueries({ queryKey: ["listings", listingId] });
     },
   });

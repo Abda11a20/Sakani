@@ -54,7 +54,6 @@ const GOVERNORATES = [
 
 const UNIT_TYPE_LABELS = {
   apartment: "شقة",
-  room: "غرفة",
   bed: "سرير",
 };
 
@@ -68,7 +67,7 @@ const GENDER_LABELS: Record<string, string> = {
 
 // Alert Description Generator
 const generateAlertSummary = (alert: Alert) => {
-  const typeMap: Record<string, string> = { apartment: "شقة", room: "غرفة خاصة", bed: "سرير" };
+  const typeMap: Record<string, string> = { apartment: "شقة", bed: "سرير" };
   const genderMap: Record<string, string> = {
     male: "شباب",
     female: "بنات",
@@ -90,7 +89,7 @@ const generateAlertSummary = (alert: Alert) => {
 export default function TenantAlerts() {
   const locale = useLocale();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard();
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
 
   // Queries & Mutations
   const { data: rawAlerts = [], isLoading: isAlertsLoading } = useMyAlerts();
@@ -108,7 +107,7 @@ export default function TenantAlerts() {
   // Form states
   const [gov, setGov] = useState("القاهرة");
   const [district, setDistrict] = useState("");
-  const [unitType, setUnitType] = useState<"apartment" | "room" | "bed">("apartment");
+  const [unitType, setUnitType] = useState<"apartment" | "bed">("apartment");
   const [maxPrice, setMaxPrice] = useState("");
   const [genderTarget, setGenderTarget] = useState<GenderTarget>("mixed");
   const [specialty, setSpecialty] = useState("");
@@ -257,7 +256,7 @@ export default function TenantAlerts() {
           <EmptyState
             icon={<Bell size={48} />}
             title="لا توجد تنبيهات بعد"
-            description="أنشئ تنبيهاً ذكياً لنخطرك فور نزول شقة أو غرفة تناسب ميزانيتك وموقعك المفضل."
+            description="أنشئ تنبيهاً ذكياً لنخطرك فور نزول شقة أو سرير يناسب ميزانيتك وموقعك المفضل."
             action={
               <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5">
                 أنشئ أول تنبيه
@@ -407,11 +406,10 @@ export default function TenantAlerts() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">نوع الوحدة</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {(
                     [
                       { key: "apartment", label: "شقة" },
-                      { key: "room", label: "غرفة" },
                       { key: "bed", label: "سرير" },
                     ] as const
                   ).map((opt) => (

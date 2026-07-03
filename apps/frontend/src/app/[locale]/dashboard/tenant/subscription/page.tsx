@@ -46,7 +46,7 @@ type BillingValues = z.infer<typeof billingSchema>;
 
 export default function TenantSubscription() {
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard();
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
   
   // Queries
   const { data: planData, isLoading: isPlanLoading } = useCurrentPlan();

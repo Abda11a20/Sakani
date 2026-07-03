@@ -11,7 +11,7 @@ import {
 import {
   useAdminListings,
   useReviewListing,
-  useAdminDeleteListing,
+  useSoftDeleteListing,
   useIdCardUrl
 } from "@/hooks/useAdmin";
 import { useToast } from "@/components/ui/toast";
@@ -68,7 +68,7 @@ export default function AdminListingsPage() {
 
   const { data, isLoading, error } = useAdminListings(page, 10, statusTab);
   const reviewMutation = useReviewListing();
-  const deleteMutation = useAdminDeleteListing();
+  const deleteMutation = useSoftDeleteListing();
 
   const handleApprove = async (id: string) => {
     try {
@@ -97,11 +97,11 @@ export default function AdminListingsPage() {
   const handleDelete = async () => {
     if (!deleteModal) return;
     try {
-      await deleteMutation.mutateAsync(deleteModal.id);
-      toast({ type: "success", description: "تم حذف الإعلان نهائياً" });
+      await deleteMutation.mutateAsync({ id: deleteModal.id, reason: "حذف من قبل الأدمن" });
+      toast({ type: "success", description: "تم نقل الإعلان إلى الأرشيف بنجاح" });
       setDeleteModal(null);
     } catch {
-      toast({ type: "error", description: "فشل في حذف الإعلان" });
+      toast({ type: "error", description: "فشل في نقل الإعلان إلى الأرشيف" });
     }
   };
 
@@ -218,7 +218,7 @@ export default function AdminListingsPage() {
                       {listing.title}
                     </h2>
                     <span className="shrink-0 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400 font-cairo font-medium">
-                      {listing.type === "apartment" ? "شقة" : listing.type === "room" ? "غرفة" : "سرير"}
+                      {listing.type === "apartment" ? "شقة" : "سرير"}
                     </span>
                   </div>
 

@@ -7,9 +7,11 @@ import { AdminChatController } from './admin-chat.controller';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { ChatModule } from '../chat/chat.module';
+import { AlertsModule } from '../alerts/alerts.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ChatModule],
+  imports: [AuthModule, UsersModule, ChatModule, AlertsModule, UploadsModule],
   controllers: [AdminController, AdminChatController],
   providers: [AdminService],
   exports: [AdminService],

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ListingDetailClient } from "./listing-detail-client";
 import type { Listing, Review } from "@/types";
+import { getImageUrl } from "@/lib/utils";
 
 interface ListingPageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -58,11 +59,11 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
     title: `${listing.title} — سكني`,
     description: listing.description
       ? listing.description.slice(0, 160)
-      : `إعلان ${listing.type === "apartment" ? "شقة" : listing.type === "room" ? "غرفة" : "سرير"} في ${listing.district}، ${listing.city}`,
+      : `إعلان ${listing.type === "apartment" ? "شقة" : listing.type === "bed" ? "سرير" : "غير متاح"} في ${listing.district}، ${listing.city}`,
     openGraph: {
       title: listing.title,
       description: listing.description?.slice(0, 160),
-      images: listing.images?.[0] ? [listing.images[0]] : [],
+      images: listing.images?.[0] ? [getImageUrl(listing.images[0])] : [],
     },
   };
 }

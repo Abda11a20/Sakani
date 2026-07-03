@@ -40,7 +40,7 @@ async function getFeaturedListings(): Promise<Listing[]> {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1"}/search?limit=6&sortBy=popular`,
-      { next: { revalidate: 300 } }
+      { next: { revalidate: 10 } }
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -54,7 +54,7 @@ async function getPopularDistricts(): Promise<District[]> {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1"}/search/popular-districts`,
-      { next: { revalidate: 600 } }
+      { next: { revalidate: 10 } }
     );
     if (!res.ok) return [];
     const json = await res.json();

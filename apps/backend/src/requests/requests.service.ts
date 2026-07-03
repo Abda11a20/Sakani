@@ -10,12 +10,20 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
-import { RequestStatus, ListingStatus, UserRole } from '@prisma/client';
+import { FinalizeBedRentalDto } from './dto/finalize-bed-rental.dto';
+import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
+import { NotificationType, RequestStatus, ListingStatus, UserRole, UnitType } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
+import { BedsService } from '../beds/beds.service';
+import { NotificationService } from '../notifications/notifications.service';
 
 @Injectable()
 export class RequestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly bedsService: BedsService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   // ── 1. إنشاء طلب معاينة (Tenant فقط) ──────────────────────────────────────
   async create(tenantId: string, dto: CreateRequestDto) {
@@ -44,30 +52,46 @@ export class RequestsService {
       throw new ConflictException('لقد قمت بإرسال طلب لهذا الإعلان وهو قيد الانتظار');
     }
 
-    const request = await this.prisma.viewingRequest.create({
-      data: {
-        tenantId,
-        listingId: dto.listingId,
-        preferredDate: dto.preferredDate,
-        message: dto.message,
-        specialty: dto.specialty,
-        status: RequestStatus.pending,
-      },
-      include: {
-        listing: {
-          include: {
-            landlord: {
-              select: userPublicSelect,
+    const request = await this.prisma.$transaction(async (tx) => {
+      const createdRequest = await tx.viewingRequest.create({
+        data: {
+          tenantId,
+          listingId: dto.listingId,
+          preferredDate: dto.preferredDate,
+          message: dto.message,
+          specialty: dto.specialty,
+          status: RequestStatus.pending,
+        },
+        include: {
+          listing: {
+            include: {
+              landlord: {
+                select: userPublicSelect,
+              },
+            },
+          },
+          tenant: {
+            select: {
+              ...userPublicSelect,
+              phone: true,
             },
           },
         },
-        tenant: {
-          select: {
-            ...userPublicSelect,
-            phone: true,
-          },
+      });
+
+      await this.notificationService.createUnique(
+        {
+          userId: listing.landlordId,
+          type: NotificationType.REQUEST,
+          title: 'New viewing request',
+          body: `A tenant requested to view "${listing.title}".`,
+          entityType: `viewing_request.created.listing.${listing.id}`,
+          entityId: createdRequest.id,
         },
-      },
+        tx,
+      );
+
+      return createdRequest;
     });
 
     return request;
@@ -166,6 +190,30 @@ export class RequestsService {
   }
 
   // ── 5. تحديث حالة الطلب (Landlord فقط) ───────────────────────────────────
+  async getListingContactAccess(tenantId: string, listingId: string) {
+    const acceptedRequest = await this.prisma.viewingRequest.findFirst({
+      where: {
+        tenantId,
+        listingId,
+        status: { in: [RequestStatus.accepted, RequestStatus.completed] },
+      },
+      include: {
+        listing: {
+          include: {
+            landlord: {
+              select: { phone: true },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      canViewPhone: Boolean(acceptedRequest),
+      phone: acceptedRequest?.listing.landlord.phone ?? null,
+    };
+  }
+
   async updateStatus(requestId: string, landlordId: string, dto: UpdateRequestStatusDto) {
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.viewingRequest.findUnique({
@@ -186,14 +234,22 @@ export class RequestsService {
         data: { status: dto.status },
       });
 
-      // إذا تم إكمال الطلب (completed) للإعلان ككل، قم بتغيير حالة الإعلان لـ rented
-      // ملاحظة: لو كان unitType === bed، ربما يكون المنطق مختلف (يعتمد على حجز الأسرة)،
-      // لكن حسب المتطلبات: "يغير حالة الـ listing لـ rented تلقائياً"
-      if (dto.status === RequestStatus.completed) {
-        await tx.listing.update({
-          where: { id: request.listingId },
-          data: { status: ListingStatus.rented },
-        });
+      if (dto.status === RequestStatus.accepted || dto.status === RequestStatus.rejected) {
+        const isAccepted = dto.status === RequestStatus.accepted;
+
+        await this.notificationService.createUnique(
+          {
+            userId: request.tenantId,
+            type: NotificationType.REQUEST,
+            title: isAccepted ? 'Viewing request accepted' : 'Viewing request rejected',
+            body: isAccepted
+              ? `Your viewing request for "${request.listing.title}" was accepted.`
+              : `Your viewing request for "${request.listing.title}" was rejected.`,
+            entityType: `viewing_request.${dto.status}.listing.${request.listingId}`,
+            entityId: request.id,
+          },
+          tx,
+        );
       }
 
       return updatedRequest;
@@ -202,9 +258,19 @@ export class RequestsService {
 
   // ── 6. إلغاء الطلب (Tenant فقط) ──────────────────────────────────────────
   async cancelRequest(requestId: string, tenantId: string) {
-    const request = await this.prisma.viewingRequest.findUnique({
-      where: { id: requestId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.viewingRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          listing: {
+            select: {
+              id: true,
+              title: true,
+              landlordId: true,
+            },
+          },
+        },
+      });
 
     if (!request) {
       throw new NotFoundException('الطلب غير موجود');
@@ -218,14 +284,211 @@ export class RequestsService {
       throw new BadRequestException('لا يمكن إلغاء الطلب إلا إذا كان قيد الانتظار');
     }
 
-    await this.prisma.viewingRequest.delete({
+    await tx.viewingRequest.delete({
       where: { id: requestId },
     });
 
+    await this.notificationService.createUnique(
+      {
+        userId: request.listing.landlordId,
+        type: NotificationType.REQUEST,
+        title: 'Viewing request canceled',
+        body: `A tenant canceled their viewing request for "${request.listing.title}".`,
+        entityType: `viewing_request.canceled.listing.${request.listingId}`,
+        entityId: request.id,
+      },
+      tx,
+    );
+
     return { message: 'تم إلغاء الطلب بنجاح' };
+    });
   }
 
   // ── 7. جلب إحصائيات المؤجر ───────────────────────────────────────────────
+  async finalizeBedRental(requestId: string, landlordId: string, dto: FinalizeBedRentalDto) {
+    return this.prisma.$transaction(async (tx) => {
+    const request = await tx.viewingRequest.findUnique({
+      where: { id: requestId },
+      include: { listing: true },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Ø§Ù„Ø·Ù„Ø¨ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯');
+    }
+
+    if (request.listing.landlordId !== landlordId) {
+      throw new ForbiddenException('Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ ØµÙ„Ø§Ø­ÙŠØ© Ù„Ø¥ØªÙ…Ø§Ù… ØªØ£Ø¬ÙŠØ± Ù‡Ø°Ø§ Ø§Ù„Ø³Ø±ÙŠØ±');
+    }
+
+    if (request.status !== RequestStatus.accepted) {
+      throw new BadRequestException('ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø·Ù„Ø¨ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ù…Ù‚Ø¨ÙˆÙ„Ø§Ù‹ Ù‚Ø¨Ù„ ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø³Ø±ÙŠØ±');
+    }
+
+    if (request.listing.unitType !== UnitType.bed) {
+      throw new BadRequestException('ÙŠÙ…ÙƒÙ† Ø¥ØªÙ…Ø§Ù… ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø£Ø³Ø±Ø© Ù…Ù† Ø·Ù„Ø¨Ø§Øª Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø±Ø© ÙÙ‚Ø·');
+    }
+
+    const bed = await tx.listingBed.findUnique({
+      where: { id: dto.bedId },
+      select: { listingId: true },
+    });
+
+    if (!bed) {
+      throw new NotFoundException('Ø§Ù„Ø³Ø±ÙŠØ± ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯');
+    }
+
+    if (bed.listingId !== request.listingId) {
+      throw new BadRequestException('Ø§Ù„Ø³Ø±ÙŠØ± Ø§Ù„Ù…Ø­Ø¯Ø¯ Ù„Ø§ ÙŠØªØ¨Ø¹ Ù„Ø¥Ø¹Ù„Ø§Ù† Ù‡Ø°Ø§ Ø§Ù„Ø·Ù„Ø¨');
+    }
+
+    const rentalResult = await this.bedsService.rentBed(
+      dto.bedId,
+      landlordId,
+      {
+        tenantId: request.tenantId,
+        rentedSince: dto.rentedSince,
+        rentedUntil: dto.rentedUntil,
+      },
+      tx,
+    );
+
+    const completedRequest = await tx.viewingRequest.update({
+      where: { id: requestId },
+      data: { status: RequestStatus.completed },
+      include: {
+        listing: { select: { id: true, title: true, unitType: true } },
+        tenant: {
+          select: {
+            ...userPublicSelect,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    await this.notificationService.createUnique(
+      {
+        userId: request.listing.landlordId,
+        type: NotificationType.SYSTEM,
+        title: 'Bed rental completed',
+        body: `Bed rental for "${request.listing.title}" has been completed.`,
+        entityType: 'bed.rental.completed',
+        entityId: request.id,
+      },
+      tx,
+    );
+
+    await this.notificationService.createUnique(
+      {
+        userId: request.tenantId,
+        type: NotificationType.SYSTEM,
+        title: 'Bed rental completed',
+        body: `Your bed rental for "${request.listing.title}" has been completed.`,
+        entityType: 'bed.rental.completed',
+        entityId: request.id,
+      },
+      tx,
+    );
+
+    return {
+      ...rentalResult,
+      request: completedRequest,
+    };
+    });
+  }
+
+  async finalizeUnitRental(requestId: string, landlordId: string, dto: FinalizeUnitRentalDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.viewingRequest.findUnique({
+        where: { id: requestId },
+        include: { listing: true },
+      });
+
+      if (!request) {
+        throw new NotFoundException('طلب المعاينة غير موجود');
+      }
+
+      if (request.listing.landlordId !== landlordId) {
+        throw new ForbiddenException('ليس لديك صلاحية لإتمام تأجير هذا العقار');
+      }
+
+      if (request.status !== RequestStatus.accepted) {
+        throw new BadRequestException('يجب أن يكون طلب المعاينة مقبولاً قبل تسجيل عقد الإيجار');
+      }
+
+      if (request.listing.unitType === UnitType.bed) {
+        throw new BadRequestException('استخدم مسار تأجير الأسرة لإعلانات الأسرة');
+      }
+
+      if (request.listing.status === ListingStatus.rented || request.listing.currentTenantId) {
+        throw new BadRequestException('هذا العقار مؤجر حالياً');
+      }
+
+      if (dto.rentedSince >= dto.rentedUntil) {
+        throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+      }
+
+      const listing = await tx.listing.update({
+        where: { id: request.listingId },
+        data: {
+          status: ListingStatus.rented,
+          currentTenantId: request.tenantId,
+          rentedSince: dto.rentedSince,
+          rentedUntil: dto.rentedUntil,
+        },
+        include: {
+          currentTenant: {
+            select: userPublicSelect,
+          },
+        },
+      });
+
+      const completedRequest = await tx.viewingRequest.update({
+        where: { id: requestId },
+        data: { status: RequestStatus.completed },
+        include: {
+          listing: { select: { id: true, title: true, unitType: true } },
+          tenant: {
+            select: {
+              ...userPublicSelect,
+              phone: true,
+            },
+          },
+        },
+      });
+
+      await this.notificationService.createUnique(
+        {
+          userId: request.listing.landlordId,
+          type: NotificationType.SYSTEM,
+          title: 'Rental completed',
+          body: `Rental for "${request.listing.title}" has been completed.`,
+          entityType: 'unit.rental.completed',
+          entityId: request.id,
+        },
+        tx,
+      );
+
+      await this.notificationService.createUnique(
+        {
+          userId: request.tenantId,
+          type: NotificationType.SYSTEM,
+          title: 'Rental completed',
+          body: `Your rental for "${request.listing.title}" has been completed.`,
+          entityType: 'unit.rental.completed',
+          entityId: request.id,
+        },
+        tx,
+      );
+
+      return {
+        message: 'تم تسجيل عقد الإيجار بنجاح',
+        listing,
+        request: completedRequest,
+      };
+    });
+  }
+
   async getRequestStats(landlordId: string) {
     const where = { listing: { landlordId } };
 

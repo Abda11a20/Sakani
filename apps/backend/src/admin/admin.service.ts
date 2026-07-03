@@ -10,18 +10,28 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReviewListingDto } from './dto/review-listing.dto';
 import { BanUserDto } from './dto/ban-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { ListingStatus, UserRole, IdentityStatus } from '@prisma/client';
+import { ListingStatus, NotificationType, UserRole, IdentityStatus } from '@prisma/client';
 import { decryptAES } from '../auth/auth.service';
 import { userPublicSelect } from '../common/selects/user.select';
+import { NotificationService } from '../notifications/notifications.service';
+import { AlertsService } from '../alerts/alerts.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+    private readonly alertsService: AlertsService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   // ── إدارة الإعلانات ────────────────────────────────────────────────────────
   async getAllListings(page: number = 1, limit: number = 10, status?: ListingStatus) {
     const skip = (page - 1) * limit;
-    const where = status ? { status } : {};
+    const where = status
+      ? { status, isDeleted: false }
+      : { isDeleted: false };
 
     const [listings, total] = await Promise.all([
       this.prisma.listing.findMany({
@@ -45,6 +55,203 @@ export class AdminService {
     return { listings, meta: { total, page, lastPage: Math.ceil(total / limit) } };
   }
 
+  // ── جلب الإعلانات المحذوفة (الأرشيف) ─────────────────────────────────────
+  async getDeletedListings(
+    page: number = 1,
+    limit: number = 10,
+    deletedByRole?: string,
+    search?: string,
+    from?: string,
+    to?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const andConditions: any[] = [{ isDeleted: true }];
+
+    if (deletedByRole && deletedByRole !== 'all') {
+      andConditions.push({ deletedByRole });
+    }
+
+    if (search) {
+      andConditions.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { landlord: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    if (from || to) {
+      const dateFilter: any = {};
+      if (from) dateFilter.gte = new Date(from);
+      if (to) dateFilter.lte = new Date(to);
+      andConditions.push({ deletedAt: dateFilter });
+    }
+
+    const where = { AND: andConditions };
+
+    const [listings, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { deletedAt: 'desc' },
+        include: {
+          landlord: {
+            select: {
+              ...userPublicSelect,
+              phone: true,
+            },
+          },
+          images: { orderBy: { order: 'asc' } },
+          _count: { select: { images: true } },
+        },
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+
+    return { listings, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+  }
+
+  // ── Soft Delete من الأدمن ───────────────────────────────────────────────────
+  async softDeleteListing(listingId: string, adminId: string, reason?: string) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { name: true, role: true },
+    });
+    if (!admin) throw new NotFoundException('الأدمن غير موجود');
+
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) throw new NotFoundException('الإعلان غير موجود');
+    if (listing.isDeleted) throw new BadRequestException('الإعلان محذوف بالفعل');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById: adminId,
+          deletedByRole: admin.role,
+          deletedReason: reason ?? null,
+          statusBeforeDelete: listing.status,
+        },
+      });
+
+      await tx.listingAuditLog.create({
+        data: {
+          listingId,
+          listingTitleSnapshot: listing.title,
+          actorId: adminId,
+          actorRole: admin.role,
+          actorName: admin.name,
+          action: 'soft_delete',
+          detail: reason ?? 'حذف من قبل الأدمن',
+        },
+      });
+    });
+
+    return { message: 'تم حذف الإعلان بنجاح' };
+  }
+
+  // ── Restore الإعلان ────────────────────────────────────────────────────────
+  async restoreListing(listingId: string, adminId: string) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { name: true, role: true },
+    });
+    if (!admin) throw new NotFoundException('الأدمن غير موجود');
+
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) throw new NotFoundException('الإعلان غير موجود');
+    if (!listing.isDeleted) throw new BadRequestException('الإعلان غير محذوف');
+
+    // Restore to previous status, fallback to pending_review
+    const restoredStatus = listing.statusBeforeDelete ?? ListingStatus.pending_review;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          isDeleted: false,
+          deletedAt: null,
+          deletedById: null,
+          deletedByRole: null,
+          deletedReason: null,
+          statusBeforeDelete: null,
+          status: restoredStatus,
+        },
+      });
+
+      await tx.listingAuditLog.create({
+        data: {
+          listingId,
+          listingTitleSnapshot: listing.title,
+          actorId: adminId,
+          actorRole: admin.role,
+          actorName: admin.name,
+          action: 'restore',
+          detail: `تم الاسترجاع — الحالة السابقة: ${restoredStatus}`,
+        },
+      });
+    });
+
+    return { message: 'تم استرجاع الإعلان بنجاح', restoredStatus };
+  }
+
+  // ── حذف صور الإعلان فقط ──────────────────────────────────────────────────
+  async deleteListingImages(listingId: string, adminId: string) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { name: true, role: true },
+    });
+    if (!admin) throw new NotFoundException('الأدمن غير موجود');
+
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+    if (!listing) throw new NotFoundException('الإعلان غير موجود');
+
+    const images = await this.prisma.listingImage.findMany({
+      where: { listingId },
+    });
+
+    // Delete files from storage
+    await Promise.allSettled(
+      images.map(async (img) => {
+        try {
+          await this.uploadsService.deleteFileByKey(img.s3Key);
+        } catch {
+          // Ignore individual file deletion errors
+        }
+      }),
+    );
+
+    // Delete image records from DB
+    await this.prisma.listingImage.deleteMany({ where: { listingId } });
+
+    // Write audit log
+    await this.prisma.listingAuditLog.create({
+      data: {
+        listingId,
+        listingTitleSnapshot: listing.title,
+        actorId: adminId,
+        actorRole: admin.role,
+        actorName: admin.name,
+        action: 'delete_images',
+        detail: `حذف ${images.length} صورة`,
+      },
+    });
+
+    return { message: `تم حذف ${images.length} صورة بنجاح`, deletedCount: images.length };
+  }
+
   async reviewListing(listingId: string, adminId: string, dto: ReviewListingDto) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
@@ -52,6 +259,10 @@ export class AdminService {
 
     if (!listing) {
       throw new NotFoundException('الإعلان غير موجود');
+    }
+
+    if (listing.isDeleted) {
+      throw new BadRequestException('لا يمكن مراجعة إعلان محذوف');
     }
 
     const data: any = { status: dto.status };
@@ -62,23 +273,115 @@ export class AdminService {
       data.rejectionReason = null; // تنظيف السبب القديم إن كان تم قبوله
     }
 
-    return this.prisma.listing.update({
-      where: { id: listingId },
-      data,
+    return this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data,
+      });
+
+      if (dto.status === ListingStatus.active || dto.status === ListingStatus.rejected) {
+        const isApproved = dto.status === ListingStatus.active;
+
+        await this.notificationService.createUnique(
+          {
+            userId: listing.landlordId,
+            type: NotificationType.SYSTEM,
+            title: isApproved ? 'Listing approved' : 'Listing rejected',
+            body: isApproved
+              ? `Your listing "${listing.title}" has been approved and is now visible.`
+              : `Your listing "${listing.title}" was rejected.`,
+            entityType: isApproved ? 'listing.approved' : 'listing.rejected',
+            entityId: listing.id,
+          },
+          tx,
+        );
+
+        if (isApproved) {
+          await this.alertsService.checkAndNotify(updatedListing.id, tx);
+        }
+      }
+
+      return updatedListing;
     });
   }
 
-  async deleteListingPermanently(listingId: string) {
+  // ── الحذف النهائي (بعد Pre-flight checks) ─────────────────────────────────
+  async deleteListingPermanently(listingId: string, adminId: string) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { name: true, role: true },
+    });
+    if (!admin) throw new NotFoundException('الأدمن غير موجود');
+
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
     });
 
-    if (!listing) {
-      throw new NotFoundException('Listing not found');
+    if (!listing) throw new NotFoundException('الإعلان غير موجود');
+
+    // Pre-flight check 1: Must be soft-deleted first
+    if (!listing.isDeleted) {
+      throw new BadRequestException(
+        'يجب أرشفة الإعلان أولاً قبل الحذف النهائي. استخدم "أرشفة" أولاً.',
+      );
     }
 
-    await this.prisma.listing.delete({ where: { id: listingId } });
-    return { message: 'Listing deleted permanently' };
+    // Pre-flight check 2: No active viewing requests
+    const activeRequests = await this.prisma.viewingRequest.count({
+      where: {
+        listingId,
+        status: { in: ['pending', 'accepted'] },
+      },
+    });
+
+    if (activeRequests > 0) {
+      throw new BadRequestException(
+        `يوجد ${activeRequests} طلب معاينة نشط مرتبط بهذا الإعلان. يجب إنهاؤها أولاً.`,
+      );
+    }
+
+    // Pre-flight check 3: No active current tenant
+    if (listing.currentTenantId) {
+      throw new BadRequestException(
+        'يوجد مستأجر نشط مرتبط بهذا الإعلان. يجب إخلاء الوحدة أولاً.',
+      );
+    }
+
+    // Delete images from storage
+    const images = await this.prisma.listingImage.findMany({ where: { listingId } });
+
+    await Promise.allSettled(
+      images.map(async (img) => {
+        try {
+          await this.uploadsService.deleteFileByKey(img.s3Key);
+        } catch {
+          // Ignore individual storage errors
+        }
+      }),
+    );
+
+    // Write audit log and delete in transaction
+    const titleSnapshot = listing.title;
+
+    await this.prisma.$transaction(async (tx) => {
+      // Permanently delete
+      await tx.listing.delete({ where: { id: listingId } });
+
+      // Write audit log
+      await tx.listingAuditLog.create({
+        data: {
+          listingId,
+          listingTitleSnapshot: titleSnapshot,
+          actorId: adminId,
+          actorRole: admin.role,
+          actorName: admin.name,
+          action: 'permanent_delete',
+          detail: 'حذف نهائي للإعلان من قاعدة البيانات',
+        },
+      });
+    });
+
+    return { message: `تم الحذف النهائي للإعلان: "${titleSnapshot}"` };
   }
 
   async getAllRequests(page: number = 1, limit: number = 10, status?: string, search?: string) {
@@ -229,11 +532,28 @@ export class AdminService {
       throw new BadRequestException('يجب توفير إما nationalIdHash أو phone لحظر المستخدم');
     }
 
+    let nationalIdHash = dto.nationalIdHash;
+    const phone = dto.phone;
+
+    // Smart Blacklist: If phone is provided, lookup the user in the database
+    // and extract their official nationalIdHash if it exists, to override or supplement the frontend input
+    if (phone) {
+      const user = await this.prisma.user.findFirst({
+        where: { phone },
+      });
+      if (user && user.nationalIdEnc) {
+        const parts = user.nationalIdEnc.split(':');
+        if (parts[0]) {
+          nationalIdHash = parts[0]; // Override with official database hash
+        }
+      }
+    }
+
     // إضافة للـ blacklist
     const blacklisted = await this.prisma.blacklist.create({
       data: {
-        nationalIdHash: dto.nationalIdHash,
-        phone: dto.phone,
+        nationalIdHash,
+        phone,
         reason: dto.reason,
         bannedBy: adminId,
       },
@@ -241,15 +561,9 @@ export class AdminService {
 
     // إيقاف حسابات المستخدمين المرتبطين (سواء بالموبايل أو الهاش)
     const orConditions: any[] = [];
-    if (dto.phone) orConditions.push({ phone: dto.phone });
-    
-    // ملاحظة: الـ user table ليس به nationalIdHash منفصل (لدينا nationalIdEnc).
-    // إذا كنت تخزن الهاش مدمجاً في nationalIdEnc فأنت بحاجة لمطابقته (Starts With Hash).
-    // ولكن لإيقاف الحسابات هنا، سنقوم بالبحث برقم الموبايل أساسياً إن توفر،
-    // أو عبر إحضار الكل والمطابقة، أو يمكن تجاهل الإيقاف التلقائي بالـ Hash وتركها للحظر المستقبلي.
-    // للمطابقة مع nationalIdEnc الذي يبدأ بـ hash:
-    if (dto.nationalIdHash) {
-      orConditions.push({ nationalIdEnc: { startsWith: dto.nationalIdHash + ':' } });
+    if (phone) orConditions.push({ phone });
+    if (nationalIdHash) {
+      orConditions.push({ nationalIdEnc: { startsWith: nationalIdHash + ':' } });
     }
 
     if (orConditions.length > 0) {
@@ -316,14 +630,16 @@ export class AdminService {
       totalRequests,
       pendingRequests,
       bannedUsers,
+      archivedListings,
     ] = await this.prisma.$transaction([
       this.prisma.user.count(),
-      this.prisma.listing.count(),
-      this.prisma.listing.count({ where: { status: ListingStatus.pending_review } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.active } }),
+      this.prisma.listing.count({ where: { isDeleted: false } }),
+      this.prisma.listing.count({ where: { status: ListingStatus.pending_review, isDeleted: false } }),
+      this.prisma.listing.count({ where: { status: ListingStatus.active, isDeleted: false } }),
       this.prisma.viewingRequest.count(),
       this.prisma.viewingRequest.count({ where: { status: 'pending' } }),
       this.prisma.blacklist.count(),
+      this.prisma.listing.count({ where: { isDeleted: true } }),
     ]);
 
     return {
@@ -334,6 +650,7 @@ export class AdminService {
       totalRequests,
       pendingRequests,
       bannedUsers,
+      archivedListings,
     };
   }
 }

@@ -6,9 +6,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useMyListings } from "@/hooks/useListings";
-import { useListingBeds, useListingBedStats, useRentBed, useVacateBed } from "@/hooks/useBeds";
+import { useListingBeds, useListingBedStats, useVacateBed } from "@/hooks/useBeds";
+import { useFinalizeBedRental, useRequestDetails } from "@/hooks/useRequests";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import { Card, CardBody, Spinner, Button, Badge, Modal, useToast, Input } from "@/components/ui";
+import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
   Bed as BedIcon,
   TrendingUp,
@@ -29,6 +30,8 @@ export default function LandlordBeds() {
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
   const { data: rawListings = [], isLoading: isListingsLoading } = useMyListings();
   const listings = rawListings || [];
+  const requestId = searchParams?.get("requestId");
+  const { data: rentalRequest, isLoading: isRequestLoading } = useRequestDetails(requestId);
 
   // Selected Listing ID
   const [selectedId, setSelectedId] = useState<string>("");
@@ -41,18 +44,20 @@ export default function LandlordBeds() {
     const queryId = searchParams?.get("listingId");
     if (queryId) {
       setSelectedId(queryId);
+    } else if (rentalRequest?.listingId) {
+      setSelectedId(rentalRequest.listingId);
     } else if (bedListings.length > 0 && !selectedId) {
       setSelectedId(bedListings[0].id);
     }
-  }, [searchParams, bedListings, selectedId]);
+  }, [searchParams, rentalRequest?.listingId, bedListings, selectedId]);
 
   // Fetch beds and stats
-  const { data: rawBeds = [], isLoading: isBedsLoading } = useListingBeds(selectedId);
+  const { data: rawBeds = [], isLoading: isBedsLoading } = useListingBeds(selectedId, true);
   const beds = rawBeds || [];
   const { data: stats, isLoading: isStatsLoading } = useListingBedStats(selectedId);
 
   // Mutations
-  const { mutate: rentBed, isPending: isRenting } = useRentBed();
+  const { mutate: finalizeBedRental, isPending: isRenting } = useFinalizeBedRental();
   const { mutate: vacateBed, isPending: isVacating } = useVacateBed();
 
   // Modals state
@@ -60,12 +65,11 @@ export default function LandlordBeds() {
   const [vacateModalBed, setVacateModalBed] = useState<{ id: string; bedNumber: number } | null>(null);
 
   // Rent Form State
-  const [tenantId, setTenantId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [formError, setFormError] = useState("");
 
-  const isLoading = isAuthLoading || isListingsLoading || (!!selectedId && (isBedsLoading || isStatsLoading));
+  const isLoading = isAuthLoading || isListingsLoading || (!!requestId && isRequestLoading) || (!!selectedId && (isBedsLoading || isStatsLoading));
 
   if (isLoading || !user) {
     return (
@@ -85,8 +89,12 @@ export default function LandlordBeds() {
     setFormError("");
 
     if (!rentModalBed) return;
-    if (!tenantId) {
-      setFormError("معرف المستأجر (ID) مطلوب");
+    if (!requestId) {
+      setFormError("يرجى البدء من طلب معاينة مقبول لتحديد المستأجر تلقائياً");
+      return;
+    }
+    if (!rentalRequest || rentalRequest.status !== "accepted") {
+      setFormError("ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø·Ù„Ø¨ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ù…Ù‚Ø¨ÙˆÙ„Ø§Ù‹ Ù‚Ø¨Ù„ ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø³Ø±ÙŠØ±");
       return;
     }
     if (!startDate || !endDate) {
@@ -98,14 +106,12 @@ export default function LandlordBeds() {
       return;
     }
 
-    rentBed(
+    finalizeBedRental(
       {
+        requestId,
         bedId: rentModalBed.id,
-        data: {
-          tenantId,
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
-        },
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
       },
       {
         onSuccess: () => {
@@ -115,7 +121,6 @@ export default function LandlordBeds() {
             type: "success",
           });
           setRentModalBed(null);
-          setTenantId("");
           setStartDate("");
           setEndDate("");
         },
@@ -157,7 +162,7 @@ export default function LandlordBeds() {
         <div>
           <h1 className="text-3xl font-bold font-cairo">إدارة الأسرة والشواغر</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
-            قم بتسجيل عقود إيجار الأسرة وإخلاءها لتحديث شواغر الغرف تلقائياً.
+            قم بتسجيل عقود إيجار الأسرة وإخلاءها لتحديث شواغر الأسرة تلقائياً.
           </p>
         </div>
 
@@ -208,7 +213,7 @@ export default function LandlordBeds() {
 
             {/* Beds occupancy Grid */}
             <div className="space-y-4">
-              <h2 className="text-xl font-bold font-cairo text-slate-800 dark:text-slate-100">تفاصيل إشغال الغرف</h2>
+              <h2 className="text-xl font-bold font-cairo text-slate-800 dark:text-slate-100">تفاصيل إشغال الأسرة</h2>
               
               {beds.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo text-slate-400">
@@ -217,7 +222,10 @@ export default function LandlordBeds() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {beds.map((bed) => (
+                  {beds.map((bed) => {
+                    const currentTenant = bed.currentTenant ?? bed.tenant;
+
+                    return (
                     <Card
                       key={bed.id}
                       className={`border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between ${
@@ -246,7 +254,7 @@ export default function LandlordBeds() {
                             <div className="mt-4 space-y-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 font-cairo">
                               <div className="flex items-center gap-2">
                                 <User size={13} className="text-amber-500" />
-                                <span>المستأجر: <span className="font-bold text-slate-800 dark:text-slate-200">{bed.tenant?.name || "غير مسجل"}</span></span>
+                                <span>المستأجر: <span className="font-bold text-slate-800 dark:text-slate-200">{currentTenant?.name || "غير مسجل"}</span></span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Calendar size={13} className="text-amber-500" />
@@ -279,7 +287,8 @@ export default function LandlordBeds() {
                         </div>
                       </CardBody>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -304,13 +313,12 @@ export default function LandlordBeds() {
                 </div>
               )}
 
-              <Input
-                label="معرف المستأجر (ID)"
-                placeholder="أدخل المعرف الفريد الخاص بالمستأجر"
-                value={tenantId}
-                onChange={(e) => setTenantId(e.target.value)}
-                className="font-sans"
-              />
+              {rentalRequest?.tenant && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                  <p className="text-xs text-slate-400">المستأجر</p>
+                  <p className="font-bold mt-1">{rentalRequest.tenant.name}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">

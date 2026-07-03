@@ -23,6 +23,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { HealthModule } from './health/health.module';
+import { RentalHistoryModule } from './rental-history/rental-history.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { HealthModule } from './health/health.module';
     NotificationsModule,
     ChatModule,
     HealthModule,
+    RentalHistoryModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

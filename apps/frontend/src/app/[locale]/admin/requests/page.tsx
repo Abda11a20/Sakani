@@ -158,17 +158,17 @@ export default function AdminRequestsPage() {
                 )}
 
                 {/* Requested Date */}
-                {req.requestedDate && (
+                {req.preferredDate && (
                   <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-cairo">
                     <Clock size={12} />
-                    موعد مقترح: {formatDate(req.requestedDate)}
+                    موعد مقترح: {formatDate(req.preferredDate)}
                   </div>
                 )}
 
                 {/* Notes */}
-                {req.notes && (
+                {req.message && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    {req.notes}
+                    {req.message}
                   </p>
                 )}
               </div>

@@ -306,6 +306,35 @@ export class UploadsService {
     return { url, message: 'تم رفع الصورة الشخصية بنجاح' };
   }
 
+  async uploadChatAttachment(userId: string, file: Express.Multer.File) {
+    const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
+
+    let key: string;
+    let url: string;
+
+    try {
+      if (provider === 'cloudinary') {
+        const res = await this.uploadToCloudinary(file, 'sakany/chat', 'upload');
+        key = res.publicId;
+        url = res.url;
+      } else {
+        const fileName = this.generateFileName(file.originalname);
+        key = `chat/${userId}/${fileName}`;
+        url = await this.s3Service.uploadFile(file, this.publicBucket, key);
+      }
+
+      return {
+        url,
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to upload chat attachment: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('حدث خطأ أثناء رفع الملف.');
+    }
+  }
+
   async deleteUserAssets(avatarPublicId?: string | null, idCardPublicId?: string | null) {
     const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
 
@@ -323,6 +352,17 @@ export class UploadsService {
       } else {
         await this.s3Service.deleteFile(idCardPublicId, this.privateBucket);
       }
+    }
+  }
+
+  // ── Utility: Delete a file from storage by key ─────────────────────────────
+  // Used by AdminService to delete listing images by s3Key
+  async deleteFileByKey(key: string): Promise<void> {
+    const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
+    if (provider === 'cloudinary') {
+      await this.destroyCloudinaryAsset(key, 'upload');
+    } else {
+      await this.s3Service.deleteFile(key, this.publicBucket);
     }
   }
 }

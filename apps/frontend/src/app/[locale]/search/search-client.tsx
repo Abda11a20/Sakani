@@ -8,7 +8,6 @@ import {
   Filter,
   X,
   Building2,
-  DoorOpen,
   BedDouble,
   SlidersHorizontal,
   ChevronLeft,
@@ -111,10 +110,9 @@ function FilterSidebar({
       {/* Unit Type */}
       <div>
         <h3 className="text-sm font-bold text-foreground mb-3">نوع الوحدة</h3>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { value: "apartment", label: "شقة", icon: Building2 },
-            { value: "room", label: "غرفة", icon: DoorOpen },
             { value: "bed", label: "سرير", icon: BedDouble },
           ].map(({ value, label, icon: Icon }) => (
             <button
@@ -305,7 +303,7 @@ function ActiveFilterChips({
   const chips: { label: string; onRemove: () => void }[] = [];
 
   if (filters.unitType) {
-    const labels: Record<string, string> = { apartment: "شقة", room: "غرفة", bed: "سرير" };
+    const labels: Record<string, string> = { apartment: "شقة", bed: "سرير" };
     chips.push({ label: labels[filters.unitType], onRemove: () => onChange({ unitType: undefined, page: 1 }) });
   }
   if (filters.governorate) chips.push({ label: filters.governorate, onRemove: () => onChange({ governorate: "", page: 1 }) });

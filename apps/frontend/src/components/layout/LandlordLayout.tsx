@@ -1,7 +1,7 @@
 // apps/frontend/src/components/layout/LandlordLayout.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
@@ -9,17 +9,22 @@ import {
   LayoutDashboard,
   Building,
   GitPullRequest,
-  Bed,
   Settings,
-  Menu,
   X,
-  Home,
   LogOut,
+  MessageSquare,
+  History,
+  Home,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLogout } from "@/hooks/useAuth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { Spinner } from "@/components/ui/spinner";
+import { DashboardNavbar } from "./DashboardNavbar";
+import { useUiStore } from "@/store/ui.store";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
-import { useLogout } from "@/hooks/useAuth";
 
 interface LandlordLayoutProps {
   children: React.ReactNode;
@@ -28,40 +33,61 @@ interface LandlordLayoutProps {
 export default function LandlordLayout({ children }: LandlordLayoutProps) {
   const locale = useLocale();
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
   const logout = useLogout();
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
+  
+  const sidebarOpen = useUiStore((state) => state.sidebarOpen);
+  const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const menuItems = [
     {
-      label: "نظرة عامة",
-      labelEn: "Overview",
+      label: "لوحة التحكم",
+      labelEn: "Dashboard",
       icon: LayoutDashboard,
       href: `/${locale}/dashboard/landlord`,
       exact: true,
     },
     {
-      label: "إعلاناتي",
-      labelEn: "My Listings",
+      label: "إدارة العقارات",
+      labelEn: "My Properties",
       icon: Building,
-      href: `/${locale}/dashboard/landlord/listings`,
+      href: `/${locale}/dashboard/landlord/properties`,
+    },
+    {
+      label: "إدارة الإعلانات",
+      labelEn: "Advertisement Management",
+      icon: Megaphone,
+      href: `/${locale}/dashboard/landlord/advertisements`,
+    },
+    {
+      label: "سجل الإيجارات",
+      labelEn: "Rental History",
+      icon: History,
+      href: `/${locale}/dashboard/landlord/rental-history`,
     },
     {
       label: "الطلبات الواردة",
-      labelEn: "Incoming Requests",
+      labelEn: "Viewing Requests",
       icon: GitPullRequest,
       href: `/${locale}/dashboard/landlord/requests`,
     },
     {
-      label: "إدارة الأسرة",
-      labelEn: "Bed Management",
-      icon: Bed,
-      href: `/${locale}/dashboard/landlord/beds`,
-    },
-    {
       label: "ملفي الشخصي",
-      labelEn: "My Profile",
+      labelEn: "Profile",
       icon: Settings,
       href: `/${locale}/dashboard/profile`,
+    },
+    {
+      label: "الدعم الفني",
+      labelEn: "Settings", // Wait, the sidebar says support but let's label it correctly
+      icon: MessageSquare,
+      href: `/${locale}/dashboard/support`,
     },
   ];
 
@@ -74,109 +100,136 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
 
   const isRtl = locale === "ar";
 
+  if (isAuthLoading || !user) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-800">
-      {/* Brand Header */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 gap-2">
-        <Link href={`/${locale}`} className="flex items-center gap-2">
-          <img src="/logo.png" alt="سكني" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />
-        </Link>
-      </div>
-
       {/* Nav Items */}
-      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = checkActive(item);
+          const labelText = isRtl ? item.label : item.labelEn;
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setIsOpen(false)}
+              onClick={() => setSidebarOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 font-cairo",
+                "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 font-cairo relative group/tooltip",
                 isActive
-                  ? "bg-[#D4A847]/10 text-[#C49535] dark:text-[#E8C06A] font-bold border-s-4 border-[#D4A847] pl-3"
+                  ? "bg-[#D4A847]/10 text-[#C49535] dark:text-[#E8C06A] font-bold border-s-4 border-[#D4A847]"
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"
               )}
             >
               <Icon size={18} className={cn("shrink-0", isActive ? "text-[#D4A847]" : "text-slate-400")} />
-              <span>{isRtl ? item.label : item.labelEn}</span>
+              
+              {/* Visible on Desktop and Mobile, hidden on Tablet */}
+              <span className="inline md:hidden xl:inline transition-all duration-200">
+                {labelText}
+              </span>
+
+              {/* Tooltip on Tablet mode (hover) */}
+              <span
+                className={cn(
+                  "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 bg-slate-800 dark:bg-slate-950 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+                  isRtl ? "right-full mr-3" : "left-full ml-3"
+                )}
+              >
+                {labelText}
+              </span>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer Settings */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+      <div className="p-3 border-t border-slate-200 dark:border-slate-800 space-y-1">
+
+        {/* Language & Theme — only visible on mobile (hidden on desktop where navbar shows them) */}
+        <div className="flex items-center gap-2 px-3 py-2 xl:hidden">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+
         <Link
           href={`/${locale}`}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-cairo"
+          className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-cairo relative group/tooltip"
         >
-          <Home size={18} className="text-slate-400" />
-          <span>{isRtl ? "الرئيسية" : "Home"}</span>
+          <Home size={18} className="text-slate-400 shrink-0" />
+          <span className="inline md:hidden xl:inline">{isRtl ? "الرئيسية" : "Home"}</span>
+          <span
+            className={cn(
+              "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 bg-slate-800 dark:bg-slate-950 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+              isRtl ? "right-full mr-3" : "left-full ml-3"
+            )}
+          >
+            {isRtl ? "الرئيسية" : "Home"}
+          </span>
         </Link>
+        
         <button
           onClick={() => logout.mutate()}
-          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-cairo"
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-cairo relative group/tooltip"
         >
-          <LogOut size={18} />
-          <span>{isRtl ? "تسجيل الخروج" : "Logout"}</span>
+          <LogOut size={18} className="shrink-0" />
+          <span className="inline md:hidden xl:inline">{isRtl ? "تسجيل الخروج" : "Logout"}</span>
+          <span
+            className={cn(
+              "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 bg-slate-800 dark:bg-slate-950 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+              isRtl ? "right-full mr-3" : "left-full ml-3"
+            )}
+          >
+            {isRtl ? "تسجيل الخروج" : "Logout"}
+          </span>
         </button>
-        <div className="flex items-center justify-between px-4">
-          <ThemeToggle />
-          <LanguageSwitcher />
-        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Desktop Sidebar (Fixed Left/Right depending on Locale) */}
-      <aside className="hidden lg:block w-64 shrink-0 h-screen sticky top-0">
-        {sidebarContent}
-      </aside>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col" dir={isRtl ? "rtl" : "ltr"}>
+      {/* Unified Thin Dashboard Navbar */}
+      <DashboardNavbar />
 
-      {/* Mobile Drawer Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Main Workspace below Navbar */}
+      <div className="flex-1 flex min-w-0">
+        
+        {/* Desktop / Tablet Sidebar (w-64 on xl, w-20 on md to xl) */}
+        <aside className="hidden md:block xl:w-64 md:w-20 shrink-0 h-[calc(100vh-64px)] sticky top-16 z-30">
+          {sidebarContent}
+        </aside>
 
-      {/* Mobile Drawer Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 bottom-0 z-50 w-64 bg-white dark:bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden",
-          isRtl
-            ? (isOpen ? "translate-x-0" : "translate-x-full")
-            : (isOpen ? "translate-x-0" : "-translate-x-full"),
-          isRtl ? "right-0" : "left-0"
+        {/* Mobile Sidebar Drawer Backdrop */}
+        {mounted && sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
-      >
-        {sidebarContent}
-      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header Bar */}
-        <header className="lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sticky top-0 z-30">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            <Menu size={24} />
-          </button>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="سكني" className="h-7 w-auto object-contain dark:brightness-0 dark:invert" />
-          </div>
-          <div className="w-10"></div>
-        </header>
+        {/* Mobile Sidebar Drawer */}
+        <aside
+          className={cn(
+            "fixed top-16 bottom-0 z-50 w-64 bg-white dark:bg-slate-900 transition-transform duration-300 ease-in-out md:hidden border-slate-200 dark:border-slate-800",
+            isRtl
+              ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") // Slide from left in RTL
+              : (sidebarOpen ? "translate-x-0" : "translate-x-full"),  // Slide from right in LTR
+            isRtl ? "left-0 border-r" : "right-0 border-l"
+          )}
+        >
+          {sidebarContent}
+        </aside>
 
-        {/* Dynamic Page Content */}
-        <main className="flex-1 py-8 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto w-full">
+        {/* Page Content area */}
+        <main className="flex-1 py-8 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto w-full min-w-0 overflow-y-auto">
           {children}
         </main>
       </div>
