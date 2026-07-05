@@ -186,6 +186,9 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
             },
           },
         },
+        currentTenant: {
+          select: userPublicSelect,
+        },
       },
     });
 

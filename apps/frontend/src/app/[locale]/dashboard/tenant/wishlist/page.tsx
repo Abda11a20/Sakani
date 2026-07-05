@@ -115,7 +115,7 @@ export default function TenantWishlist() {
 
         {/* Wishlist Grid & States */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {Array.from({ length: Math.max(activeIds.length, 3) }).map((_, i) => (
               <ListingCardSkeleton key={i} />
             ))}
@@ -139,7 +139,7 @@ export default function TenantWishlist() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {/* Available listings */}
             {availableListings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />

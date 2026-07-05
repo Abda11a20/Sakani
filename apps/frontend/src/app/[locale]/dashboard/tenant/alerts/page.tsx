@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import {
   useMyAlerts,
@@ -24,6 +25,7 @@ import {
   BellOff,
   AlertTriangle,
   HelpCircle,
+  Search,
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import type { Alert, GenderTarget } from "@/types";
@@ -348,6 +350,15 @@ export default function TenantAlerts() {
 
                     {/* Action buttons */}
                     <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      {active && (
+                        <Link
+                          href={`/${locale}/search?alertId=${alert.id}`}
+                          className="rounded-lg text-xs font-cairo py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1 shadow-sm transition-all"
+                        >
+                          <Search size={12} />
+                          <span>عرض المطابقات</span>
+                        </Link>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"

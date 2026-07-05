@@ -7,7 +7,9 @@ import { useLocale } from "next-intl";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useMyListings } from "@/hooks/useListings";
 import { useListingBeds, useListingBedStats, useVacateBed } from "@/hooks/useBeds";
-import { useFinalizeBedRental, useRequestDetails } from "@/hooks/useRequests";
+import { useFinalizeBedRental, useRequestDetails, useQuickRent } from "@/hooks/useRequests";
+import { useLookupTenantByPhone } from "@/hooks/useTenantLookup";
+import { getWhatsAppLink } from "@/lib/whatsapp";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
@@ -19,6 +21,8 @@ import {
   UserCheck,
   CheckCircle,
   HelpCircle,
+  Loader2,
+  Phone,
 } from "lucide-react";
 
 export default function LandlordBeds() {
@@ -59,6 +63,7 @@ export default function LandlordBeds() {
   // Mutations
   const { mutate: finalizeBedRental, isPending: isRenting } = useFinalizeBedRental();
   const { mutate: vacateBed, isPending: isVacating } = useVacateBed();
+  const { mutate: quickRent, isPending: isQuickRenting } = useQuickRent();
 
   // Modals state
   const [rentModalBed, setRentModalBed] = useState<{ id: string; bedNumber: number } | null>(null);
@@ -68,6 +73,8 @@ export default function LandlordBeds() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [formError, setFormError] = useState("");
+  const [quickPhone, setQuickPhone] = useState("");
+  const { data: lookedUpTenant, isLoading: isLookingUp } = useLookupTenantByPhone(quickPhone);
 
   const isLoading = isAuthLoading || isListingsLoading || (!!requestId && isRequestLoading) || (!!selectedId && (isBedsLoading || isStatsLoading));
 
@@ -89,14 +96,7 @@ export default function LandlordBeds() {
     setFormError("");
 
     if (!rentModalBed) return;
-    if (!requestId) {
-      setFormError("يرجى البدء من طلب معاينة مقبول لتحديد المستأجر تلقائياً");
-      return;
-    }
-    if (!rentalRequest || rentalRequest.status !== "accepted") {
-      setFormError("ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø·Ù„Ø¨ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ù…Ù‚Ø¨ÙˆÙ„Ø§Ù‹ Ù‚Ø¨Ù„ ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø³Ø±ÙŠØ±");
-      return;
-    }
+
     if (!startDate || !endDate) {
       setFormError("يرجى إدخال تاريخ البداية والنهاية");
       return;
@@ -106,29 +106,74 @@ export default function LandlordBeds() {
       return;
     }
 
-    finalizeBedRental(
-      {
-        requestId,
-        bedId: rentModalBed.id,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "تم تأجير السرير",
-            description: `تم تسجيل تأجير السرير رقم ${rentModalBed.bedNumber} بنجاح.`,
-            type: "success",
-          });
-          setRentModalBed(null);
-          setStartDate("");
-          setEndDate("");
-        },
-        onError: (err: any) => {
-          setFormError(err.friendlyMessage || "فشل تسجيل تأجير السرير. تأكد من صحة معرف المستأجر.");
-        },
+    if (requestId) {
+      // الطريقة الأولى: تأجير بناءً على طلب معاينة مقبول مسبقاً
+      if (!rentalRequest || rentalRequest.status !== "accepted") {
+        setFormError("يجب أن يكون طلب المعاينة مقبولاً قبل تأجير السرير");
+        return;
       }
-    );
+      finalizeBedRental(
+        {
+          requestId,
+          bedId: rentModalBed.id,
+          startDate: new Date(startDate).toISOString(),
+          endDate: new Date(endDate).toISOString(),
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "تم تأجير السرير",
+              description: `تم تسجيل تأجير السرير رقم ${rentModalBed.bedNumber} بنجاح.`,
+              type: "success",
+            });
+            setRentModalBed(null);
+            setStartDate("");
+            setEndDate("");
+            setQuickPhone("");
+          },
+          onError: (err: any) => {
+            setFormError(err.friendlyMessage || "فشل تسجيل تأجير السرير. تأكد من صحة معرف المستأجر.");
+          },
+        }
+      );
+    } else {
+      // الطريقة الثانية: التأجير السريع المباشر برقم الهاتف
+      if (!quickPhone || quickPhone.length < 11) {
+        setFormError("يرجى إدخال رقم هاتف مستأجر صالح مكون من 11 رقماً على الأقل");
+        return;
+      }
+      if (!lookedUpTenant) {
+        setFormError("يرجى الانتظار حتى يتم التحقق من رقم المستأجر وتأكيد حسابه");
+        return;
+      }
+
+      quickRent(
+        {
+          listingId: selectedId,
+          phone: quickPhone,
+          startDate: new Date(startDate).toISOString(),
+          endDate: new Date(endDate).toISOString(),
+          bedId: rentModalBed.id,
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "تم التأجير السريع للسرير",
+              description: `تم تسجيل تأجير السرير رقم ${rentModalBed.bedNumber} للمستأجر فوراً بنجاح.`,
+              type: "success",
+            });
+            setRentModalBed(null);
+            setStartDate("");
+            setEndDate("");
+            setQuickPhone("");
+          },
+          onError: (err: any) => {
+            const msg = err?.response?.data?.message || err.friendlyMessage || "فشل تسجيل تأجير السرير. تأكد من أن السرير غير مؤجر بالفعل.";
+            setFormError(msg);
+          },
+        }
+      );
+    }
   };
 
   const handleVacateSubmit = () => {
@@ -313,10 +358,67 @@ export default function LandlordBeds() {
                 </div>
               )}
 
-              {rentalRequest?.tenant && (
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
-                  <p className="text-xs text-slate-400">المستأجر</p>
-                  <p className="font-bold mt-1">{rentalRequest.tenant.name}</p>
+              {requestId ? (
+                rentalRequest?.tenant && (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-xs text-slate-400">المستأجر</p>
+                    <p className="font-bold mt-1">{rentalRequest.tenant.name}</p>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 font-cairo">رقم هاتف المستأجر</label>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        required
+                        placeholder="01XXXXXXXXX"
+                        value={quickPhone}
+                        onChange={(e) => setQuickPhone(e.target.value)}
+                        className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 font-sans"
+                        style={{ direction: "ltr", textAlign: "right" }}
+                      />
+                      {isLookingUp && (
+                        <div className="absolute top-1/2 left-3 -translate-y-1/2">
+                          <Loader2 size={16} className="animate-spin text-amber-500" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {quickPhone.replace(/[^0-9]/g, "").length >= 11 && (
+                    <>
+                      {lookedUpTenant ? (
+                        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 px-4 py-3 rounded-xl">
+                          <CheckCircle size={18} className="text-green-500 shrink-0" />
+                          <div className="text-xs">
+                            <p className="font-bold text-green-800 dark:text-green-300 font-cairo">مستأجر موثق بالمنصة</p>
+                            <p className="text-slate-500 mt-0.5 font-cairo">{lookedUpTenant.name}</p>
+                          </div>
+                        </div>
+                      ) : !isLookingUp ? (
+                        <div className="space-y-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 px-4 py-3 rounded-xl">
+                          <p className="text-xs text-amber-800 dark:text-amber-300 font-bold font-cairo">
+                            هذا الرقم غير مسجل بالمنصة كـ مستأجر حالياً.
+                          </p>
+                          <a
+                            href={`${getWhatsAppLink(quickPhone)}?text=${encodeURIComponent(
+                              `مرحباً، أدعوك للتسجيل في منصة سكني لإتمام عقد الإيجار الإلكتروني الخاص بك: ${
+                                typeof window !== "undefined" ? window.location.origin : ""
+                              }/${locale}/register?role=tenant`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-green-500 text-white hover:bg-green-600 transition-all font-cairo"
+                          >
+                            <Phone size={14} />
+                            دعوة المستأجر للتسجيل عبر واتساب
+                          </a>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -354,10 +456,10 @@ export default function LandlordBeds() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isRenting}
+                  disabled={isRenting || isQuickRenting || (!requestId && !lookedUpTenant)}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl py-3"
                 >
-                  {isRenting ? "جاري الحفظ..." : "تسجيل عقد الإيجار"}
+                  {isRenting || isQuickRenting ? "جاري الحفظ..." : "تسجيل عقد الإيجار"}
                 </Button>
               </div>
             </form>

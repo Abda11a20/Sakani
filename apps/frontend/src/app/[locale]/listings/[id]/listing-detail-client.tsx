@@ -35,15 +35,15 @@ import { api } from "@/lib/api";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { useAuthStore } from "@/store/auth.store";
 import { useWishlist } from "@/hooks/useWishlist";
-import { 
-  Avatar, 
-  Badge, 
-  Card, 
-  CardBody, 
-  Spinner, 
-  Button, 
-  Modal, 
-  useToast 
+import {
+  Avatar,
+  Badge,
+  Card,
+  CardBody,
+  Spinner,
+  Button,
+  Modal,
+  useToast
 } from "@/components/ui";
 import { getImageUrl } from "@/lib/utils";
 import type { Listing, Review } from "@/types";
@@ -84,6 +84,7 @@ function RequestViewingModal({
 }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("10:00");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -106,6 +107,21 @@ function RequestViewingModal({
   };
 
   if (!open) return null;
+
+  const TIME_OPTIONS = [
+    { value: "09:00", label: "9 صباحاً" },
+    { value: "10:00", label: "10 صباحاً" },
+    { value: "11:00", label: "11 صباحاً" },
+    { value: "12:00", label: "12 ظهراً" },
+    { value: "13:00", label: "1 ظهراً" },
+    { value: "14:00", label: "2 ظهراً" },
+    { value: "15:00", label: "3 عصراً" },
+    { value: "16:00", label: "4 عصراً" },
+    { value: "17:00", label: "5 مساءً" },
+    { value: "18:00", label: "6 مساءً" },
+    { value: "19:00", label: "7 مساءً" },
+    { value: "20:00", label: "8 مساءً" },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
@@ -160,22 +176,9 @@ function RequestViewingModal({
               <select
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]/20 focus:border-[#1B4F8A] text-slate-800 dark:text-slate-200"
+                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]/20 focus:border-[#1B4F8A] text-slate-800 dark:text-slate-200 font-semibold"
               >
-                {([
-                  { value: "09:00", label: "9 صباحاً" },
-                  { value: "10:00", label: "10 صباحاً" },
-                  { value: "11:00", label: "11 صباحاً" },
-                  { value: "12:00", label: "12 ظهراً" },
-                  { value: "13:00", label: "1 مساءً" },
-                  { value: "14:00", label: "2 مساءً" },
-                  { value: "15:00", label: "3 مساءً" },
-                  { value: "16:00", label: "4 مساءً" },
-                  { value: "17:00", label: "5 مساءً" },
-                  { value: "18:00", label: "6 مساءً" },
-                  { value: "19:00", label: "7 مساءً" },
-                  { value: "20:00", label: "8 مساءً" },
-                ] as { value: string; label: string }[]).map((opt) => (
+                {TIME_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -362,7 +365,7 @@ export function ListingDetailClient({
       {/* Main Details Panel */}
       <div className="container mx-auto px-4 max-w-5xl space-y-4 sm:space-y-5">
         {/* 2. Image Gallery Carousel with Premium Contained Aspect Design */}
-        <div 
+        <div
           className="relative w-full h-[220px] sm:h-[340px] md:h-[380px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center group"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -400,7 +403,7 @@ export function ListingDetailClient({
           </div>
 
           {/* Zoom icon over image center */}
-          <div 
+          <div
             onClick={() => setLightboxOpen(true)}
             className="absolute bottom-3 right-3 bg-slate-900/70 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity z-20"
           >
@@ -438,11 +441,10 @@ export function ListingDetailClient({
               <button
                 key={idx}
                 onClick={() => setActiveImageIdx(idx)}
-                className={`w-14 h-10 rounded-lg overflow-hidden shrink-0 border transition-all ${
-                  idx === activeImageIdx
+                className={`w-14 h-10 rounded-lg overflow-hidden shrink-0 border transition-all ${idx === activeImageIdx
                     ? "border-[#1B4F8A] ring-2 ring-[#1B4F8A]/20 scale-102"
                     : "border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100"
-                }`}
+                  }`}
               >
                 <img src={getImageUrl(img)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
               </button>
@@ -568,11 +570,10 @@ export function ListingDetailClient({
                 {listing.beds.map((bed) => (
                   <span
                     key={bed.id}
-                    className={`px-3 py-2 rounded-xl text-[10px] font-semibold border flex items-center gap-1.5 ${
-                      bed.isAvailable
+                    className={`px-3 py-2 rounded-xl text-[10px] font-semibold border flex items-center gap-1.5 ${bed.isAvailable
                         ? "bg-green-50/50 dark:bg-green-955/20 border-green-200 dark:border-green-900 text-green-700 dark:text-green-400"
                         : "bg-red-50/50 dark:bg-red-955/10 border-red-100 dark:border-red-900/20 text-red-500 line-through opacity-60"
-                    }`}
+                      }`}
                   >
                     <BedDouble size={12} />
                     {isRtl ? `سرير ${bed.bedNumber}` : `Bed ${bed.bedNumber}`}
@@ -663,11 +664,11 @@ export function ListingDetailClient({
                 </h3>
                 <div className="flex items-center gap-3">
                   {/* Dynamic photo using actual landlord avatarUrl if present, fallback to initials otherwise */}
-                  <Avatar 
-                    src={listing.landlord.avatarUrl ? getImageUrl(listing.landlord.avatarUrl) : null} 
-                    name={listing.landlord.name} 
-                    size="md" 
-                    verified={listing.isVerified} 
+                  <Avatar
+                    src={listing.landlord.avatarUrl ? getImageUrl(listing.landlord.avatarUrl) : null}
+                    name={listing.landlord.name}
+                    size="md"
+                    verified={listing.isVerified}
                   />
                   <div>
                     <h4 className="font-bold text-slate-900 dark:text-white leading-none text-xs">
@@ -715,15 +716,7 @@ export function ListingDetailClient({
 
           <div className="max-w-md mx-auto pt-1 space-y-2.5">
             <button
-              onClick={() => {
-                if (!currentUser) {
-                  if (typeof window !== "undefined") {
-                    window.location.href = `/${locale}/login?returnUrl=/${locale}/listings/${listing.id}`;
-                  }
-                  return;
-                }
-                setRequestModalOpen(true);
-              }}
+              onClick={() => setRequestModalOpen(true)}
               className="w-full bg-[#1B4F8A] hover:bg-[#153E6D] text-white py-3 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs"
             >
               <Calendar size={14} />
@@ -846,7 +839,7 @@ export function ListingDetailClient({
           >
             <X size={20} />
           </button>
-          
+
           <button
             className="absolute left-4 top-1/2 -translate-y-1/2 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-50"
             onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}

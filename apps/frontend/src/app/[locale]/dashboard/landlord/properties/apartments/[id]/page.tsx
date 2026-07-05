@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/[id]/page.tsx
+// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/[id]/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -7,6 +7,9 @@ import { useLocale } from "next-intl";
 import Link from "next/link";
 import { useListing, useVacateUnit } from "@/hooks/useListings";
 import { useLandlordRentalHistory } from "@/hooks/useRentalHistory";
+import { useQuickRent } from "@/hooks/useRequests";
+import { useLookupTenantByPhone } from "@/hooks/useTenantLookup";
+import { getWhatsAppLink } from "@/lib/whatsapp";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Spinner, Card, CardBody, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
@@ -18,7 +21,10 @@ import {
   AlertTriangle,
   Phone,
   History,
-  Info
+  Info,
+  Loader2,
+  CheckCircle,
+  UserCheck
 } from "lucide-react";
 import type { RentalHistoryItem } from "@/types";
 
@@ -37,6 +43,14 @@ export default function LandlordApartmentDetailPage() {
   const { data: historyData, isLoading: isHistoryLoading } = useLandlordRentalHistory({ limit: 100 });
 
   const [vacateModalOpen, setVacateModalOpen] = useState(false);
+  const [quickRentModalOpen, setQuickRentModalOpen] = useState(false);
+  const [quickPhone, setQuickPhone] = useState("");
+  const [quickStartDate, setQuickStartDate] = useState("");
+  const [quickEndDate, setQuickEndDate] = useState("");
+  const [quickFormError, setQuickFormError] = useState("");
+
+  const { data: lookedUpTenant, isLoading: isLookingUp } = useLookupTenantByPhone(quickPhone);
+  const { mutate: quickRent, isPending: isQuickRenting } = useQuickRent();
 
   const isLoading = isAptLoading || isHistoryLoading;
 
@@ -97,6 +111,55 @@ export default function LandlordApartmentDetailPage() {
         });
       }
     });
+  };
+
+  const handleQuickRentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuickFormError("");
+
+    if (!quickPhone || quickPhone.length < 11) {
+      setQuickFormError(isRtl ? "يرجى إدخال رقم هاتف مستأجر صالح مكون من 11 رقماً على الأقل" : "Please enter a valid 11-digit phone number");
+      return;
+    }
+    if (!lookedUpTenant) {
+      setQuickFormError(isRtl ? "يرجى الانتظار حتى يتم التحقق من رقم المستأجر وتأكيد حسابه" : "Please wait for tenant validation");
+      return;
+    }
+    if (!quickStartDate || !quickEndDate) {
+      setQuickFormError(isRtl ? "يرجى تحديد تواريخ عقد الإيجار" : "Please select lease dates");
+      return;
+    }
+    if (new Date(quickStartDate) >= new Date(quickEndDate)) {
+      setQuickFormError(isRtl ? "تاريخ النهاية يجب أن يكون بعد تاريخ البداية" : "End date must be after start date");
+      return;
+    }
+
+    quickRent(
+      {
+        listingId: id,
+        phone: quickPhone,
+        startDate: new Date(quickStartDate).toISOString(),
+        endDate: new Date(quickEndDate).toISOString(),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: isRtl ? "تم التأجير السريع بنجاح" : "Quick Lease Finalized",
+            description: isRtl ? "تم إنشاء طلب معاينة وتأجير الشقة للمستأجر فوراً بنجاح." : "Lease has been registered successfully.",
+            type: "success",
+          });
+          setQuickRentModalOpen(false);
+          setQuickPhone("");
+          setQuickStartDate("");
+          setQuickEndDate("");
+          refetch();
+        },
+        onError: (err: any) => {
+          const message = err?.response?.data?.message || err.friendlyMessage || (isRtl ? "حدث خطأ أثناء إجراء التأجير السريع." : "An error occurred.");
+          setQuickFormError(message);
+        },
+      }
+    );
   };
 
   return (
@@ -267,15 +330,24 @@ export default function LandlordApartmentDetailPage() {
                     <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center mx-auto">
                       <Info size={24} />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-850 dark:text-slate-200">
-                        {isRtl ? "الشقة شاغرة حالياً" : "Apartment is Vacant"}
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1 max-w-[200px] mx-auto">
-                        {isRtl
-                          ? "لا توجد عقود جارية. سيتم تحديد المستأجر تلقائياً عند قبول طلب معاينة."
-                          : "No active lease. A tenant is assigned when you finalize a viewing request."}
-                      </p>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-slate-850 dark:text-slate-200">
+                          {isRtl ? "الشقة شاغرة حالياً" : "Apartment is Vacant"}
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1 max-w-[200px] mx-auto">
+                          {isRtl
+                            ? "لا توجد عقود جارية. سيتم تحديد المستأجر تلقائياً عند قبول طلب معاينة."
+                            : "No active lease. A tenant is assigned when you finalize a viewing request."}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setQuickRentModalOpen(true)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl py-3 text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <UserCheck size={14} />
+                        <span>{isRtl ? "تسجيل عقد إيجار مباشر (برقم الهاتف)" : "Register Direct Lease (Phone)"}</span>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -320,6 +392,129 @@ export default function LandlordApartmentDetailPage() {
                 </Button>
               </div>
             </div>
+          </Modal>
+        )}
+
+        {/* Quick Rent Modal */}
+        {quickRentModalOpen && (
+          <Modal
+            isOpen={true}
+            onClose={() => setQuickRentModalOpen(false)}
+            title={isRtl ? "تسجيل عقد إيجار سريع ومباشر" : "Direct Quick Lease Registration"}
+          >
+            <form onSubmit={handleQuickRentSubmit} className="p-6 space-y-4 font-cairo">
+              {quickFormError && (
+                <div className="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900">
+                  {quickFormError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  {isRtl ? "رقم هاتف المستأجر" : "Tenant Phone Number"}
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    required
+                    placeholder="01XXXXXXXXX"
+                    value={quickPhone}
+                    onChange={(e) => setQuickPhone(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 font-sans"
+                    style={{ direction: "ltr", textAlign: "right" }}
+                  />
+                  {isLookingUp && (
+                    <div className="absolute top-1/2 left-3 -translate-y-1/2">
+                      <Loader2 size={16} className="animate-spin text-amber-500" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {quickPhone.replace(/[^0-9]/g, "").length >= 11 && (
+                <>
+                  {lookedUpTenant ? (
+                    <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 px-4 py-3 rounded-xl">
+                      <CheckCircle size={18} className="text-green-500 shrink-0" />
+                      <div className="text-xs">
+                        <p className="font-bold text-green-800 dark:text-green-300">
+                          {isRtl ? "مستأجر موثق بالمنصة" : "Verified Tenant Found"}
+                        </p>
+                        <p className="text-slate-500 mt-0.5">{lookedUpTenant.name}</p>
+                      </div>
+                    </div>
+                  ) : !isLookingUp ? (
+                    <div className="space-y-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 px-4 py-3 rounded-xl">
+                      <p className="text-xs text-amber-800 dark:text-amber-300 font-bold">
+                        {isRtl ? "هذا الرقم غير مسجل بالمنصة كـ مستأجر حالياً." : "This number is not registered as a tenant."}
+                      </p>
+                      <a
+                        href={`${getWhatsAppLink(quickPhone)}?text=${encodeURIComponent(
+                          isRtl
+                            ? `مرحباً، أدعوك للتسجيل في منصة سكني لإتمام عقد الإيجار الإلكتروني الخاص بك: ${
+                                typeof window !== "undefined" ? window.location.origin : ""
+                              }/${locale}/register?role=tenant`
+                            : `Hello, register on Sakany to complete your lease: ${
+                                typeof window !== "undefined" ? window.location.origin : ""
+                              }/${locale}/register?role=tenant`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-green-500 text-white hover:bg-green-600 transition-all"
+                      >
+                        <Phone size={14} />
+                        {isRtl ? "دعوة المستأجر للتسجيل عبر واتساب" : "Invite Tenant via WhatsApp"}
+                      </a>
+                    </div>
+                  ) : null}
+                </>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    {isRtl ? "تاريخ البداية" : "Start Date"}
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={quickStartDate}
+                    onChange={(e) => setQuickStartDate(e.target.value)}
+                    className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    {isRtl ? "تاريخ النهاية" : "End Date"}
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={quickEndDate}
+                    onChange={(e) => setQuickEndDate(e.target.value)}
+                    className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <Button
+                  type="button"
+                  onClick={() => setQuickRentModalOpen(false)}
+                  variant="outline"
+                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800"
+                >
+                  {isRtl ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isQuickRenting || !lookedUpTenant}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl py-3"
+                >
+                  {isQuickRenting ? (isRtl ? "جاري الحفظ..." : "Saving...") : (isRtl ? "تسجيل عقد الإيجار" : "Register Lease")}
+                </Button>
+              </div>
+            </form>
           </Modal>
         )}
       </div>

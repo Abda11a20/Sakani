@@ -16,7 +16,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly uploadsService: UploadsService,
-  ) {}
+  ) { }
 
   // ── جلب البروفايل الخاص بالمستخدم ─────────────────────────────────────────
   async getProfile(userId: string): Promise<SafeUser> {
@@ -176,22 +176,36 @@ export class UsersService {
     return { message: 'User deleted permanently' };
   }
 
-  // ── Lookup Tenant by Phone (Landlord/Admin only) ──────────────────────────
-  async lookupByPhone(phone: string): Promise<{ id: string; name: string; phone: string; role: string }> {
-    const matches = await this.prisma.user.findMany({
-      where: { phone, role: UserRole.tenant },
-      select: { id: true, name: true, phone: true, role: true },
+  // ── البحث عن مستأجر برقم الهاتف ─────────────────────────────────────────
+  async lookupByPhone(phone: string) {
+    const cleaned = phone.replace(/[^0-9]/g, '');
+    if (!cleaned) {
+      throw new NotFoundException('رقم الهاتف المدخل غير صالح');
+    }
+    
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: cleaned },
+          { phone: cleaned.startsWith('2') ? cleaned.substring(1) : cleaned },
+          { phone: cleaned.startsWith('20') ? cleaned.substring(2) : cleaned },
+          { phone: cleaned.startsWith('0') ? cleaned : '0' + cleaned },
+          { phone: cleaned.startsWith('20') ? '0' + cleaned.substring(2) : cleaned },
+        ],
+        role: UserRole.tenant,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
+      },
     });
 
-    if (matches.length === 0) {
-      throw new NotFoundException('لم يتم العثور على مستأجر بهذا الرقم');
+    if (!user) {
+      throw new NotFoundException('المستأجر غير مسجل بالمنصة برقم الهاتف المدخل');
     }
 
-    // Unexpected data integrity issue: multiple tenants share the same phone
-    if (matches.length > 1) {
-      throw new ConflictException('يوجد أكثر من مستخدم مسجّل بهذا الرقم. تواصل مع الإدارة.');
-    }
-
-    return matches[0];
+    return user;
   }
 }

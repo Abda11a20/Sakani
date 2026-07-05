@@ -15,7 +15,7 @@ import {
   LogOut,
   MessageSquare,
   History,
-  Calendar,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLogout } from "@/hooks/useAuth";
@@ -35,7 +35,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
   const pathname = usePathname();
   const logout = useLogout();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
-  
+
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
@@ -62,7 +62,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
     {
       label: "طلبات المعاينة",
       labelEn: "Viewing Requests",
-      icon: Calendar,
+      icon: FileText,
       href: `/${locale}/dashboard/tenant/viewing-requests`,
     },
     {
@@ -130,7 +130,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
               )}
             >
               <Icon size={18} className={cn("shrink-0", isActive ? "text-[#1B4F8A] dark:text-[#7BAEE8]" : "text-slate-400")} />
-              
+
               {/* Visible on Desktop and Mobile, hidden on Tablet */}
               <span className="inline md:hidden xl:inline transition-all duration-200">
                 {labelText}
@@ -174,7 +174,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
             {isRtl ? "الرئيسية" : "Home"}
           </span>
         </Link>
-        
+
         <button
           onClick={() => logout.mutate()}
           className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-cairo relative group/tooltip"
@@ -201,7 +201,7 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
 
       {/* Main Workspace below Navbar */}
       <div className="flex-1 flex min-w-0">
-        
+
         {/* Desktop / Tablet Sidebar (w-64 on xl, w-20 on md to xl) */}
         <aside className="hidden md:block xl:w-64 md:w-20 shrink-0 h-[calc(100vh-64px)] sticky top-16 z-30">
           {sidebarContent}

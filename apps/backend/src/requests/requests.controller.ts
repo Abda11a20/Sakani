@@ -18,6 +18,7 @@ import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { FinalizeBedRentalDto } from './dto/finalize-bed-rental.dto';
 import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
+import { QuickRentDto } from './dto/quick-rent.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -30,6 +31,16 @@ type SafeUser = Omit<User, 'passwordHash'>;
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
+
+  // ── 0. التأجير السريع المباشر (Landlord فقط) ──────────────────────────────────
+  @Post('quick-rent')
+  @Roles(UserRole.landlord)
+  async quickRent(
+    @CurrentUser() user: SafeUser,
+    @Body() dto: QuickRentDto,
+  ) {
+    return this.requestsService.quickRent(user.id, dto);
+  }
 
   // ── 1. إنشاء طلب معاينة (Tenant فقط) ──────────────────────────────────────
   @Post()

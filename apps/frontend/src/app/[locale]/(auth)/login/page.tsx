@@ -19,7 +19,7 @@ export default async function LoginPage({ params: { locale } }: { params: { loca
       <div className="flex-1 flex flex-col justify-center items-center p-8 bg-white dark:bg-slate-950">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center md:text-start">
-            <img src="/logo.png" alt="سكني" className="h-16 w-auto mx-auto md:mx-0 mb-6 object-contain dark:brightness-0 dark:invert" />
+            <img src="/icon-192.png" alt="سكني" className="h-16 w-16 mx-auto md:mx-0 mb-6 object-contain rounded-2xl shadow-md" />
             <h1 className="text-3xl font-bold tracking-tight text-primary dark:text-gold">
               {t("welcomeBack")}
             </h1>

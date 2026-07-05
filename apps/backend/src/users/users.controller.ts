@@ -24,7 +24,7 @@ type SafeUser = Omit<User, 'passwordHash'>;
 
 @Controller()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   // ── 1. Get Current User Profile ─────────────────────────────────────────────
   @Get('users/profile')
@@ -50,21 +50,24 @@ export class UsersController {
     return this.usersService.deleteAccount(user.id);
   }
 
+  // ── 4.5. البحث عن مستأجر برقم الهاتف ──────────────────────────────────
+  @Get('users/lookup-by-phone')
+  async lookupByPhone(@Query('phone') phone: string) {
+    return this.usersService.lookupByPhone(phone);
+  }
+
+  @Get('users/lookup')
+  async lookupByPhoneAlt(@Query('phone') phone: string) {
+    return this.usersService.lookupByPhone(phone);
+  }
+
   // ── 4. Get Public Profile of Any User ────────────────────────────────
   @Get('users/:id')
   async getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicProfile(id);
   }
 
-  // ── 5. Lookup Tenant by Phone (Landlord/Admin only) ───────────────────
-  @Get('users/lookup-by-phone')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.landlord, UserRole.admin, UserRole.super_admin)
-  async lookupByPhone(@Query('phone') phone: string) {
-    return this.usersService.lookupByPhone(phone);
-  }
-
-  // ── 6. Admin: List All Users (Commented out to avoid collision with admin/users route in admin.controller.ts) ─────────
+  // ── 5. Admin: List All Users (Commented out to avoid collision with admin/users route in admin.controller.ts) ─────────
   // @Get('admin/users')
   // @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(UserRole.admin, UserRole.super_admin)

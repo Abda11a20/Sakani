@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useMyAlerts } from "@/hooks/useAlerts";
+import { useMatchingAlert } from "@/hooks/useAlertMatching";
 import {
   Search,
   Filter,
@@ -399,6 +401,12 @@ function Pagination({
   );
 }
 
+// Wrapper card to fetch alert matching for search results without breaking hooks rules
+function SearchListingCard({ listing }: { listing: Listing }) {
+  const matchingAlert = useMatchingAlert(listing);
+  return <ListingCard listing={listing} matchingAlert={matchingAlert} />;
+}
+
 // ── Main Search Client Component ──────────────────────────────
 export function SearchPageClient({
   locale,
@@ -410,6 +418,8 @@ export function SearchPageClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const { data: alerts } = useMyAlerts();
+
   const [filters, setFilters] = useState<SearchFilters>(() =>
     parseInitialFilters(initialFilters)
   );
@@ -419,6 +429,28 @@ export function SearchPageClient({
   const [result, setResult] = useState<SearchResult>({ items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } });
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Sync filters from alertId if present
+  useEffect(() => {
+    const alertId = initialFilters.alertId;
+    if (alertId && alerts && alerts.length > 0) {
+      const activeAlert = alerts.find((a) => a.id === alertId);
+      if (activeAlert) {
+        const nextFilters: SearchFilters = {
+          query: "",
+          unitType: activeAlert.unitType || undefined,
+          governorate: activeAlert.governorate || "",
+          district: activeAlert.district || "",
+          maxPrice: activeAlert.maxPrice || undefined,
+          genderTarget: activeAlert.genderTarget || undefined,
+          page: 1,
+          limit: 12,
+        };
+        setFilters(nextFilters);
+        setPendingFilters(nextFilters);
+      }
+    }
+  }, [initialFilters.alertId, alerts]);
 
   // Sync URL
   const syncUrl = useCallback(
@@ -583,7 +615,7 @@ export function SearchPageClient({
 
             {/* Grid */}
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <ListingCardSkeleton key={i} />
                 ))}
@@ -605,9 +637,9 @@ export function SearchPageClient({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                 {result.items.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                  <SearchListingCard key={listing.id} listing={listing} />
                 ))}
               </div>
             )}

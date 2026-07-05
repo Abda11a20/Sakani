@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { useLocale } from "next-intl";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus, useFinalizeUnitRental, useFinalizeBedRental } from "@/hooks/useRequests";
-import { useLookupTenantByPhone } from "@/hooks/useTenantLookup";
+import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus } from "@/hooks/useRequests";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast, Avatar } from "@/components/ui";
 import {
@@ -17,18 +18,16 @@ import {
   XCircle,
   PlayCircle,
   HelpCircle,
-  Phone,
-  Search,
-  Loader2,
 } from "lucide-react";
 
 type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
 
 export default function LandlordRequests() {
+  const locale = useLocale();
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
   const [page, setPage] = useState(1);
-  
+
   const { data: requestsData, isLoading: isRequestsLoading } = useLandlordRequests(page);
   const { data: stats, isLoading: isStatsLoading } = useLandlordRequestStats();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateRequestStatus();
@@ -40,10 +39,6 @@ export default function LandlordRequests() {
   } | null>(null);
 
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
-  const [quickPhone, setQuickPhone] = useState("");
-  const { data: quickTenant, isLoading: isLookingUp } = useLookupTenantByPhone(quickPhone);
-  const finalizeUnit = useFinalizeUnitRental();
-  const finalizeBed = useFinalizeBedRental();
 
   const isLoading = isAuthLoading || isRequestsLoading || isStatsLoading;
 
@@ -160,11 +155,10 @@ export default function LandlordRequests() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${
-                activeTab === tab.key
+              className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${activeTab === tab.key
                   ? "bg-amber-500 text-white shadow-sm font-bold"
                   : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -194,7 +188,7 @@ export default function LandlordRequests() {
                     src={(req.tenant as any)?.avatarUrl || (req.tenant as any)?.image || null}
                     size="lg"
                   />
-                  
+
                   <div className="space-y-1 w-full">
                     <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 font-cairo line-clamp-1">
                       {req.tenant?.name || "مستأجر غير معروف"}
@@ -203,7 +197,7 @@ export default function LandlordRequests() {
                       {req.listing?.title || "عقار غير محدد"}
                     </p>
                   </div>
-                  
+
                   <div className="mt-1">
                     {getStatusBadge(req.status)}
                   </div>
@@ -221,36 +215,6 @@ export default function LandlordRequests() {
             title="تفاصيل الطلب"
           >
             <div className="p-4 sm:p-6 space-y-5 font-cairo">
-              {/* Quick Rental by Phone */}
-              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                  <Phone size={13} /> البحث السريع عن مستأجر برقم الهاتف
-                </p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="tel"
-                    value={quickPhone}
-                    onChange={(e) => setQuickPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
-                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-xl outline-none focus:ring-2 focus:ring-amber-400/30"
-                    style={{ direction: "ltr" }}
-                  />
-                  {isLookingUp && <Loader2 size={16} className="animate-spin text-amber-500 shrink-0" />}
-                </div>
-                {quickPhone.replace(/\s/g, "").length >= 11 && (
-                  quickTenant ? (
-                    <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-2.5">
-                      <CheckCircle size={14} className="text-green-500 shrink-0" />
-                      <div className="text-xs">
-                        <p className="font-bold text-green-800 dark:text-green-300">{quickTenant.name}</p>
-                        <p className="text-green-600 dark:text-green-400 font-sans" style={{ direction: "ltr" }}>{quickTenant.phone}</p>
-                      </div>
-                    </div>
-                  ) : !isLookingUp ? (
-                    <p className="text-xs text-red-500 dark:text-red-400 font-semibold">لم يتم العثور على مستأجر بهذا الرقم</p>
-                  ) : null
-                )}
-              </div>
               {/* Header */}
               <div className="flex items-center gap-4">
                 <Avatar
@@ -348,16 +312,12 @@ export default function LandlordRequests() {
                 )}
 
                 {((selectedRequest.status as string) === "accepted" || (selectedRequest.status as string) === "approved") && (
-                  <Button
-                    onClick={() => {
-                      const req = selectedRequest;
-                      setSelectedRequest(null);
-                      setModalAction({ requestId: req.id, action: "completed" });
-                    }}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-sm text-xs sm:text-sm"
+                  <Link
+                    href={`/${locale}/dashboard/landlord/rentals?listingId=${selectedRequest.listingId}&requestId=${selectedRequest.id}`}
+                    className="w-full text-center bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-sm text-xs sm:text-sm block"
                   >
-                    إكمال وتأكيد المعاينة
-                  </Button>
+                    إكمال وتأكيد المعاينة وتوقيع العقد
+                  </Link>
                 )}
 
                 {selectedRequest.status === "completed" && (
@@ -406,13 +366,12 @@ export default function LandlordRequests() {
                 <Button
                   onClick={handleAction}
                   disabled={isUpdating}
-                  className={`flex-1 text-white font-bold rounded-xl py-3 ${
-                    modalAction.action === "accepted"
+                  className={`flex-1 text-white font-bold rounded-xl py-3 ${modalAction.action === "accepted"
                       ? "bg-green-600 hover:bg-green-700"
                       : modalAction.action === "rejected"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-amber-500 hover:bg-amber-600"
-                  }`}
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-amber-500 hover:bg-amber-600"
+                    }`}
                 >
                   {isUpdating ? "جاري الحفظ..." : "تأكيد الإجراء"}
                 </Button>

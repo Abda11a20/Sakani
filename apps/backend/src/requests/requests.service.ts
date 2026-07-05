@@ -12,7 +12,8 @@ import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { FinalizeBedRentalDto } from './dto/finalize-bed-rental.dto';
 import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
-import { NotificationType, RequestStatus, ListingStatus, UserRole, UnitType } from '@prisma/client';
+import { QuickRentDto } from './dto/quick-rent.dto';
+import { NotificationType, RequestStatus, ListingStatus, UserRole, UnitType, BedStatus, Prisma } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 import { BedsService } from '../beds/beds.service';
 import { NotificationService } from '../notifications/notifications.service';
@@ -24,6 +25,86 @@ export class RequestsService {
     private readonly bedsService: BedsService,
     private readonly notificationService: NotificationService,
   ) {}
+
+  // ── 0. التأجير السريع المباشر (Landlord فقط) ──────────────────────────────────
+  async quickRent(landlordId: string, dto: QuickRentDto) {
+    // 1. البحث عن المستأجر برقم الهاتف
+    const tenant = await this.prisma.user.findFirst({
+      where: { phone: dto.phone, role: UserRole.tenant },
+    });
+    if (!tenant) {
+      throw new NotFoundException('المستأجر غير مسجل بالمنصة برقم الهاتف المدخل');
+    }
+
+    // 2. التحقق من وجود وصلاحية الإعلان
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: dto.listingId },
+      include: { beds: true },
+    });
+    if (!listing || (listing as any).isDeleted) {
+      throw new NotFoundException('العقار غير موجود أو تم حذفه');
+    }
+    if (listing.landlordId !== landlordId) {
+      throw new ForbiddenException('ليس لديك صلاحية لتأجير هذا العقار');
+    }
+    if (listing.status === ListingStatus.rejected || listing.status === ListingStatus.draft) {
+      throw new BadRequestException('لا يمكن تأجير العقار المرفوض أو المسودة');
+    }
+
+    // 3. التحقق من منع التأجير المكرر
+    if (listing.unitType === UnitType.apartment) {
+      if (listing.status === ListingStatus.rented || listing.currentTenantId) {
+        throw new BadRequestException('هذا العقار مؤجر حالياً بالفعل لمستأجر آخر');
+      }
+    } else {
+      const availableBeds = listing.availableBeds ?? 0;
+      if (availableBeds === 0) {
+        throw new BadRequestException('جميع الأسرة في هذا العقار مؤجرة حالياً بالفعل');
+      }
+    }
+
+    // 4. إتمام المعاملة في transaction موحدة
+    return this.prisma.$transaction(async (tx) => {
+      // أ. إنشاء طلب معاينة مقبول تلقائياً مع علامة direct_rent
+      const request = await tx.viewingRequest.create({
+        data: {
+          tenantId: tenant.id,
+          listingId: dto.listingId,
+          preferredDate: new Date(),
+          status: RequestStatus.accepted,
+          message: 'direct_rent', // علامة لتمييز التأجير السريع
+        },
+      });
+
+      // ب. إتمام عملية التأجير الفعلي
+      if (listing.unitType === UnitType.apartment) {
+        const finalizeResult = await this.finalizeUnitRentalTx(request.id, landlordId, {
+          rentedSince: new Date(dto.rentedSince),
+          rentedUntil: new Date(dto.rentedUntil),
+        }, tx);
+        return finalizeResult;
+      } else {
+        if (!dto.bedId) {
+          throw new BadRequestException('معرف السرير (bedId) مطلوب لتأجير سرير مباشر');
+        }
+
+        const chosenBed = listing.beds.find((b) => b.id === dto.bedId);
+        if (!chosenBed) {
+          throw new BadRequestException('السرير المحدد غير موجود في هذا الإعلان');
+        }
+        if (chosenBed.status !== BedStatus.available) {
+          throw new BadRequestException('السرير المحدد مؤجر بالفعل أو غير متاح للتأجير');
+        }
+
+        const finalizeResult = await this.finalizeBedRentalTx(request.id, landlordId, {
+          bedId: chosenBed.id,
+          rentedSince: new Date(dto.rentedSince),
+          rentedUntil: new Date(dto.rentedUntil),
+        }, tx);
+        return finalizeResult;
+      }
+    });
+  }
 
   // ── 1. إنشاء طلب معاينة (Tenant فقط) ──────────────────────────────────────
   async create(tenantId: string, dto: CreateRequestDto) {
@@ -307,6 +388,16 @@ export class RequestsService {
   // ── 7. جلب إحصائيات المؤجر ───────────────────────────────────────────────
   async finalizeBedRental(requestId: string, landlordId: string, dto: FinalizeBedRentalDto) {
     return this.prisma.$transaction(async (tx) => {
+      return this.finalizeBedRentalTx(requestId, landlordId, dto, tx);
+    });
+  }
+
+  async finalizeBedRentalTx(
+    requestId: string,
+    landlordId: string,
+    dto: FinalizeBedRentalDto,
+    tx: Prisma.TransactionClient,
+  ) {
     const request = await tx.viewingRequest.findUnique({
       where: { id: requestId },
       include: { listing: true },
@@ -390,19 +481,48 @@ export class RequestsService {
       tx,
     );
 
+    // Invalidate/auto-reject other pending requests if no beds remain
+    const updatedListing = await tx.listing.findUnique({
+      where: { id: request.listingId },
+      select: { availableBeds: true },
+    });
+    const newAvailableBeds = updatedListing?.availableBeds ?? 0;
+
+    if (newAvailableBeds === 0) {
+      await tx.viewingRequest.updateMany({
+        where: {
+          listingId: request.listingId,
+          id: { not: requestId },
+          status: RequestStatus.pending,
+        },
+        data: {
+          status: RequestStatus.rejected,
+        },
+      });
+    }
+
     return {
       ...rentalResult,
       request: completedRequest,
     };
-    });
   }
 
   async finalizeUnitRental(requestId: string, landlordId: string, dto: FinalizeUnitRentalDto) {
     return this.prisma.$transaction(async (tx) => {
-      const request = await tx.viewingRequest.findUnique({
-        where: { id: requestId },
-        include: { listing: true },
-      });
+      return this.finalizeUnitRentalTx(requestId, landlordId, dto, tx);
+    });
+  }
+
+  async finalizeUnitRentalTx(
+    requestId: string,
+    landlordId: string,
+    dto: FinalizeUnitRentalDto,
+    tx: Prisma.TransactionClient,
+  ) {
+    const request = await tx.viewingRequest.findUnique({
+      where: { id: requestId },
+      include: { listing: true },
+    });
 
       if (!request) {
         throw new NotFoundException('طلب المعاينة غير موجود');
@@ -481,12 +601,23 @@ export class RequestsService {
         tx,
       );
 
-      return {
-        message: 'تم تسجيل عقد الإيجار بنجاح',
-        listing,
-        request: completedRequest,
-      };
+    // Reject all other pending requests for this listing
+    await tx.viewingRequest.updateMany({
+      where: {
+        listingId: request.listingId,
+        id: { not: requestId },
+        status: RequestStatus.pending,
+      },
+      data: {
+        status: RequestStatus.rejected,
+      },
     });
+
+    return {
+      message: 'تم تسجيل عقد الإيجار بنجاح',
+      listing,
+      request: completedRequest,
+    };
   }
 
   async getRequestStats(landlordId: string) {

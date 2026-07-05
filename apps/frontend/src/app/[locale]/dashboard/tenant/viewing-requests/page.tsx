@@ -1,281 +1,428 @@
-// apps/frontend/src/app/[locale]/dashboard/tenant/viewing-requests/page.tsx
+// apps/frontend/src/app/[locale]/dashboard/tenant/requests/page.tsx
 "use client";
 
 import React, { useState } from "react";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+// eslint-disable-next-line import/no-named-as-default-member
+import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
+import { useCreateReview, useMyReviews } from "@/hooks/useReviews";
+import TenantLayout from "@/components/layout/TenantLayout";
+import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
+  FileText,
   Calendar,
   Clock,
-  MapPin,
-  Building2,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  Inbox,
+  Building,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
+  Star,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
-import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
-import { useToast } from "@/components/ui";
-import { Badge } from "@/components/ui/badge";
+import { useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import { getImageUrl } from "@/lib/utils";
-import type { ViewingRequest, ViewingRequestStatus } from "@/types";
 
-// ── Status display helpers ──────────────────────────────────────────────────
-const STATUS_CONFIG: Record<
-  ViewingRequestStatus,
-  { label: string; color: string; icon: React.ReactNode }
-> = {
-  pending: {
-    label: "قيد الانتظار",
-    color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-    icon: <AlertCircle size={13} />,
-  },
-  accepted: {
-    label: "مقبول",
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    icon: <CheckCircle2 size={13} />,
-  },
-  approved: {
-    label: "مقبول",
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    icon: <CheckCircle2 size={13} />,
-  },
-  rejected: {
-    label: "مرفوض",
-    color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    icon: <XCircle size={13} />,
-  },
-  completed: {
-    label: "مكتمل",
-    color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    icon: <CheckCircle2 size={13} />,
-  },
-};
+type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
 
-const ARABIC_MONTHS = [
-  "يناير","فبراير","مارس","أبريل","مايو","يونيو",
-  "يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر",
-];
-
-function formatArabicDate(isoDate: string) {
-  const d = new Date(isoDate);
-  return `${d.getDate()} ${ARABIC_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function formatArabicTime(isoDate: string) {
-  const d = new Date(isoDate);
-  const h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, "0");
-  const period = h < 12 ? "ص" : "م";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${m} ${period}`;
-}
-
-// ── Request Card ─────────────────────────────────────────────────────────────
-function RequestCard({ request }: { request: ViewingRequest }) {
+export default function TenantRequests() {
+  const locale = useLocale();
+  const router = useRouter();
   const { toast } = useToast();
-  const cancelRequest = useCancelRequest();
-  const status = STATUS_CONFIG[request.status] ?? STATUS_CONFIG.pending;
-  const [confirming, setConfirming] = useState(false);
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
+  const [page, setPage] = useState(1);
 
-  const handleCancel = async () => {
-    if (!confirming) {
-      setConfirming(true);
-      return;
-    }
-    try {
-      await cancelRequest.mutateAsync(request.id);
-      toast({ title: "تم إلغاء الطلب", description: "تم إلغاء طلب المعاينة بنجاح.", type: "success" });
-    } catch {
-      toast({ title: "فشل إلغاء الطلب", description: "حاول مرة أخرى.", type: "error" });
-    } finally {
-      setConfirming(false);
+  // Queries & Mutations
+  const { data: requestsData, isLoading: isRequestsLoading } = useTenantRequests(page);
+  const { data: myReviews = [], isLoading: isReviewsLoading } = useMyReviews();
+  const { mutate: cancelRequest, isPending: isCancelling } = useCancelRequest();
+  const { mutate: createReview, isPending: isSubmittingReview } = useCreateReview();
+
+  // Tab Filtering
+  const [activeTab, setActiveTab] = useState<FilterStatus>("all");
+
+  // Modal States
+  const [cancelModalId, setCancelModalId] = useState<string | null>(null);
+  const [reviewModalListing, setReviewModalListing] = useState<{ id: string; title: string } | null>(null);
+
+  // Review Form State
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
+
+  const isLoading = isAuthLoading || isRequestsLoading || isReviewsLoading;
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  const items = requestsData?.items || [];
+  const reviewedListingIds = new Set(myReviews.map((review) => review.listingId));
+
+  const filteredItems = items.filter((req) => {
+    if (activeTab === "all") return true;
+    const statusStr = req.status as string;
+    if (activeTab === "accepted") return statusStr === "accepted" || statusStr === "approved";
+    return statusStr === activeTab;
+  });
+
+  const handleCancelRequestSubmit = () => {
+    if (!cancelModalId) return;
+
+    cancelRequest(cancelModalId, {
+      onSuccess: () => {
+        toast({
+          title: "تم إلغاء الطلب",
+          description: "تم إلغاء طلب المعاينة بنجاح.",
+          type: "success",
+        });
+        setCancelModalId(null);
+      },
+      onError: () => {
+        toast({
+          title: "فشل إلغاء الطلب",
+          description: "حدث خطأ أثناء محاولة إلغاء الطلب. حاول مرة أخرى.",
+          type: "error",
+        });
+      },
+    });
+  };
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewModalListing) return;
+
+    createReview(
+      {
+        listingId: reviewModalListing.id,
+        rating,
+        comment: comment || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "تم إضافة التقييم",
+            description: "شكراً لك! تم نشر تقييمك للمؤجر والعقار بنجاح.",
+            type: "success",
+          });
+          setReviewModalListing(null);
+          setRating(5);
+          setComment("");
+        },
+        onError: () => {
+          toast({
+            title: "حدث خطأ",
+            description: "فشل إرسال التقييم. قد تكون قمت بتقييم هذا العقار بالفعل.",
+            type: "error",
+          });
+        },
+      }
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-bold font-cairo">جديد</Badge>;
+      case "accepted":
+      case "approved":
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400 font-bold font-cairo">مقبول</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold font-cairo">مرفوض</Badge>;
+      case "completed":
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 font-bold font-cairo">مكتمل</Badge>;
+      default:
+        return <Badge className="bg-slate-100 text-slate-800 font-cairo">{status}</Badge>;
     }
   };
 
-  const listing = request.listing;
-  const thumb =
-    listing && Array.isArray((listing as any).images) && (listing as any).images.length > 0
-      ? getImageUrl((listing as any).images[0])
-      : null;
-
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex flex-col sm:flex-row">
-        {/* Thumbnail */}
-        <div className="sm:w-36 h-32 sm:h-auto shrink-0 bg-slate-100 dark:bg-slate-800 relative overflow-hidden">
-          {thumb ? (
-            <img src={thumb} alt={listing?.title ?? ""} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-700">
-              <Building2 size={32} />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent sm:bg-none" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 p-4 space-y-3">
-          {/* Title + status */}
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-snug line-clamp-2">
-                {listing?.title ?? "إعلان غير متاح"}
-              </h3>
-              {listing && (
-                <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  <MapPin size={11} className="text-[#1B4F8A] shrink-0" />
-                  <span className="truncate">{(listing as any).address ?? listing.title}</span>
-                </div>
-              )}
-            </div>
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ${status.color}`}
-            >
-              {status.icon}
-              {status.label}
-            </span>
-          </div>
-
-          {/* Date + time */}
-          <div className="flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Calendar size={13} className="text-[#1B4F8A]" />
-              {formatArabicDate(request.preferredDate)}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} className="text-[#1B4F8A]" />
-              {formatArabicTime(request.preferredDate)}
-            </span>
-          </div>
-
-          {/* Created at */}
-          <p className="text-[11px] text-slate-400">
-            تم الطلب بتاريخ: {formatArabicDate(request.createdAt)}
+    <TenantLayout>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold font-cairo">طلبات الاستئجار</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+            تابع حالة طلبات المعاينة التي قمت بتقديمها وتواصل مع المؤجرين.
           </p>
-
-          {/* Cancel action (pending only) */}
-          {request.status === "pending" && (
-            <button
-              onClick={handleCancel}
-              disabled={cancelRequest.isPending}
-              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition-all ${
-                confirming
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
-              }`}
-            >
-              {cancelRequest.isPending ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Trash2 size={12} />
-              )}
-              {confirming ? "اضغط مرة أخرى للتأكيد" : "إلغاء الطلب"}
-            </button>
-          )}
         </div>
-      </div>
-    </div>
-  );
-}
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-export default function TenantViewingRequestsPage() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useTenantRequests(page);
-
-  const items = data?.items ?? [];
-  const totalPages = data?.pages ?? 1;
-
-  return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6 font-cairo" dir="rtl">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-          <Calendar size={22} className="text-[#1B4F8A]" />
-          طلبات المعاينة
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          تتبّع جميع طلبات المعاينة التي أرسلتها للمؤجرين
-        </p>
-      </div>
-
-      {/* Summary stats */}
-      {!isLoading && items.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           {(
             [
-              { status: "pending" as ViewingRequestStatus, label: "قيد الانتظار" },
-              { status: "accepted" as ViewingRequestStatus, label: "مقبولة" },
-              { status: "rejected" as ViewingRequestStatus, label: "مرفوضة" },
-              { status: "completed" as ViewingRequestStatus, label: "مكتملة" },
-            ] as { status: ViewingRequestStatus; label: string }[]
-          ).map(({ status, label }) => {
-            const count = items.filter(
-              (r) => r.status === status || (status === "accepted" && r.status === "approved")
-            ).length;
-            const cfg = STATUS_CONFIG[status];
-            return (
-              <div
-                key={status}
-                className={`rounded-xl p-3 text-center ${cfg.color} border border-current/10`}
-              >
-                <p className="text-xl font-extrabold">{count}</p>
-                <p className="text-[11px] font-semibold mt-0.5">{label}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-slate-400">
-          <Loader2 size={28} className="animate-spin" />
-        </div>
-      ) : isError ? (
-        <div className="text-center py-16 text-red-500 dark:text-red-400">
-          <XCircle size={32} className="mx-auto mb-2" />
-          <p className="font-semibold text-sm">فشل في تحميل الطلبات. حاول مجدداً.</p>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-20 space-y-3 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-          <Inbox size={40} className="mx-auto opacity-40" />
-          <p className="font-bold text-sm text-slate-600 dark:text-slate-400">لا توجد طلبات معاينة بعد</p>
-          <p className="text-xs">تصفّح الإعلانات وابعث طلب معاينة لأي عقار يعجبك</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {items.map((req) => (
-            <RequestCard key={req.id} request={req} />
+              { key: "all", label: "الكل" },
+              { key: "pending", label: "جديد" },
+              { key: "accepted", label: "مقبول" },
+              { key: "rejected", label: "مرفوض" },
+              { key: "completed", label: "مكتمل" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${
+                activeTab === tab.key
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        {/* List Grid */}
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo">
+            <FileText size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">لا توجد طلبات</h3>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto text-sm">
+              لم تقم بتقديم طلبات استئجار تطابق التصفية الحالية.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredItems.map((req) => {
+              const isPending = req.status === "pending";
+              const isAccepted = req.status === "accepted" || req.status === "approved";
+              const isCompleted = req.status === "completed";
+              const isRejected = req.status === "rejected";
+              const hasReviewed = reviewedListingIds.has(req.listingId);
+
+              return (
+                <Card
+                  key={req.id}
+                  className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <CardBody className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      {/* Left: Thumbnail & Details */}
+                      <div className="flex flex-col sm:flex-row items-start gap-4 flex-1">
+                        <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800">
+                          {req.listing?.images?.[0] ? (
+                            <img
+                              src={getImageUrl(req.listing.images[0])}
+                              alt={req.listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Building size={28} />
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate font-cairo">
+                              {req.listing?.title || "عقار غير معروف"}
+                            </h3>
+                            {getStatusBadge(req.status)}
+                          </div>
+                          
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo">
+                            {req.listing?.address || "عنوان غير محدد"}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 font-cairo">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={11} className="text-amber-500" />
+                              <span>تاريخ المعاينة: {new Date(req.preferredDate).toLocaleDateString("ar-EG")}</span>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={11} className="text-slate-400" />
+                              <span>تاريخ الطلب: {new Date(req.createdAt).toLocaleDateString("ar-EG")}</span>
+                            </span>
+                          </div>
+
+                          {/* Notes */}
+                          {req.message && (
+                            <div className="flex gap-1.5 text-slate-600 dark:text-slate-400 text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80 mt-2">
+                              <MessageSquare size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                              <p className="font-cairo truncate">{req.message}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: Actions */}
+                      <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 dark:border-slate-800/50 pt-4 lg:pt-0 lg:ps-6 justify-end">
+                        <Button
+                          onClick={() => router.push(`/${locale}/listings/${req.listingId}`)}
+                          className="flex-1 lg:w-32 bg-blue-600 hover:bg-blue-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
+                        >
+                          <Eye size={13} />
+                          <span>{locale === "ar" ? "عرض الإعلان" : "View Listing"}</span>
+                        </Button>
+
+                        {isPending && (
+                          <Button
+                            onClick={() => setCancelModalId(req.id)}
+                            className="flex-1 lg:w-32 bg-red-600 hover:bg-red-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
+                          >
+                            <Trash2 size={13} />
+                            <span>إلغاء الطلب</span>
+                          </Button>
+                        )}
+
+                        {isAccepted && (
+                          <div className="text-center font-cairo text-xs text-green-600 dark:text-green-400 font-bold flex items-center gap-1 bg-green-500/10 py-1.5 px-3 rounded-full">
+                            <CheckCircle size={12} />
+                            <span>تم القبول من المؤجر</span>
+                          </div>
+                        )}
+
+                        {isRejected && (
+                          <div className="text-center font-cairo text-xs text-red-600 dark:text-red-400 font-bold flex items-center gap-1 bg-red-500/10 py-1.5 px-3 rounded-full">
+                            <XCircle size={12} />
+                            <span>مرفوض</span>
+                          </div>
+                        )}
+
+                        {isCompleted && req.listing && !hasReviewed && (
+                          <Button
+                            onClick={() => setReviewModalListing({ id: req.listingId, title: req.listing?.title || "" })}
+                            className="flex-1 lg:w-32 bg-amber-500 hover:bg-amber-600 text-white font-bold font-cairo flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs"
+                          >
+                            <Star size={13} />
+                            <span>كتابة تقييم</span>
+                          </Button>
+                        )}
+
+                        {isCompleted && hasReviewed && (
+                          <div className="text-center font-cairo text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 bg-amber-500/10 py-1.5 px-3 rounded-full">
+                            <Star size={12} />
+                            <span>تم إضافة التقييم</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Cancel Request Modal */}
+        {cancelModalId && (
+          <Modal
+            isOpen={true}
+            onClose={() => setCancelModalId(null)}
+            title="تأكيد إلغاء الطلب"
           >
-            <ChevronRight size={16} />
-          </button>
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            <div className="p-6 text-center space-y-4 font-cairo">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+                <HelpCircle size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                هل أنت متأكد من إلغاء طلب المعاينة؟
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+                سيتم إزالة الطلب وإشعار المؤجر بإلغائه. لا يمكنك التراجع عن هذا الإجراء.
+              </p>
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => setCancelModalId(null)}
+                  variant="outline"
+                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800 font-semibold"
+                >
+                  تراجع
+                </Button>
+                <Button
+                  onClick={handleCancelRequestSubmit}
+                  disabled={isCancelling}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl py-3"
+                >
+                  {isCancelling ? "جاري الإلغاء..." : "تأكيد الإلغاء"}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Review Modal */}
+        {reviewModalListing && (
+          <Modal
+            isOpen={true}
+            onClose={() => setReviewModalListing(null)}
+            title="كتابة تقييم للعقار والمؤجر"
           >
-            <ChevronLeft size={16} />
-          </button>
-        </div>
-      )}
-    </div>
+            <form onSubmit={handleReviewSubmit} className="p-6 space-y-4 font-cairo">
+              <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                تقييمك لعقار: <span className="text-blue-600">{reviewModalListing.title}</span>
+              </h4>
+
+              {/* Star rating selection */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500">التقييم العام</label>
+                <div
+                  className="flex items-center gap-1 pt-1 justify-center"
+                  style={{ direction: "ltr" }}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const isLit = hoverRating !== null ? star <= hoverRating : star <= rating;
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(null)}
+                        onClick={() => setRating(star)}
+                        className="p-1 focus:outline-none transition-transform hover:scale-110 shrink-0"
+                      >
+                        <Star
+                          size={32}
+                          className={
+                            isLit
+                              ? "text-yellow-400 fill-yellow-400 stroke-yellow-500"
+                              : "text-slate-300 stroke-slate-400 dark:text-slate-700"
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Text comment */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500">تعليقك (اختياري)</label>
+                <textarea
+                  placeholder="اكتب تفاصيل تجربتك مع العقار والمؤجر..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  className="w-full text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  onClick={() => setReviewModalListing(null)}
+                  variant="outline"
+                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl py-3"
+                >
+                  {isSubmittingReview ? "جاري الإرسال..." : "إرسال التقييم"}
+                </Button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </div>
+    </TenantLayout>
   );
 }

@@ -47,6 +47,91 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; labelAr: string; l
   ALERT: { bg: "bg-rose-50 dark:bg-rose-950/30", text: "text-rose-600 dark:text-rose-400", labelAr: "تنبيه", labelEn: "Alert" },
 };
 
+const translateNotification = (title: string, body: string, isRtl: boolean) => {
+  if (!isRtl) return { title, body };
+
+  let translatedTitle = title;
+  const lowerTitle = title.toLowerCase();
+
+  // Translate Titles
+  if (lowerTitle.includes("bed rental completed")) {
+    translatedTitle = "تم تأجير السرير بنجاح";
+  } else if (lowerTitle.includes("rental completed")) {
+    translatedTitle = "تم تأجير الوحدة بنجاح";
+  } else if (lowerTitle.includes("new viewing request")) {
+    translatedTitle = "طلب معاينة جديد";
+  } else if (lowerTitle.includes("viewing request accepted")) {
+    translatedTitle = "تم قبول طلب المعاينة";
+  } else if (lowerTitle.includes("viewing request rejected")) {
+    translatedTitle = "تم رفض طلب المعاينة";
+  } else if (lowerTitle.includes("viewing request canceled")) {
+    translatedTitle = "تم إلغاء طلب المعاينة";
+  } else if (lowerTitle.includes("listing approved")) {
+    translatedTitle = "تمت الموافقة على الإعلان";
+  } else if (lowerTitle.includes("listing rejected")) {
+    translatedTitle = "تم رفض الإعلان";
+  } else if (lowerTitle.includes("new message")) {
+    translatedTitle = "رسالة جديدة";
+  } else if (lowerTitle.includes("password reset successful")) {
+    translatedTitle = "تغيير كلمة المرور بنجاح";
+  }
+
+  // Translate Body and handle dynamic quoted values
+  let translatedBody = body;
+  const quoteMatch = body.match(/"([^"]+)"/);
+  const propertyName = quoteMatch ? quoteMatch[1] : "";
+
+  const lowerBody = body.toLowerCase();
+
+  if (lowerBody.includes("bed rental for") && lowerBody.includes("completed")) {
+    translatedBody = propertyName 
+      ? `تم إتمام عملية تأجير سرير بنجاح في العقار "${propertyName}".`
+      : "تم إتمام عملية تأجير سرير بنجاح.";
+  } else if (lowerBody.includes("your bed rental for") && lowerBody.includes("completed")) {
+    translatedBody = propertyName 
+      ? `تم إتمام عملية تأجير سرير لك بنجاح في العقار "${propertyName}".`
+      : "تم إتمام عملية تأجير السرير لك بنجاح.";
+  } else if (lowerBody.includes("rental for") && lowerBody.includes("completed")) {
+    translatedBody = propertyName 
+      ? `تم إتمام تأجير العقار "${propertyName}" بنجاح.`
+      : "تم إتمام تأجير العقار بنجاح.";
+  } else if (lowerBody.includes("your rental for") && lowerBody.includes("completed")) {
+    translatedBody = propertyName 
+      ? `تم إتمام عقد إيجار العقار "${propertyName}" الخاص بك بنجاح.`
+      : "تم إتمام عقد الإيجار بنجاح.";
+  } else if (lowerBody.includes("requested to view")) {
+    translatedBody = propertyName 
+      ? `قام مستأجر بتقديم طلب معاينة للعقار "${propertyName}".`
+      : "قام مستأجر بتقديم طلب معاينة جديد لعقارك.";
+  } else if (lowerBody.includes("viewing request for") && lowerBody.includes("accepted")) {
+    translatedBody = propertyName 
+      ? `تم قبول طلب المعاينة الخاص بك للعقار "${propertyName}" من قبل المؤجر.`
+      : "تم قبول طلب المعاينة الخاص بك من قبل المؤجر.";
+  } else if (lowerBody.includes("viewing request for") && lowerBody.includes("rejected")) {
+    translatedBody = propertyName 
+      ? `تم رفض طلب المعاينة الخاص بك للعقار "${propertyName}" من قبل المؤجر.`
+      : "تم رفض طلب المعاينة الخاص بك من قبل المؤجر.";
+  } else if (lowerBody.includes("canceled their viewing request")) {
+    translatedBody = propertyName 
+      ? `قام المستأجر بإلغاء طلب المعاينة الخاص به للعقار "${propertyName}".`
+      : "قام المستأجر بإلغاء طلب المعاينة للعقار.";
+  } else if (lowerBody.includes("has been approved")) {
+    translatedBody = propertyName 
+      ? `تمت الموافقة على إعلانك "${propertyName}" بنجاح وهو الآن نشط وظاهر بالمنصة.`
+      : "تمت الموافقة على إعلانك بنجاح وأصبح ظاهراً بالمنصة.";
+  } else if (lowerBody.includes("was rejected")) {
+    translatedBody = propertyName 
+      ? `تم رفض إعلانك "${propertyName}" من قبل الإدارة.`
+      : "تم رفض إعلانك من قبل الإدارة.";
+  } else if (lowerBody.includes("received a new message")) {
+    translatedBody = "لقد تلقيت رسالة جديدة في الدعم الفني.";
+  } else if (lowerBody.includes("password has been successfully reset")) {
+    translatedBody = "تم إعادة تعيين كلمة المرور الخاصة بك بنجاح.";
+  }
+
+  return { title: translatedTitle, body: translatedBody };
+};
+
 export default function NotificationsPage() {
   const locale = useLocale();
   const router = useRouter();
@@ -292,6 +377,11 @@ export default function NotificationsPage() {
                     labelEn: "Alert",
                   };
                   const typeLabel = isRtl ? typeInfo.labelAr : typeInfo.labelEn;
+                  const { title: displayTitle, body: displayBody } = translateNotification(
+                    notification.title,
+                    notification.body,
+                    isRtl
+                  );
                   const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
                     addSuffix: true,
                     locale: dateLocale,
@@ -329,11 +419,11 @@ export default function NotificationsPage() {
                                 : "text-slate-700 dark:text-slate-350"
                             }`}
                           >
-                            {notification.title}
+                            {displayTitle}
                           </p>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {notification.body}
+                          {displayBody}
                         </p>
                         
                         <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 dark:text-slate-500">

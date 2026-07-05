@@ -4,20 +4,26 @@
 import React from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone, Bell } from "lucide-react";
-import type { Alert, Listing } from "@/types";
+import { useRouter } from "next/navigation";
+import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone, Loader2 } from "lucide-react";
+import type { Listing } from "@/types";
 import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
 import { cn, getImageUrl } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
+import { getWhatsAppLink } from "@/lib/whatsapp";
+import { useAuthStore } from "@/store/auth.store";
+// eslint-disable-next-line import/no-named-as-default-member
+import { useListingContactAccess } from "@/hooks/useRequests";
+
 
 interface ListingCardProps {
   listing: Listing;
   className?: string;
   rating?: number;
-  matchingAlert?: Alert | null;
+  matchingAlert?: any;
 }
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -53,6 +59,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating, matchingAlert }) => {
   const locale = useLocale();
+  const router = useRouter();
   const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
   const [showPreview, setShowPreview] = React.useState(false);
 
@@ -66,10 +73,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
   const { isInWishlist, toggleWishlist } = useWishlist();
   const isFavorite = isInWishlist(listing.id);
 
+  // Auth & Contact access via React Query
+  const { user: currentUser } = useAuthStore();
+  const { data: contactAccess, isLoading: isLoadingContact } = useListingContactAccess(
+    listing.id,
+    showPreview && currentUser?.role === "tenant"
+  );
+
   return (
     <div
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button") || target.closest(".cursor-pointer")) {
+          return;
+        }
+        router.push(`/${locale}/listings/${listing.id}`);
+      }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer",
         className
       )}
     >
@@ -88,32 +109,19 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         )}
 
         {/* Badges overlay */}
-        <div className="absolute start-2 top-2 flex flex-col gap-1.5">
-          <Badge variant="default" className="bg-white/90 text-gray-800 backdrop-blur-sm dark:bg-gray-900/90 dark:text-gray-100">
+        <div className="absolute start-2 top-2 flex flex-col gap-1.5 items-start">
+          <Badge variant="default" className="bg-white/90 text-gray-800 backdrop-blur-sm dark:bg-gray-900/90 dark:text-gray-100 font-bold font-cairo">
             {TYPE_LABELS[listing.type]}
           </Badge>
-          <Badge variant={STATUS_VARIANT[listing.status]}>
+          <Badge variant={STATUS_VARIANT[listing.status]} className="font-bold font-cairo">
             {STATUS_LABELS[listing.status]}
           </Badge>
-          {/* Smart alert match badge */}
-          {matchingAlert && (() => {
-            const params = new URLSearchParams();
-            if (matchingAlert.unitType) params.set("unitType", matchingAlert.unitType);
-            if (matchingAlert.governorate) params.set("governorate", matchingAlert.governorate);
-            if (matchingAlert.district) params.set("district", matchingAlert.district);
-            if (matchingAlert.maxPrice) params.set("maxPrice", String(matchingAlert.maxPrice));
-            if (matchingAlert.genderTarget) params.set("genderTarget", matchingAlert.genderTarget);
-            return (
-              <Link
-                href={`/${locale}/search?${params.toString()}`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-900 shadow-sm hover:bg-amber-500 transition-colors"
-              >
-                <Bell size={9} />
-                يطابق تنبيهاتك
-              </Link>
-            );
-          })()}
+          {matchingAlert && (
+            <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white gap-1 shadow-md border-none font-bold animate-pulse font-cairo text-[10px] px-2 py-0.5">
+              <Sparkles size={10} className="animate-spin text-amber-300" style={{ animationDuration: '3s' }} />
+              تطابق ذكي
+            </Badge>
+          )}
         </div>
 
         <div className="absolute end-2 top-2 flex flex-col gap-1.5">
@@ -161,6 +169,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             toggleWishlist(listing.id);
           }}
           className={cn(
@@ -226,7 +235,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         {/* Landlord + Rating */}
         {listing.landlord && (
           <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity" onClick={() => setShowPreview(true)}>
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity" onClick={(e) => {
+              e.stopPropagation();
+              setShowPreview(true);
+            }}>
               <Avatar
                 src={listing.landlord.avatarUrl || null}
                 name={listing.landlord.name}
@@ -250,7 +262,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
       </div>
 
       {/* Footer action */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 hidden sm:block">
         <Link
           href={`/${locale}/listings/${listing.id}`}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 text-primary dark:text-blue-400 px-4 py-2.5 text-sm font-semibold transition-colors"
@@ -276,7 +288,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               size="lg"
               verified={isUserVerified(listing.landlord)}
             />
-            
+
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
                 {listing.landlord.name}
@@ -284,7 +296,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                   <CheckCircle className="text-blue-500 fill-blue-500 dark:text-blue-400 dark:fill-blue-400 shrink-0" size={18} />
                 )}
               </h3>
-              
+
               <div className="flex justify-center pt-1">
                 {(() => {
                   const status = getIdentityVerificationStatus(listing.landlord);
@@ -338,22 +350,38 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               </div>
             </div>
 
-            {listing.landlord.phone && (
+            {isLoadingContact ? (
+              <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 flex justify-center py-4">
+                <Loader2 className="animate-spin text-amber-500" size={24} />
+              </div>
+            ) : !currentUser ? (
+              <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 text-xs text-red-500 font-bold leading-relaxed px-4 py-2 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-900">
+                لا يمكن التواصل مع المعلن إلا بعد تسجيل الدخول كـ (مستأجر) وتقديم طلب معاينة ويقوم المؤجر بقبوله.
+              </div>
+            ) : currentUser.role !== "tenant" ? (
+              <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 text-xs text-red-500 font-bold leading-relaxed px-4 py-2 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-900">
+                يجب أن تسجل دخولك بصفة (مستأجر) لتتمكن من تقديم طلبات المعاينة والتواصل مع المعلنين.
+              </div>
+            ) : contactAccess?.canViewPhone && contactAccess.phone ? (
               <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col gap-2">
                 <a
-                  href={`tel:${listing.landlord.phone}`}
+                  href={`tel:${contactAccess.phone}`}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-primary text-white hover:bg-primary/95 transition-all shadow-md"
                 >
                   <Phone size={16} /> اتصل بالمعلن
                 </a>
                 <a
-                  href={`https://wa.me/${listing.landlord.phone.replace(/[^0-9]/g, "")}`}
+                  href={getWhatsAppLink(contactAccess.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition-all shadow-md"
                 >
                   <MessageSquare size={16} /> مراسلة عبر واتساب
                 </a>
+              </div>
+            ) : (
+              <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 text-xs text-amber-600 dark:text-amber-400 font-bold leading-relaxed px-4 py-3 bg-amber-50 dark:bg-amber-950/10 rounded-xl border border-amber-200/50 dark:border-amber-900/50">
+                لا يمكن التواصل مع المعلن إلا بعد قبول طلب المعاينة الخاص بك من قبل المؤجر.
               </div>
             )}
           </div>

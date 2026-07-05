@@ -122,16 +122,23 @@ export const useFinalizeBedRental = () => {
     },
     onSuccess: (data, variables) => {
       const bed = data?.bed || data;
-      // Invalidate all relevant query keys to force re-fetch from server
+      const listing = data?.listing;
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["requests", variables.requestId] });
       queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
-      // Specific listing/bed invalidations
+      queryClient.refetchQueries({ queryKey: ["requests"], type: "active" });
+      queryClient.refetchQueries({ queryKey: ["listings", "my"], type: "active" });
+      if (listing?.id) {
+        queryClient.setQueryData(["listings", listing.id], listing);
+        queryClient.setQueryData<Listing[]>(["listings", "my"], (current) =>
+          current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
+        );
+      }
       if (bed?.listingId) {
         queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId] });
         queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId, "beds"] });
+        queryClient.refetchQueries({ queryKey: ["listings", bed.listingId, "beds"], type: "active" });
       }
     },
   });
@@ -148,17 +155,19 @@ export const useFinalizeUnitRental = () => {
       });
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       const listing = data?.listing;
-      // Invalidate all relevant query keys to force re-fetch from server
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["requests", variables.requestId] });
       queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
-      // Specific listing invalidation
+      queryClient.refetchQueries({ queryKey: ["requests"], type: "active" });
+      queryClient.refetchQueries({ queryKey: ["listings", "my"], type: "active" });
       if (listing?.id) {
-        queryClient.invalidateQueries({ queryKey: ["listings", listing.id] });
+        queryClient.setQueryData(["listings", listing.id], listing);
+        queryClient.setQueryData<Listing[]>(["listings", "my"], (current) =>
+          current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
+        );
       }
     },
   });
@@ -188,3 +197,48 @@ export const useCancelRequest = () => {
     },
   });
 };
+
+export const useQuickRent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    any,
+    Error,
+    { listingId: string; phone: string; startDate: string; endDate: string; bedId?: string }
+  >({
+    mutationFn: async ({ listingId, phone, startDate, endDate, bedId }) => {
+      const response = await api.post("/requests/quick-rent", {
+        listingId,
+        phone,
+        rentedSince: startDate,
+        rentedUntil: endDate,
+        bedId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+      queryClient.invalidateQueries({ queryKey: ["beds"] });
+      queryClient.invalidateQueries({ queryKey: ["listing-beds"] });
+    },
+  });
+};
+
+export const useListingContactAccess = (listingId: string, enabled: boolean) => {
+  return useQuery({
+    queryKey: ["contact-access", listingId],
+    queryFn: async () => {
+      const response = await api.get<{ canViewPhone: boolean; phone: string | null }>(
+        `/requests/listing/${listingId}/contact-access`
+      );
+      return response.data;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+  });
+};
+

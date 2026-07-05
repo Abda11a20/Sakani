@@ -9,30 +9,27 @@ export interface TenantLookupResult {
   role: string;
 }
 
-/**
- * Looks up a tenant by phone number.
- * Only enabled when phone has at least 11 digits (Egyptian minimum).
- * Returns only {id, name, phone, role} — no sensitive fields.
- * Accessible by landlords and admins only (enforced by backend).
- */
 export const useLookupTenantByPhone = (phone: string) => {
-  const cleanPhone = phone.replace(/\s/g, "");
-  const enabled = cleanPhone.length >= 11;
-
+  const cleaned = phone.replace(/[^0-9]/g, "");
+  
   return useQuery<TenantLookupResult | null>({
-    queryKey: ["tenant-lookup", cleanPhone],
-    queryFn: async () => {
+    queryKey: ["users", "lookup-phone", cleaned],
+    queryFn: async (): Promise<TenantLookupResult | null> => {
+      if (cleaned.length < 11) return null;
       try {
-        const res = await api.get<TenantLookupResult>(
-          `/users/lookup-by-phone?phone=${encodeURIComponent(cleanPhone)}`
+        const response = await api.get<TenantLookupResult>(
+          `/users/lookup-by-phone?phone=${cleaned}`
         );
-        return res.data;
-      } catch {
-        return null;
+        return response.data;
+      } catch (err: any) {
+        // Return null if tenant is not found (404)
+        if (err?.response?.status === 404) {
+          return null;
+        }
+        throw err;
       }
     },
-    enabled,
-    staleTime: 30_000,
-    retry: false,
+    enabled: cleaned.length >= 11,
+    staleTime: 300_000, // Cache results for 5 minutes
   });
 };
