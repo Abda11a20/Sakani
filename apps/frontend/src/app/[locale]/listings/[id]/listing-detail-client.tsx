@@ -84,7 +84,6 @@ function RequestViewingModal({
 }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("10:00");
-  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -97,7 +96,6 @@ function RequestViewingModal({
       await api.post("/requests", {
         listingId,
         preferredDate: new Date(`${date}T${time}`).toISOString(),
-        message: notes || undefined,
       });
       setSuccess(true);
     } catch (err) {
@@ -164,23 +162,23 @@ function RequestViewingModal({
                 onChange={(e) => setTime(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]/20 focus:border-[#1B4F8A] text-slate-800 dark:text-slate-200"
               >
-                {["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {([
+                  { value: "09:00", label: "9 صباحاً" },
+                  { value: "10:00", label: "10 صباحاً" },
+                  { value: "11:00", label: "11 صباحاً" },
+                  { value: "12:00", label: "12 ظهراً" },
+                  { value: "13:00", label: "1 مساءً" },
+                  { value: "14:00", label: "2 مساءً" },
+                  { value: "15:00", label: "3 مساءً" },
+                  { value: "16:00", label: "4 مساءً" },
+                  { value: "17:00", label: "5 مساءً" },
+                  { value: "18:00", label: "6 مساءً" },
+                  { value: "19:00", label: "7 مساءً" },
+                  { value: "20:00", label: "8 مساءً" },
+                ] as { value: string; label: string }[]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-355 mb-1">
-                رسالة للمؤجر (اختياري)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="اكتب أي ملاحظات أو أسئلة للمؤجر هنا..."
-                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]/20 focus:border-[#1B4F8A] text-slate-800 dark:text-slate-200 resize-none"
-              />
             </div>
 
             <div className="flex gap-2.5 pt-1.5">
@@ -717,7 +715,15 @@ export function ListingDetailClient({
 
           <div className="max-w-md mx-auto pt-1 space-y-2.5">
             <button
-              onClick={() => setRequestModalOpen(true)}
+              onClick={() => {
+                if (!currentUser) {
+                  if (typeof window !== "undefined") {
+                    window.location.href = `/${locale}/login?returnUrl=/${locale}/listings/${listing.id}`;
+                  }
+                  return;
+                }
+                setRequestModalOpen(true);
+              }}
               className="w-full bg-[#1B4F8A] hover:bg-[#153E6D] text-white py-3 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs"
             >
               <Calendar size={14} />

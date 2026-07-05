@@ -15,6 +15,7 @@ import {
   LogOut,
   MessageSquare,
   History,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLogout } from "@/hooks/useAuth";
@@ -57,6 +58,12 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
       labelEn: "Rental History",
       icon: History,
       href: `/${locale}/dashboard/tenant/rental-history`,
+    },
+    {
+      label: "طلبات المعاينة",
+      labelEn: "Viewing Requests",
+      icon: Calendar,
+      href: `/${locale}/dashboard/tenant/viewing-requests`,
     },
     {
       label: "المفضلة",

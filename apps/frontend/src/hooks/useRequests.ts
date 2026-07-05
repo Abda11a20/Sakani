@@ -122,23 +122,16 @@ export const useFinalizeBedRental = () => {
     },
     onSuccess: (data, variables) => {
       const bed = data?.bed || data;
-      const listing = data?.listing;
+      // Invalidate all relevant query keys to force re-fetch from server
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["requests", variables.requestId] });
       queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
-      queryClient.refetchQueries({ queryKey: ["requests"], type: "active" });
-      queryClient.refetchQueries({ queryKey: ["listings", "my"], type: "active" });
-      if (listing?.id) {
-        queryClient.setQueryData(["listings", listing.id], listing);
-        queryClient.setQueryData<Listing[]>(["listings", "my"], (current) =>
-          current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
-        );
-      }
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+      // Specific listing/bed invalidations
       if (bed?.listingId) {
         queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId] });
         queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId, "beds"] });
-        queryClient.refetchQueries({ queryKey: ["listings", bed.listingId, "beds"], type: "active" });
       }
     },
   });
@@ -155,19 +148,17 @@ export const useFinalizeUnitRental = () => {
       });
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       const listing = data?.listing;
+      // Invalidate all relevant query keys to force re-fetch from server
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["requests", variables.requestId] });
       queryClient.invalidateQueries({ queryKey: ["listings", "my"] });
-      queryClient.refetchQueries({ queryKey: ["requests"], type: "active" });
-      queryClient.refetchQueries({ queryKey: ["listings", "my"], type: "active" });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+      // Specific listing invalidation
       if (listing?.id) {
-        queryClient.setQueryData(["listings", listing.id], listing);
-        queryClient.setQueryData<Listing[]>(["listings", "my"], (current) =>
-          current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
-        );
+        queryClient.invalidateQueries({ queryKey: ["listings", listing.id] });
       }
     },
   });

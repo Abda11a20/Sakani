@@ -3,7 +3,8 @@
 
 import React, { useState } from "react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus } from "@/hooks/useRequests";
+import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus, useFinalizeUnitRental, useFinalizeBedRental } from "@/hooks/useRequests";
+import { useLookupTenantByPhone } from "@/hooks/useTenantLookup";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast, Avatar } from "@/components/ui";
 import {
@@ -16,6 +17,9 @@ import {
   XCircle,
   PlayCircle,
   HelpCircle,
+  Phone,
+  Search,
+  Loader2,
 } from "lucide-react";
 
 type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
@@ -36,6 +40,10 @@ export default function LandlordRequests() {
   } | null>(null);
 
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [quickPhone, setQuickPhone] = useState("");
+  const { data: quickTenant, isLoading: isLookingUp } = useLookupTenantByPhone(quickPhone);
+  const finalizeUnit = useFinalizeUnitRental();
+  const finalizeBed = useFinalizeBedRental();
 
   const isLoading = isAuthLoading || isRequestsLoading || isStatsLoading;
 
@@ -213,6 +221,36 @@ export default function LandlordRequests() {
             title="تفاصيل الطلب"
           >
             <div className="p-4 sm:p-6 space-y-5 font-cairo">
+              {/* Quick Rental by Phone */}
+              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <Phone size={13} /> البحث السريع عن مستأجر برقم الهاتف
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    value={quickPhone}
+                    onChange={(e) => setQuickPhone(e.target.value)}
+                    placeholder="01XXXXXXXXX"
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-xl outline-none focus:ring-2 focus:ring-amber-400/30"
+                    style={{ direction: "ltr" }}
+                  />
+                  {isLookingUp && <Loader2 size={16} className="animate-spin text-amber-500 shrink-0" />}
+                </div>
+                {quickPhone.replace(/\s/g, "").length >= 11 && (
+                  quickTenant ? (
+                    <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-2.5">
+                      <CheckCircle size={14} className="text-green-500 shrink-0" />
+                      <div className="text-xs">
+                        <p className="font-bold text-green-800 dark:text-green-300">{quickTenant.name}</p>
+                        <p className="text-green-600 dark:text-green-400 font-sans" style={{ direction: "ltr" }}>{quickTenant.phone}</p>
+                      </div>
+                    </div>
+                  ) : !isLookingUp ? (
+                    <p className="text-xs text-red-500 dark:text-red-400 font-semibold">لم يتم العثور على مستأجر بهذا الرقم</p>
+                  ) : null
+                )}
+              </div>
               {/* Header */}
               <div className="flex items-center gap-4">
                 <Avatar

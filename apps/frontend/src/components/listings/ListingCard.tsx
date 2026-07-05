@@ -4,8 +4,8 @@
 import React from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone } from "lucide-react";
-import type { Listing } from "@/types";
+import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone, Bell } from "lucide-react";
+import type { Alert, Listing } from "@/types";
 import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -17,6 +17,7 @@ interface ListingCardProps {
   listing: Listing;
   className?: string;
   rating?: number;
+  matchingAlert?: Alert | null;
 }
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -50,7 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
   rented: "مؤجر",
 };
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating }) => {
+export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating, matchingAlert }) => {
   const locale = useLocale();
   const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
   const [showPreview, setShowPreview] = React.useState(false);
@@ -94,6 +95,25 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
           <Badge variant={STATUS_VARIANT[listing.status]}>
             {STATUS_LABELS[listing.status]}
           </Badge>
+          {/* Smart alert match badge */}
+          {matchingAlert && (() => {
+            const params = new URLSearchParams();
+            if (matchingAlert.unitType) params.set("unitType", matchingAlert.unitType);
+            if (matchingAlert.governorate) params.set("governorate", matchingAlert.governorate);
+            if (matchingAlert.district) params.set("district", matchingAlert.district);
+            if (matchingAlert.maxPrice) params.set("maxPrice", String(matchingAlert.maxPrice));
+            if (matchingAlert.genderTarget) params.set("genderTarget", matchingAlert.genderTarget);
+            return (
+              <Link
+                href={`/${locale}/search?${params.toString()}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-900 shadow-sm hover:bg-amber-500 transition-colors"
+              >
+                <Bell size={9} />
+                يطابق تنبيهاتك
+              </Link>
+            );
+          })()}
         </div>
 
         <div className="absolute end-2 top-2 flex flex-col gap-1.5">

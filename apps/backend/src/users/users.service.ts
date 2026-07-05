@@ -175,4 +175,23 @@ export class UsersService {
 
     return { message: 'User deleted permanently' };
   }
+
+  // ── Lookup Tenant by Phone (Landlord/Admin only) ──────────────────────────
+  async lookupByPhone(phone: string): Promise<{ id: string; name: string; phone: string; role: string }> {
+    const matches = await this.prisma.user.findMany({
+      where: { phone, role: UserRole.tenant },
+      select: { id: true, name: true, phone: true, role: true },
+    });
+
+    if (matches.length === 0) {
+      throw new NotFoundException('لم يتم العثور على مستأجر بهذا الرقم');
+    }
+
+    // Unexpected data integrity issue: multiple tenants share the same phone
+    if (matches.length > 1) {
+      throw new ConflictException('يوجد أكثر من مستخدم مسجّل بهذا الرقم. تواصل مع الإدارة.');
+    }
+
+    return matches[0];
+  }
 }
