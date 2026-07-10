@@ -109,16 +109,13 @@ export class EmailService {
       const message =
         error instanceof Error ? error.message : 'خطأ غير معروف';
 
-      if (isProduction) {
-        this.logger.error(
-          `❌ فشل إرسال البريد إلى ${payload.to}: ${message}`,
-        );
-        throw new Error(`فشل إرسال البريد الإلكتروني: ${message}`);
-      }
+      // نسجّل الخطأ دائماً بغض النظر عن البيئة
+      this.logger.error(
+        `❌ فشل إرسال البريد إلى ${payload.to}: ${message}`,
+      );
 
-      // في بيئة التطوير: نطبع الـ OTP ونكمل دون رمي خطأ
-      this.logger.warn(`[DEV] فشل البريد إلى ${payload.to}: ${message}`);
-      if (devOtp) {
+      // في بيئة التطوير: نطبع الـ OTP لتسهيل الاختبار
+      if (!isProduction && devOtp) {
         this.logger.warn(
           `\n\n  ╔════════════════════════════════════════╗` +
             `\n  ║  🔑 DEV OTP for ${payload.to.padEnd(24)} ║` +
@@ -126,6 +123,9 @@ export class EmailService {
             `\n  ╚════════════════════════════════════════╝\n`,
         );
       }
+
+      // لا نرمي خطأً — الكود محفوظ في قاعدة البيانات بالفعل
+      // رمي الخطأ هنا كان يُظهر "حدث خطأ" للمستخدم رغم أن الـ OTP تم إنشاؤه بنجاح
     }
   }
 }
