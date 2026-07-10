@@ -30,7 +30,8 @@ export class GmailEmailProvider implements IEmailProvider {
       secure,
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
-    });
+      family: 4, // Force IPv4 to avoid ENETUNREACH error on Hugging Face Spaces (IPv6 disabled)
+    } as any);
 
     this.logger.log(`📧 Gmail SMTP مُهيَّأ → ${host}:${port} (secure=${secure})`);
   }
