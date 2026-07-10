@@ -6,11 +6,11 @@
 function wrapHtml(title: string, body: string, frontendUrl: string): string {
   // استخدام favicon.png داخل دائرة بيضاء لإظهار الشعار بوضوح وجمالية فائقة
   const logoHtml = `
-    <div style="text-align:center;margin-bottom:14px;">
+    <div style="text-align:center;margin-bottom:12px;">
       <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;text-align:center;">
         <tr>
-          <td align="center" style="background:#ffffff;border-radius:50%;padding:10px;width:48px;height:48px;box-shadow:0 4px 12px rgba(0,0,0,0.15);text-align:center;vertical-align:middle;">
-            <img src="${frontendUrl}/favicon.png" width="48" height="48" alt="Sakany" style="display:block;border-radius:50%;max-width:100%;height:auto;margin:0 auto;outline:none;border:none;"/>
+          <td align="center" style="background:#ffffff;border-radius:50%;padding:8px;width:44px;height:44px;box-shadow:0 4px 10px rgba(0,0,0,0.12);text-align:center;vertical-align:middle;">
+            <img src="${frontendUrl}/favicon.png" width="44" height="44" alt="Sakany" style="display:block;border-radius:50%;max-width:100%;height:auto;margin:0 auto;outline:none;border:none;"/>
           </td>
         </tr>
       </table>
@@ -28,53 +28,55 @@ function wrapHtml(title: string, body: string, frontendUrl: string): string {
     @media only screen and (max-width: 480px) {
       .email-container {
         width: 100% !important;
-        max-width: 100% !important;
-        padding: 10px !important;
+        max-width: 95% !important;
+        margin: 0 auto !important;
       }
       .email-content {
-        padding: 24px 20px !important;
+        padding: 20px 16px !important;
       }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;direction:rtl;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f9;padding:24px 12px;width:100%;table-layout:fixed;text-align:center;">
-    <tr>
-      <td align="center" style="text-align:center;vertical-align:top;">
-        <!-- Container Card: مدمجة الحجم ومتوسطة العرض لتوافق مثالي -->
-        <table align="center" cellpadding="0" cellspacing="0" border="0" class="email-container" style="max-width:440px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(27,79,138,0.06);margin:0 auto;text-align:right;direction:rtl;">
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;direction:rtl;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;text-align:center;">
+  <center style="width:100%;background-color:#f4f6f9;padding:16px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f9;width:100%;table-layout:fixed;text-align:center;" align="center">
+      <tr>
+        <td align="center" style="text-align:center;vertical-align:top;">
+          <!-- Container Card: مدمجة الحجم ومتوسطة العرض لتوافق مثالي -->
+          <table align="center" cellpadding="0" cellspacing="0" border="0" class="email-container" style="max-width:380px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 15px rgba(27,79,138,0.06);margin:0 auto;text-align:right;direction:rtl;">
 
-          <!-- Header -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#1B4F8A 0%,#133761 100%);padding:28px 24px;text-align:center;vertical-align:middle;">
-              ${logoHtml}
-              <h1 style="color:#D4A847;margin:0;font-size:26px;font-weight:900;letter-spacing:1px;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">سَكني</h1>
-              <p style="color:rgba(255,255,255,0.9);margin:6px 0 0;font-size:13px;letter-spacing:0.5px;">منصة تأجير العقارات في مصر</p>
-            </td>
-          </tr>
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#1B4F8A 0%,#133761 100%);padding:24px 20px;text-align:center;vertical-align:middle;">
+                ${logoHtml}
+                <h1 style="color:#D4A847;margin:0;font-size:24px;font-weight:900;letter-spacing:0.5px;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">سَكني</h1>
+                <p style="color:rgba(255,255,255,0.95);margin:4px 0 0;font-size:12px;letter-spacing:0.5px;">منصة تأجير العقارات في مصر</p>
+              </td>
+            </tr>
 
-          <!-- Body -->
-          <tr>
-            <td class="email-content" style="padding:32px 30px 24px;background:#ffffff;vertical-align:top;">
-              <h2 style="color:#1B4F8A;margin:0 0 16px;font-size:20px;font-weight:700;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;border-bottom:2px solid #f4f6f9;padding-bottom:12px;">${title}</h2>
-              ${body}
-            </td>
-          </tr>
+            <!-- Body -->
+            <tr>
+              <td class="email-content" style="padding:28px 24px 20px;background:#ffffff;vertical-align:top;text-align:right;">
+                <h2 style="color:#1B4F8A;margin:0 0 14px;font-size:18px;font-weight:700;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;border-bottom:2px solid #f4f6f9;padding-bottom:10px;text-align:right;">${title}</h2>
+                ${body}
+              </td>
+            </tr>
 
-          <!-- Footer -->
-          <tr>
-            <td style="background:#fafbfc;padding:20px 30px;text-align:center;border-top:1px solid #f0f3f6;">
-              <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.7;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-                إذا لم تطلب هذا البريد يرجى تجاهله تماماً — حسابك بأمان.<br/>
-                <span style="color:#1B4F8A;font-weight:700;">فريق عمل سَكني</span> &copy; ${new Date().getFullYear()}
-              </p>
-            </td>
-          </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="background:#fafbfc;padding:16px 24px;text-align:center;border-top:1px solid #f0f3f6;">
+                <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                  إذا لم تطلب هذا البريد يرجى تجاهله تماماً — حسابك بأمان.<br/>
+                  <span style="color:#1B4F8A;font-weight:700;">فريق عمل سَكني</span> &copy; ${new Date().getFullYear()}
+                </p>
+              </td>
+            </tr>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </center>
 </body>
 </html>`;
 }
@@ -86,17 +88,17 @@ function wrapText(title: string, body: string): string {
 // ── OTP Box component ─────────────────────────────────────────────────────────
 
 function otpBox(otp: string, color: string, bgColor: string): string {
-  return `<div style="background:${bgColor};border:2px dashed ${color};border-radius:12px;padding:20px;text-align:center;margin:20px 0;">
-    <span style="font-size:38px;font-weight:900;color:${color};letter-spacing:8px;font-family:monospace,sans-serif;line-height:1;">${otp}</span>
+  return `<div style="background:${bgColor};border:2px dashed ${color};border-radius:10px;padding:16px;text-align:center;margin:16px 0;">
+    <span style="font-size:32px;font-weight:900;color:${color};letter-spacing:6px;font-family:monospace,sans-serif;line-height:1;">${otp}</span>
   </div>`;
 }
 
 function actionButton(label: string, url: string): string {
-  return `<div style="text-align:center;margin:24px 0 0;">
-    <a href="${url}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1B4F8A,#133761);color:#D4A847;text-decoration:none;padding:12px 30px;border-radius:30px;font-size:15px;font-weight:700;box-shadow:0 4px 10px rgba(27,79,138,0.25);">
+  return `<div style="text-align:center;margin:20px 0 0;">
+    <a href="${url}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1B4F8A,#133761);color:#D4A847;text-decoration:none;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:700;box-shadow:0 4px 8px rgba(27,79,138,0.2);">
       ${label}
     </a>
-    <p style="color:#94a3b8;font-size:10px;margin:10px 0 0;line-height:1.4;">
+    <p style="color:#94a3b8;font-size:10px;margin:8px 0 0;line-height:1.4;text-align:center;">
       أو انسخ هذا الرابط مباشرة في متصفحك:<br/>
       <a href="${url}" target="_blank" style="color:#1B4F8A;text-decoration:underline;word-break:break-all;">${url}</a>
     </p>
