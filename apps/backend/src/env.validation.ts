@@ -13,6 +13,11 @@ export const envSchema = z
     RESEND_FROM: z.string().optional(),
     // Email provider selector
     EMAIL_PROVIDER: z.enum(['gmail', 'resend']).default('gmail'),
+    // Gmail API OAuth2 (used when EMAIL_PROVIDER=gmail on platforms where SMTP is blocked)
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_REFRESH_TOKEN: z.string().optional(),
+    GOOGLE_SENDER_EMAIL: z.string().optional(),
     // Gmail SMTP
     MAIL_HOST: z.string().default('smtp.gmail.com'),
     MAIL_PORT: z.string().default('587'),
