@@ -81,7 +81,8 @@ export class GmailEmailProvider implements IEmailProvider {
    * كما تتطلبه Gmail API (users.messages.send → raw)
    */
   private buildRfc822(payload: EmailPayload): string {
-    const from = `"سَكني | Sakani" <${this.senderEmail}>`;
+    const fromName = `=?UTF-8?B?${Buffer.from('سَكني | Sakani', 'utf8').toString('base64')}?=`;
+    const from = `${fromName} <${this.senderEmail}>`;
     const subjectEncoded = this.encodeBase64Header(payload.subject);
 
     const mime = [

@@ -4,19 +4,6 @@
 // ── Shared wrappers ───────────────────────────────────────────────────────────
 
 function wrapHtml(title: string, body: string, frontendUrl: string): string {
-  // استخدام favicon.png داخل دائرة بيضاء لإظهار الشعار بوضوح وجمالية فائقة
-  const logoHtml = `
-    <div style="text-align:center;margin-bottom:12px;">
-      <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;text-align:center;">
-        <tr>
-          <td align="center" style="background:#ffffff;border-radius:50%;padding:8px;width:44px;height:44px;box-shadow:0 4px 10px rgba(0,0,0,0.12);text-align:center;vertical-align:middle;">
-            <img src="${frontendUrl}/favicon.png" width="44" height="44" alt="Sakany" style="display:block;border-radius:50%;max-width:100%;height:auto;margin:0 auto;outline:none;border:none;"/>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
-
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -48,7 +35,6 @@ function wrapHtml(title: string, body: string, frontendUrl: string): string {
             <!-- Header -->
             <tr>
               <td style="background:linear-gradient(135deg,#1B4F8A 0%,#133761 100%);padding:24px 20px;text-align:center;vertical-align:middle;">
-                ${logoHtml}
                 <h1 style="color:#D4A847;margin:0;font-size:24px;font-weight:900;letter-spacing:0.5px;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">سَكني</h1>
                 <p style="color:rgba(255,255,255,0.95);margin:4px 0 0;font-size:12px;letter-spacing:0.5px;">منصة تأجير العقارات في مصر</p>
               </td>
