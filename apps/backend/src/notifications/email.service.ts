@@ -1,189 +1,131 @@
 // apps/backend/src/notifications/email.service.ts
+// خدمة البريد الإلكتروني — تعتمد على IEmailProvider فقط (SOLID)
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
-import * as nodemailer from 'nodemailer';
+import { IEmailProvider } from './email-provider.interface';
+import { GmailEmailProvider } from './providers/gmail-email.provider';
+import { ResendEmailProvider } from './providers/resend-email.provider';
+import {
+  buildVerificationEmail,
+  buildPasswordResetEmail,
+  buildPasswordChangedEmail,
+} from './email-templates';
 
-// ── Types ────────────────────────────────────────────────────────────────────
-interface EmailPayload {
-  to: string;
-  subject: string;
-  html: string;
-}
+// مدة صلاحية الـ OTP (تطابق ما هو مُعرَّف في auth.service.ts: OTP_EXPIRY_MINUTES = 10)
+const OTP_EXPIRY_MINUTES = 10;
 
-type EmailProvider = 'resend' | 'smtp';
-
-// ── EmailService ─────────────────────────────────────────────────────────────
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly provider: EmailProvider;
-  private readonly resendApiKey: string | undefined;
-  private readonly resendFrom: string;
-  private smtpTransporter: nodemailer.Transporter | null = null;
+  private readonly provider: IEmailProvider;
+  private readonly frontendUrl: string;
 
   constructor(private readonly config: ConfigService) {
-    this.resendApiKey = this.config.get<string>('RESEND_API_KEY');
-    this.resendFrom = this.config.get<string>('RESEND_FROM') || 'سَكني | Sakani <onboarding@resend.dev>';
+    this.frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
-    if (this.resendApiKey) {
-      this.provider = 'resend';
-      this.logger.log('📧 Email provider: Resend API');
+    // اختيار المزود بناءً على متغير البيئة EMAIL_PROVIDER
+    const emailProvider =
+      this.config.get<string>('EMAIL_PROVIDER')?.toLowerCase() ?? 'gmail';
+
+    if (emailProvider === 'resend') {
+      this.provider = new ResendEmailProvider(config);
     } else {
-      this.provider = 'smtp';
-      this.logger.log('📧 Email provider: SMTP (Nodemailer)');
-      this.smtpTransporter = nodemailer.createTransport({
-        host: this.config.get<string>('EMAIL_HOST') || 'smtp.gmail.com',
-        port: this.config.get<number>('EMAIL_PORT') || 465,
-        secure: true,
-        auth: {
-          user: this.config.get<string>('EMAIL_USER'),
-          pass: this.config.get<string>('EMAIL_APP_PASSWORD'),
-        },
-      });
+      // الافتراضي: Gmail SMTP
+      this.provider = new GmailEmailProvider(config);
     }
+
+    this.logger.log(
+      `📧 مزود البريد النشط: ${this.provider.providerName.toUpperCase()}`,
+    );
   }
 
-  // ── Public API ─────────────────────────────────────────────────────────────
+  // ── Public API (لا يتغير — متوافق مع جميع الاستدعاءات الحالية) ─────────────
 
   /** إرسال كود تفعيل الحساب */
   async sendEmailVerification(email: string, otp: string): Promise<void> {
-    const body = `
-      <p style="color: #333; font-size: 16px;">مرحباً بك في منصة <strong>سَكني</strong>!</p>
-      <p style="color: #555;">لتفعيل حسابك، أدخل الرمز التالي:</p>
-      <div style="background: #f0f5ff; border: 2px dashed #1B4F8A; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-        <span style="font-size: 36px; font-weight: bold; color: #1B4F8A; letter-spacing: 8px;">${otp}</span>
-      </div>
-      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
-    `;
-    const html = this.wrapTemplate('تفعيل حسابك', body);
-    await this.dispatch({ to: email, subject: 'تفعيل حساب سَكني', html }, otp);
+    const loginUrl = `${this.frontendUrl}/ar/login`;
+    const { html, text } = buildVerificationEmail(otp, loginUrl, OTP_EXPIRY_MINUTES, this.frontendUrl);
+
+    await this.dispatch(
+      {
+        to: email,
+        subject: 'تفعيل حساب سَكني — رمز التحقق',
+        html,
+        text,
+      },
+      otp,
+    );
   }
 
   /** إرسال كود إعادة تعيين كلمة المرور */
   async sendPasswordReset(email: string, otp: string): Promise<void> {
-    const body = `
-      <p style="color: #333; font-size: 16px;">تلقينا طلب لإعادة تعيين كلمة المرور لحسابك.</p>
-      <p style="color: #555;">استخدم الرمز التالي لإعادة تعيين كلمة المرور:</p>
-      <div style="background: #fff5f5; border: 2px dashed #e74c3c; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-        <span style="font-size: 36px; font-weight: bold; color: #e74c3c; letter-spacing: 8px;">${otp}</span>
-      </div>
-      <p style="color: #e74c3c; font-size: 14px; font-weight: bold;">⏰ هذا الرمز صالح لمدة 10 دقائق فقط.</p>
-      <p style="color: #888; font-size: 13px;">إذا لم تكن قد طلبت هذا، فلا داعي للقلق — حسابك بأمان تام.</p>
-    `;
-    const html = this.wrapTemplate('إعادة تعيين كلمة المرور', body);
-    await this.dispatch({ to: email, subject: 'إعادة تعيين كلمة مرور سَكني', html }, otp);
+    // رابط يوجه لصفحة إعادة التعيين مع الإيميل كـ query param
+    const resetUrl = `${this.frontendUrl}/ar/reset-password?email=${encodeURIComponent(email)}`;
+    const { html, text } = buildPasswordResetEmail(otp, resetUrl, OTP_EXPIRY_MINUTES, this.frontendUrl);
+
+    await this.dispatch(
+      {
+        to: email,
+        subject: 'إعادة تعيين كلمة مرور سَكني',
+        html,
+        text,
+      },
+      otp,
+    );
   }
 
-  // ── Private: Dispatch (routes to the active provider) ──────────────────────
-
+  /** إرسال تأكيد تغيير كلمة المرور */
   async sendPasswordChangedConfirmation(email: string): Promise<void> {
-    const body = `
-      <p style="color: #333; font-size: 16px;">Your Sakani password was changed successfully.</p>
-      <p style="color: #555;">If this was you, no further action is needed.</p>
-      <p style="color: #e74c3c; font-size: 13px;">If this was not you, please contact support immediately.</p>
-    `;
-    const html = this.wrapTemplate('Password changed', body);
-    await this.dispatch({ to: email, subject: 'Your Sakani password was changed', html });
+    const loginUrl = `${this.frontendUrl}/ar/login`;
+    const { html, text } = buildPasswordChangedEmail(loginUrl, this.frontendUrl);
+
+    await this.dispatch({
+      to: email,
+      subject: 'تم تغيير كلمة المرور — سَكني',
+      html,
+      text,
+    });
   }
 
-  private async dispatch(payload: EmailPayload, devOtp?: string): Promise<void> {
+  // ── Private: Dispatcher ────────────────────────────────────────────────────
+
+  private async dispatch(
+    payload: { to: string; subject: string; html: string; text?: string },
+    devOtp?: string,
+  ): Promise<void> {
     // في بيئة الاختبار: لا نرسل شيئاً
     if (process.env.NODE_ENV === 'test') {
-      this.logger.log(`[TEST] Suppressed email to ${payload.to}`);
+      this.logger.log(`[TEST] تم إلغاء البريد إلى ${payload.to}`);
       return;
     }
 
     const isProduction = process.env.NODE_ENV === 'production';
 
     try {
-      if (this.provider === 'resend') {
-        await this.sendViaResend(payload);
-      } else {
-        await this.sendViaSmtp(payload);
-      }
+      await this.provider.send(payload);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message =
+        error instanceof Error ? error.message : 'خطأ غير معروف';
 
       if (isProduction) {
-        // في الإنتاج: نرمي الخطأ لإلغاء الـ Transaction بالكامل
-        this.logger.error(`❌ Failed to send email to ${payload.to}: ${message}`);
+        this.logger.error(
+          `❌ فشل إرسال البريد إلى ${payload.to}: ${message}`,
+        );
         throw new Error(`فشل إرسال البريد الإلكتروني: ${message}`);
       }
 
-      // في التطوير: نطبع الـ OTP في الكونسول ونكمل العملية
-      this.logger.warn(`[DEV] Email to ${payload.to} failed: ${message}`);
+      // في بيئة التطوير: نطبع الـ OTP ونكمل دون رمي خطأ
+      this.logger.warn(`[DEV] فشل البريد إلى ${payload.to}: ${message}`);
       if (devOtp) {
         this.logger.warn(
           `\n\n  ╔════════════════════════════════════════╗` +
-          `\n  ║  🔑 DEV OTP for ${payload.to.padEnd(25)} ║` +
-          `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
-          `\n  ╚════════════════════════════════════════╝\n`,
+            `\n  ║  🔑 DEV OTP for ${payload.to.padEnd(24)} ║` +
+            `\n  ║       CODE: ${devOtp.padEnd(27)} ║` +
+            `\n  ╚════════════════════════════════════════╝\n`,
         );
       }
     }
-  }
-
-  // ── Private: Resend API Transport ──────────────────────────────────────────
-
-  private async sendViaResend(payload: EmailPayload): Promise<void> {
-    const response = await axios.post(
-      'https://api.resend.com/emails',
-      {
-        from: this.resendFrom,
-        to: [payload.to],
-        subject: payload.subject,
-        html: payload.html,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${this.resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 10_000,
-      },
-    );
-
-    this.logger.log(`✅ Email sent via Resend to ${payload.to} | ID: ${response.data?.id}`);
-  }
-
-  // ── Private: SMTP (Nodemailer) Transport ───────────────────────────────────
-
-  private async sendViaSmtp(payload: EmailPayload): Promise<void> {
-    if (!this.smtpTransporter) {
-      throw new Error('SMTP transporter is not configured');
-    }
-
-    const info = await this.smtpTransporter.sendMail({
-      from: `"سَكني | Sakani" <${this.config.get<string>('EMAIL_USER')}>`,
-      to: payload.to,
-      subject: payload.subject,
-      html: payload.html,
-    });
-
-    this.logger.log(`✅ Email sent via SMTP to ${payload.to} | ID: ${info.messageId}`);
-  }
-
-  // ── Private: HTML Email Template ───────────────────────────────────────────
-
-  private wrapTemplate(title: string, body: string): string {
-    return `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fc; padding: 20px;">
-        <div style="background: #1B4F8A; padding: 20px 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: #D4A847; margin: 0; font-size: 28px;">سَكني</h1>
-          <p style="color: #ffffff; margin: 5px 0 0; font-size: 14px;">منصة تأجير العقارات في مصر</p>
-        </div>
-        <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #1B4F8A; margin-top: 0;">${title}</h2>
-          ${body}
-          <hr style="border: none; border-top: 1px solid #e8e8e8; margin: 24px 0;" />
-          <p style="color: #888; font-size: 12px; text-align: center; margin: 0;">
-            إذا لم تكن قد طلبت هذا الإيميل، يرجى تجاهله تماماً.<br/>
-            فريق سَكني &mdash; جميع الحقوق محفوظة
-          </p>
-        </div>
-      </div>
-    `;
   }
 }

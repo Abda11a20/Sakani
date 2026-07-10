@@ -10,6 +10,16 @@ export const envSchema = z
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
     RESEND_API_KEY: z.string().optional(),
+    RESEND_FROM: z.string().optional(),
+    // Email provider selector
+    EMAIL_PROVIDER: z.enum(['gmail', 'resend']).default('gmail'),
+    // Gmail SMTP
+    MAIL_HOST: z.string().default('smtp.gmail.com'),
+    MAIL_PORT: z.string().default('587'),
+    MAIL_SECURE: z.string().default('false'),
+    MAIL_USER: z.string().optional(),
+    MAIL_PASSWORD: z.string().optional(),
+    MAIL_FROM: z.string().optional(),
     STORAGE_PROVIDER: z.enum(['s3', 'cloudinary']).default('s3'),
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
     CLOUDINARY_API_KEY: z.string().optional(),
