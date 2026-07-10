@@ -274,22 +274,23 @@ export function ForgotPasswordForm() {
             </p>
           </div>
 
-          <div className="flex justify-between gap-2" dir="ltr">
+          <div className="flex justify-center gap-1 sm:gap-2 max-w-full overflow-hidden" dir="ltr">
             {otp.map((digit, index) => (
-              <Input
-                key={index}
-                ref={(el) => {
-                  otpRefs.current[index] = el;
-                }}
-                type="tel"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleOtpChange(index, e.target.value)}
-                onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                onPaste={handleOtpPaste}
-                className="w-12 h-14 text-center text-lg font-bold"
-              />
+              <div key={index} className="w-9 h-11 sm:w-12 sm:h-14 flex-shrink-0">
+                <Input
+                  ref={(el) => {
+                    otpRefs.current[index] = el;
+                  }}
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={handleOtpPaste}
+                  className="w-full h-full text-center text-lg font-bold p-0"
+                />
+              </div>
             ))}
           </div>
 

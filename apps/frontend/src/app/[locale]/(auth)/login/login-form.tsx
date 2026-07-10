@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Phone, Mail, Eye, EyeOff } from "lucide-react";
+import { Phone, Mail, Eye, EyeOff, Lock } from "lucide-react";
 import { useLogin } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -76,7 +76,7 @@ export function LoginForm() {
         <label className="block text-sm font-medium text-foreground/80">
           {t("phoneOrEmail")}
         </label>
-        <div className="relative">
+        <div className="relative" dir="ltr">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             <IdentifierIcon size={18} />
           </span>
@@ -85,7 +85,7 @@ export function LoginForm() {
             type="text"
             placeholder={t("phoneOrEmailPlaceholder")}
             dir="ltr"
-            className={`input-field w-full ps-10 ${errors.identifier ? "border-red-500" : ""}`}
+            className={`input-field w-full ps-10 pe-4 ${errors.identifier ? "border-red-500" : ""}`}
             {...register("identifier")}
           />
         </div>
@@ -99,12 +99,16 @@ export function LoginForm() {
         <label className="block text-sm font-medium text-foreground/80">
           {t("password")}
         </label>
-        <div className="relative">
+        <div className="relative" dir="ltr">
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <Lock size={18} />
+          </span>
           <input
             id="login-password"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className={`input-field w-full pe-10 ${errors.password ? "border-red-500" : ""}`}
+            dir="ltr"
+            className={`input-field w-full ps-10 pe-10 ${errors.password ? "border-red-500" : ""}`}
             {...register("password")}
           />
           <button

@@ -142,20 +142,20 @@ async function HeroSection({ locale }: { locale: string }) {
                 ))}
               </div>
 
-              <div className="flex-1 flex items-center gap-2 px-3">
+              <div className="flex-1 flex items-center gap-1 sm:gap-2 px-1 sm:px-3 min-w-0">
                 <Search size={18} className="text-white/40 shrink-0" />
                 <input
                   id="hero-search"
                   type="text"
                   placeholder={t("searchPlaceholder")}
-                  className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-sm"
+                  className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-xs sm:text-sm min-w-0 w-full"
                 />
               </div>
 
               <Link
                 href={`/${locale}/search`}
                 id="hero-search-btn"
-                className="shrink-0 px-6 py-3 rounded-xl text-sm font-bold text-[#0F1A2E] transition-all hover:opacity-90 active:scale-95"
+                className="shrink-0 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold text-[#0F1A2E] transition-all hover:opacity-90 active:scale-95"
                 style={{ background: "#D4A847" }}
               >
                 {t("searchButton")}

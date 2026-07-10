@@ -104,10 +104,10 @@ export default function LandlordDashboard() {
           <h2 className="text-lg font-bold text-slate-800 dark:text-white font-cairo">
             {isRtl ? "الإحصائيات الرئيسية" : "Key Statistics"}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Total Views */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-6 flex items-center justify-between">
+              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">إجمالي المشاهدات</span>
                   <h3 className="text-2xl font-bold font-sans text-blue-600 dark:text-blue-400">{new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(stats?.totalViews ?? 0)}</h3>
@@ -121,7 +121,7 @@ export default function LandlordDashboard() {
 
             {/* Active Listings */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-6 flex items-center justify-between">
+              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">الإعلانات النشطة</span>
                   <h3 className="text-2xl font-bold font-sans text-amber-600 dark:text-amber-400">{stats?.activeListings ?? 0}</h3>
@@ -135,7 +135,7 @@ export default function LandlordDashboard() {
 
             {/* Occupied Units */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-6 flex items-center justify-between">
+              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">الوحدات المؤجرة</span>
                   <h3 className="text-2xl font-bold font-sans text-green-600 dark:text-green-400">{stats?.occupiedUnits ?? 0}</h3>
@@ -149,7 +149,7 @@ export default function LandlordDashboard() {
 
             {/* Pending Requests */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-6 flex items-center justify-between">
+              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">طلبات معلقة</span>
                   <h3 className="text-2xl font-bold font-sans text-orange-600 dark:text-orange-400">{stats?.pendingRequests ?? 0}</h3>

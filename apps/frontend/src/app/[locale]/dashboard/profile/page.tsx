@@ -575,7 +575,7 @@ export default function ProfilePage() {
                   <Button
                     type="submit"
                     disabled={isChangingPassword}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl py-3 mt-4"
+                    className="w-full btn-primary font-bold rounded-xl py-3 mt-4"
                   >
                     {isChangingPassword ? "جاري التغيير..." : "تحديث كلمة المرور"}
                   </Button>

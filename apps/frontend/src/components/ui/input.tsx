@@ -13,7 +13,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, leftIcon, rightIcon, disabled, ...props }, ref) => {
+  ({ className, label, error, leftIcon, rightIcon, disabled, type, dir, ...props }, ref) => {
+    const isLtrContent = type === "password" || type === "email" || type === "tel" || dir === "ltr";
+
     return (
       <div className="w-full">
         {label && (
@@ -21,7 +23,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative" dir={isLtrContent ? "ltr" : undefined}>
           {leftIcon && (
             <div
               className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-gray-500"
@@ -31,6 +33,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
           <input
+            type={type}
+            dir={dir ?? (isLtrContent ? "ltr" : undefined)}
             className={cn(
               "flex w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:border-gray-700",
               error ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300 dark:border-gray-700",
