@@ -37,5 +37,5 @@ COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# تشغيل الباك إند
-CMD ["node", "apps/backend/dist/src/main"]
+# تشغيل الباك إند مع إعطاء الأولوية لـ IPv4 لتفادي مشاكل الاتصال في الاستضافات
+CMD ["node", "--dns-result-order=ipv4first", "apps/backend/dist/src/main"]
