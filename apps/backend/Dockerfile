@@ -7,12 +7,14 @@ WORKDIR /app
 # ─── Stage 2: Production Dependencies ────────────────────────────────────────
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts
+# ✅ تم التعديل هنا: استخدام npm install مع تجاهل الـ devDependencies لتجنب تطلب الـ lockfile
+RUN npm install --omit=dev --ignore-scripts
 
 # ─── Stage 3: Build ──────────────────────────────────────────────────────────
 FROM base AS builder
 COPY package*.json ./
-RUN npm ci
+# ✅ تم التعديل هنا أيضاً لنفس السبب
+RUN npm install
 COPY . .
 # Generate Prisma client before building
 RUN npx prisma generate
