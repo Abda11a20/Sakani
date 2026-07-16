@@ -9,6 +9,7 @@ import {
   MessageSquare,
   History,
   Megaphone,
+  Compass,
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import UnifiedDashboardLayout, { type DashboardMenuItem } from "./UnifiedDashboardLayout";
@@ -51,6 +52,12 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
       labelEn: "Viewing Requests",
       icon: GitPullRequest,
       href: `/${locale}/dashboard/landlord/requests`,
+    },
+    {
+      label: "المجتمع",
+      labelEn: "Community",
+      icon: Compass,
+      href: `/${locale}/community`,
     },
     {
       label: "ملفي الشخصي",

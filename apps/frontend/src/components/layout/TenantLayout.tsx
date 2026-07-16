@@ -9,6 +9,7 @@ import {
   MessageSquare,
   History,
   FileText,
+  Compass,
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import UnifiedDashboardLayout, { type DashboardMenuItem } from "./UnifiedDashboardLayout";
@@ -51,6 +52,12 @@ export default function TenantLayout({ children }: TenantLayoutProps) {
       labelEn: "Smart Alerts",
       icon: Bell,
       href: `/${locale}/dashboard/tenant/alerts`,
+    },
+    {
+      label: "المجتمع",
+      labelEn: "Community",
+      icon: Compass,
+      href: `/${locale}/community`,
     },
     {
       label: "ملفي الشخصي",
