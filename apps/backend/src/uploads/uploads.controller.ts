@@ -1,5 +1,6 @@
 // c:\Users\pc\Desktop\Sakany\sakani\apps\backend\src\uploads\uploads.controller.ts
 import { Controller, Post, Delete, Patch, Get, Param, Body, UploadedFile, UploadedFiles, UseGuards, UseInterceptors, Req } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './uploads.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,6 +16,8 @@ interface RequestWithUser {
   };
 }
 
+@ApiTags('Uploads')
+@ApiBearerAuth()
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}

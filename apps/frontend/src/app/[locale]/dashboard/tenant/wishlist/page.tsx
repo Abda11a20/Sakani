@@ -48,7 +48,7 @@ function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRem
 
 export default function TenantWishlist() {
   const locale = useLocale();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Get client-side wishlist IDs
   const { wishlistIds } = useWishlist();

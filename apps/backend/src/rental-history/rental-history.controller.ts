@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RentalHistoryService } from './rental-history.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +18,8 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Rental History')
+@ApiBearerAuth()
 @Controller('rental-history')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RentalHistoryController {

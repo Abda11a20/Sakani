@@ -1,6 +1,6 @@
 // apps/frontend/src/hooks/useUploads.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { uploadsApi } from "@/lib/api/uploads.api";
 
 export interface UploadImageResult {
   id: string;
@@ -17,17 +17,8 @@ export const useUploadListingImages = (listingId: string) => {
       files.forEach((file) => {
         formData.append("images", file);
       });
-
-      const response = await api.post<UploadImageResult[]>(
-        `/uploads/listings/${listingId}/images`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      return response.data;
+      const response = await uploadsApi.listingImages(listingId, formData);
+      return response.data as UploadImageResult[];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["listings", listingId] });
@@ -39,12 +30,14 @@ export const useUploadListingImages = (listingId: string) => {
 export const useDeleteImage = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<{ success: boolean; message: string }, Error, { imageId: string; listingId?: string }>({
+  return useMutation<
+    { success: boolean; message: string },
+    Error,
+    { imageId: string; listingId?: string }
+  >({
     mutationFn: async ({ imageId }) => {
-      const response = await api.delete<{ success: boolean; message: string }>(
-        `/uploads/images/${imageId}`
-      );
-      return response.data;
+      const response = await uploadsApi.deleteImage(imageId);
+      return response.data as { success: boolean; message: string };
     },
     onSuccess: (_, { listingId }) => {
       if (listingId) {
@@ -60,11 +53,8 @@ export const useReorderImages = (listingId: string) => {
 
   return useMutation<{ success: boolean; message: string }, Error, string[]>({
     mutationFn: async (imageIds) => {
-      const response = await api.patch<{ success: boolean; message: string }>(
-        `/uploads/listings/${listingId}/images/reorder`,
-        { imageIds }
-      );
-      return response.data;
+      const response = await uploadsApi.reorderImages(listingId, imageIds);
+      return response.data as { success: boolean; message: string };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["listings", listingId] });

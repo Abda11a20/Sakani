@@ -9,6 +9,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiHideProperty } from '@nestjs/swagger';
 import { UnitType, GenderTarget } from '@prisma/client';
 
 export class CreateAlertDto {
@@ -39,6 +40,7 @@ export class CreateAlertDto {
   specialty?: string;
 
   // Ensure at least one filter is present (validated in service)
+  @ApiHideProperty()
   @ValidateIf(
     (o: CreateAlertDto) =>
       !o.governorate &&

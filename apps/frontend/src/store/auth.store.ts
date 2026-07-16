@@ -1,6 +1,7 @@
 // apps/frontend/src/store/auth.store.ts
 import { create } from "zustand";
 import type { User } from "@/types";
+import { TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from "@/lib/constants";
 
 interface AuthState {
   user: User | null;
@@ -15,8 +16,7 @@ interface AuthState {
   hydrate: () => void;
 }
 
-const TOKEN_KEY = "sakani_token";
-const USER_KEY = "sakani_user";
+
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== "undefined") {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
-      localStorage.removeItem("sakani_refresh_token");
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
     set({ user: null, token: null });
   },

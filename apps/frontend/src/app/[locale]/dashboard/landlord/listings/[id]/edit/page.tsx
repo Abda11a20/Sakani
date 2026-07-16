@@ -13,7 +13,7 @@ export default function EditListingPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
   const { data: listing, isLoading: isListingLoading } = useListing(id);
   const { mutateAsync: updateListing, isPending: isUpdating } = useUpdateListing(id);
 

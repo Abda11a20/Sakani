@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
@@ -24,11 +25,13 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Listings')
 @Controller('listings')
 export class ListingsController {
   constructor(private readonly listingsService: ListingsService) {}
 
   // ── 1. إنشاء إعلان جديد (للمؤجر فقط) ──────────────────────────────────────
+  @ApiBearerAuth()
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -40,6 +43,7 @@ export class ListingsController {
   }
 
   // ── 2. جلب إعلانات المؤجر (للمؤجر فقط) ────────────────────────────────────
+  @ApiBearerAuth()
   @Get('my')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -75,6 +79,7 @@ export class ListingsController {
   }
 
   // ── 5. تعديل الإعلان (للمؤجر صاحبه فقط) ──────────────────────────────────
+  @ApiBearerAuth()
   @Patch(':id/vacate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -82,6 +87,7 @@ export class ListingsController {
     return this.listingsService.vacateUnit(id, user.id);
   }
 
+  @ApiBearerAuth()
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -94,6 +100,7 @@ export class ListingsController {
   }
 
   // ── 6. حذف الإعلان (Soft Delete) للمؤجر صاحبه فقط ────────────────────────
+  @ApiBearerAuth()
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)

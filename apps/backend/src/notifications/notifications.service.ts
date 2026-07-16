@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationType, Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService, transactionStorage } from '../prisma/prisma.service';
+import { NotificationDispatcher } from './notification-dispatcher.service';
 
 type NotificationClient = PrismaService | Prisma.TransactionClient;
 
@@ -15,7 +16,10 @@ interface CreateNotificationInput {
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly dispatcher: NotificationDispatcher,
+  ) {}
 
   async createUnique(
     input: CreateNotificationInput,
@@ -38,7 +42,7 @@ export class NotificationService {
       return existingNotification;
     }
 
-    return client.notification.create({
+    const notification = await client.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
@@ -48,6 +52,22 @@ export class NotificationService {
         entityId,
       },
     });
+
+    // Check if we are running inside an active Prisma transaction
+    const pendingDispatches = transactionStorage.getStore();
+    if (pendingDispatches) {
+      // Defer dispatching until the transaction commits successfully
+      pendingDispatches.push(() => {
+        this.dispatcher.dispatch(notification);
+      });
+    } else {
+      // Not in a transaction, dispatch immediately (Fire-and-Forget)
+      setImmediate(() => {
+        this.dispatcher.dispatch(notification);
+      });
+    }
+
+    return notification;
   }
 
   async findAll(userId: string, page = 1, limit = 20) {

@@ -167,8 +167,12 @@ export class BedsService {
   }
 
   // ── 4. إخلاء سرير (Landlord فقط) ───────────────────────────────────────────
-  async vacateBed(bedId: string, landlordId: string) {
-    return this.prisma.$transaction(async (tx) => {
+  async vacateBed(
+    bedId: string,
+    landlordId: string,
+    client?: Prisma.TransactionClient,
+  ) {
+    const vacate = async (tx: Prisma.TransactionClient) => {
       const bed = await tx.listingBed.findUnique({
         where: { id: bedId },
         include: { listing: true },
@@ -184,6 +188,22 @@ export class BedsService {
 
       if (bed.status !== BedStatus.rented) {
         throw new BadRequestException('هذا السرير غير مؤجر ليتم إخلاؤه');
+      }
+
+      // Automatically terminate any active contract for this bed
+      const activeContract = await tx.rentalContract.findFirst({
+        where: { bedId, status: 'active' },
+      });
+      if (activeContract) {
+        await tx.rentalContract.update({
+          where: { id: activeContract.id },
+          data: {
+            status: 'terminated',
+            actualCheckout: new Date(),
+            terminationReason: 'landlord_request',
+            terminationNotes: 'تم إخلاء السرير يدوياً',
+          },
+        });
       }
 
       // 1. تحديث السرير ليصبح متاحاً وتفريغ بيانات المستأجر
@@ -218,6 +238,52 @@ export class BedsService {
         message: 'تم إخلاء السرير بنجاح',
         bed: updatedBed,
       };
+    };
+
+    if (client) {
+      return vacate(client);
+    }
+    return this.prisma.$transaction(vacate);
+  }
+
+  async vacateBedBySystem(
+    bedId: string,
+    client: Prisma.TransactionClient,
+  ) {
+    const bed = await client.listingBed.findUnique({
+      where: { id: bedId },
+      include: { listing: true },
+    });
+
+    if (!bed) {
+      return;
+    }
+
+    // 1. تحديث السرير ليصبح متاحاً
+    await client.listingBed.update({
+      where: { id: bedId },
+      data: {
+        status: BedStatus.available,
+        currentTenantId: null,
+        rentedSince: null,
+        rentedUntil: null,
+      },
+    });
+
+    // 2. تحديث availableBeds في الإعلان
+    const newAvailableBeds = (bed.listing.availableBeds ?? 0) + 1;
+    const listingUpdateData: any = {
+      availableBeds: newAvailableBeds,
+    };
+
+    // إذا كانت حالة الإعلان rented، يتم نقله لـ paused لأن العقار انتهت مدته تلقائياً وينتظر قرار المؤجر
+    if (bed.listing.status === ListingStatus.rented) {
+      listingUpdateData.status = ListingStatus.paused;
+    }
+
+    await client.listing.update({
+      where: { id: bed.listingId },
+      data: listingUpdateData,
     });
   }
 

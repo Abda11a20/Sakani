@@ -1,6 +1,7 @@
 // apps/frontend/src/hooks/useReviews.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { reviewsApi } from "@/lib/api/reviews.api";
 import type { Review } from "@/types";
 
 export interface CreateReviewPayload {
@@ -14,10 +15,8 @@ export const useLandlordRating = (landlordId: string | null | undefined) => {
     queryKey: ["reviews", "landlord", landlordId, "rating"],
     queryFn: async () => {
       if (!landlordId) return { ratingAvg: 0, reviewsCount: 0 };
-      const response = await api.get<{ ratingAvg: number; reviewsCount: number }>(
-        `/reviews/landlord/${landlordId}/rating`
-      );
-      return response.data;
+      const response = await reviewsApi.getLandlordRating(landlordId);
+      return response.data as { ratingAvg: number; reviewsCount: number };
     },
     enabled: !!landlordId,
   });
@@ -28,13 +27,14 @@ export const useListingReviews = (listingId: string | null | undefined) => {
     queryKey: ["reviews", "listing", listingId],
     queryFn: async (): Promise<Review[]> => {
       if (!listingId) return [];
-      const response = await api.get<Review[]>(`/reviews/listing/${listingId}`);
-      return response.data;
+      const response = await reviewsApi.getByListing(listingId);
+      return response.data as Review[];
     },
     enabled: !!listingId,
   });
 };
 
+// useMyReviews uses a special endpoint not in reviewsApi — kept with api directly
 export const useMyReviews = () => {
   return useQuery<Review[]>({
     queryKey: ["reviews", "my"],
@@ -50,8 +50,8 @@ export const useCreateReview = () => {
 
   return useMutation<Review, Error, CreateReviewPayload>({
     mutationFn: async (data): Promise<Review> => {
-      const response = await api.post<Review>("/reviews", data);
-      return response.data;
+      const response = await reviewsApi.create(data);
+      return response.data as Review;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "listing", variables.listingId] });
@@ -67,7 +67,7 @@ export const useDeleteReview = () => {
 
   return useMutation<void, Error, { id: string; listingId: string }>({
     mutationFn: async ({ id }): Promise<void> => {
-      await api.delete(`/reviews/${id}`);
+      await reviewsApi.delete(id);
     },
     onSuccess: (_, { listingId }) => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "listing", listingId] });

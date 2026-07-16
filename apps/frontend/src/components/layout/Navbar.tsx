@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Home, Search, Plus, LogOut, User, LayoutDashboard, KeyRound, Download, Menu, X } from "lucide-react";
+import { Home, Search, Plus, LogOut, User, LayoutDashboard, KeyRound, Download, Menu, X, Compass } from "lucide-react";
 import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
@@ -16,6 +16,8 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getDashboardPath } from "@/lib/helpers";
+import { UserRoleKey } from "@/lib/constants";
 
 export const Navbar: React.FC = () => {
   const locale = useLocale();
@@ -40,6 +42,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { href: `/${locale}`, label: t("home"), icon: Home },
     { href: `/${locale}/search`, label: t("search"), icon: Search },
+    { href: `/${locale}/community`, label: t("community"), icon: Compass },
     ...(mounted && user?.role === "landlord"
       ? [{ href: `/${locale}/listings/new`, label: t("addListing"), icon: Plus }]
       : []),
@@ -155,7 +158,7 @@ export const Navbar: React.FC = () => {
                     )}
                     <DropdownMenu.Item asChild>
                       <Link
-                        href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
+                        href={getDashboardPath(user.role as UserRoleKey, locale)}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
                       >
                         <LayoutDashboard size={16} />
@@ -281,7 +284,7 @@ export const Navbar: React.FC = () => {
                     </Link>
                   )}
                   <Link
-                    href={user.role === "admin" || user.role === "super_admin" ? `/${locale}/admin` : `/${locale}/dashboard/${user.role}`}
+                    href={getDashboardPath(user.role as UserRoleKey, locale)}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >

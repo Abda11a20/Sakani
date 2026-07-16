@@ -13,6 +13,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import Pusher from "pusher-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export default function ChatWidget({ conversationId: propConversationId, title }
   const locale = useLocale();
   const isRtl = locale === "ar";
   const { user, token } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -94,13 +96,14 @@ export default function ChatWidget({ conversationId: propConversationId, title }
         try {
           await api.patch(`/chat/conversations/${conversationId}/read`);
           setUnreadCount(0);
+          queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
         } catch {
           // ignore
         }
       };
       markAsRead();
     }
-  }, [isOpen, conversationId, user]);
+  }, [isOpen, conversationId, user, queryClient]);
 
   // Get or Create Support Conversation for User
   useEffect(() => {
@@ -195,8 +198,10 @@ export default function ChatWidget({ conversationId: propConversationId, title }
 
       if (isOpen) {
         api.patch(`/chat/conversations/${conversationId}/read`).catch(() => {});
+        queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
       } else {
         setUnreadCount((prev) => prev + 1);
+        queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
       }
     });
 

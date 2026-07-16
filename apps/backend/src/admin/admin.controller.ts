@@ -14,6 +14,7 @@ import {
   DefaultValuePipe,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { ReviewListingDto } from './dto/review-listing.dto';
 import { BanUserDto } from './dto/ban-user.dto';
@@ -28,6 +29,8 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Admin')
+@ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
@@ -204,8 +207,9 @@ export class AdminController {
   async getBannedUsers(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
   ) {
-    return this.adminService.getBannedUsers(page, limit);
+    return this.adminService.getBannedUsers(page, limit, search);
   }
 
   @Delete('banned/:id')

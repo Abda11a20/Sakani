@@ -307,6 +307,18 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
   }
 
   // ── 7. إخلاء الوحدة ──────────────────────────────────────────────────────
+  async vacateListing(id: string, tx: Prisma.TransactionClient, forcePause: boolean = false) {
+    return tx.listing.update({
+      where: { id },
+      data: {
+        status: forcePause ? ListingStatus.paused : ListingStatus.active,
+        currentTenantId: null,
+        rentedSince: null,
+        rentedUntil: null,
+      },
+    });
+  }
+
   async vacateUnit(id: string, landlordId: string) {
     const listing = await this.prisma.listing.findUnique({
       where: { id },
@@ -334,14 +346,24 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
       throw new BadRequestException('هذا العقار غير مؤجر حالياً');
     }
 
-    const updatedListing = await this.prisma.listing.update({
-      where: { id },
-      data: {
-        status: ListingStatus.active,
-        currentTenantId: null,
-        rentedSince: null,
-        rentedUntil: null,
-      },
+    const updatedListing = await this.prisma.$transaction(async (tx) => {
+      // Automatically terminate any active contract for this listing
+      const activeContract = await tx.rentalContract.findFirst({
+        where: { listingId: id, status: 'active' },
+      });
+      if (activeContract) {
+        await tx.rentalContract.update({
+          where: { id: activeContract.id },
+          data: {
+            status: 'terminated',
+            actualCheckout: new Date(),
+            terminationReason: 'landlord_request',
+            terminationNotes: 'تم الإخلاء يدوياً من لوحة المؤجر',
+          },
+        });
+      }
+
+      return this.vacateListing(id, tx, false);
     });
 
     return {

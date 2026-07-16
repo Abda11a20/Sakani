@@ -212,6 +212,91 @@ export class ConversationService {
     return { success: true, conversation: updated };
   }
 
+  async findOrCreatePrivateConversation(user1Id: string, user2Id: string) {
+    // Find if there is an existing PRIVATE conversation with both users
+    const existing = await this.prisma.conversation.findFirst({
+      where: {
+        type: 'PRIVATE',
+        participants: {
+          every: {
+            userId: { in: [user1Id, user2Id] }
+          }
+        }
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
+            }
+          }
+        }
+      }
+    });
+
+    // Check if it really has both participants (exact count 2)
+    if (existing && existing.participants.length === 2) {
+      return existing;
+    }
+
+    // Create a new PRIVATE conversation
+    const conversation = await this.prisma.conversation.create({
+      data: {
+        type: 'PRIVATE',
+        status: 'ACTIVE',
+        participants: {
+          create: [
+            { userId: user1Id, role: ParticipantRole.USER },
+            { userId: user2Id, role: ParticipantRole.USER }
+          ]
+        }
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
+            }
+          }
+        }
+      }
+    });
+
+    return conversation;
+  }
+
+  async getConversationDetails(conversationId: string, userId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+    const isPart = conversation.participants.some(p => p.userId === userId);
+    if (!isPart && !isAdmin) {
+      throw new ForbiddenException('Not authorized to view this conversation');
+    }
+
+    return conversation;
+  }
+
   async ensureParticipant(conversationId: string, userId: string, role: ParticipantRole = ParticipantRole.USER) {
     const participant = await this.prisma.conversationParticipant.findUnique({
       where: {

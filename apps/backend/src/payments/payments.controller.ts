@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,11 +25,13 @@ interface RequestWithUser {
   };
 }
 
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   // GET /payments/plan — current user's plan
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('plan')
   async getCurrentPlan(@Req() req: RequestWithUser) {
@@ -36,6 +39,7 @@ export class PaymentsController {
   }
 
   // POST /payments/initiate — create a payment request
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('initiate')
   async initiatePayment(
@@ -56,6 +60,7 @@ export class PaymentsController {
   }
 
   // GET /payments/history — subscription history
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('history')
   async getSubscriptionHistory(@Req() req: RequestWithUser) {
@@ -63,6 +68,7 @@ export class PaymentsController {
   }
 
   // DELETE /payments/subscription — cancel active subscription
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete('subscription')
   async cancelSubscription(@Req() req: RequestWithUser) {

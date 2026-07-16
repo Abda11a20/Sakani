@@ -1,21 +1,8 @@
 // apps/backend/src/rental-history/rental-history.service.ts
-//
-// Data source: ViewingRequest WHERE status = 'completed'
-// joined with Listing + User.
-//
-// NOTE: ViewingRequest is the primary source for rental history in the
-// current implementation. As the system evolves (contract termination,
-// renewal, multiple tenants per listing over time), a dedicated
-// RentalContract model should be introduced and this service updated.
-//
-// Sorting uses `updatedAt` (the timestamp of the last status change,
-// i.e. when the request was marked `completed`).
-// Until a dedicated `completedAt` field exists, `updatedAt` is the
-// closest proxy for "when the rental was finalized".
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RequestStatus, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 
 export interface RentalHistoryQuery {
@@ -45,21 +32,20 @@ export class RentalHistoryService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: Prisma.ViewingRequestWhereInput = {
-      status: RequestStatus.completed,
+    const where: Prisma.RentalContractWhereInput = {
       listing: {
         landlordId,
       },
     };
 
-    // Date range filter (on updatedAt — the finalization timestamp)
+    // Date range filter (on createdAt)
     if (from || to) {
-      where.updatedAt = {};
-      if (from) where.updatedAt.gte = new Date(from);
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
-        where.updatedAt.lte = toDate;
+        where.createdAt.lte = toDate;
       }
     }
 
@@ -85,16 +71,29 @@ export class RentalHistoryService {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.viewingRequest.findMany({
+      this.prisma.rentalContract.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { updatedAt: sort },
+        orderBy: { createdAt: sort },
         select: {
           id: true,
+          contractNumber: true,
           status: true,
+          createdByType: true,
+          monthlyRent: true,
+          securityDeposit: true,
+          paymentCycle: true,
+          currency: true,
+          startDate: true,
+          endDate: true,
+          actualCheckout: true,
+          isAutoRenew: true,
+          terminationReason: true,
+          terminationNotes: true,
+          notes: true,
           createdAt: true,
-          updatedAt: true, // used as completedAt proxy
+          updatedAt: true,
           listing: {
             select: {
               id: true,
@@ -118,7 +117,7 @@ export class RentalHistoryService {
           },
         },
       }),
-      this.prisma.viewingRequest.count({ where }),
+      this.prisma.rentalContract.count({ where }),
     ]);
 
     return {
@@ -145,19 +144,18 @@ export class RentalHistoryService {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ViewingRequestWhereInput = {
-      status: RequestStatus.completed,
+    const where: Prisma.RentalContractWhereInput = {
       tenantId,
     };
 
     // Date range filter
     if (from || to) {
-      where.updatedAt = {};
-      if (from) where.updatedAt.gte = new Date(from);
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
-        where.updatedAt.lte = toDate;
+        where.createdAt.lte = toDate;
       }
     }
 
@@ -184,16 +182,29 @@ export class RentalHistoryService {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.viewingRequest.findMany({
+      this.prisma.rentalContract.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { updatedAt: sort },
+        orderBy: { createdAt: sort },
         select: {
           id: true,
+          contractNumber: true,
           status: true,
+          createdByType: true,
+          monthlyRent: true,
+          securityDeposit: true,
+          paymentCycle: true,
+          currency: true,
+          startDate: true,
+          endDate: true,
+          actualCheckout: true,
+          isAutoRenew: true,
+          terminationReason: true,
+          terminationNotes: true,
+          notes: true,
           createdAt: true,
-          updatedAt: true, // completedAt proxy
+          updatedAt: true,
           listing: {
             select: {
               id: true,
@@ -217,7 +228,7 @@ export class RentalHistoryService {
           },
         },
       }),
-      this.prisma.viewingRequest.count({ where }),
+      this.prisma.rentalContract.count({ where }),
     ]);
 
     return {
@@ -244,18 +255,16 @@ export class RentalHistoryService {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ViewingRequestWhereInput = {
-      status: RequestStatus.completed,
-    };
+    const where: Prisma.RentalContractWhereInput = {};
 
     // Date range filter
     if (from || to) {
-      where.updatedAt = {};
-      if (from) where.updatedAt.gte = new Date(from);
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
-        where.updatedAt.lte = toDate;
+        where.createdAt.lte = toDate;
       }
     }
 
@@ -284,16 +293,29 @@ export class RentalHistoryService {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.viewingRequest.findMany({
+      this.prisma.rentalContract.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { updatedAt: sort },
+        orderBy: { createdAt: sort },
         select: {
           id: true,
+          contractNumber: true,
           status: true,
+          createdByType: true,
+          monthlyRent: true,
+          securityDeposit: true,
+          paymentCycle: true,
+          currency: true,
+          startDate: true,
+          endDate: true,
+          actualCheckout: true,
+          isAutoRenew: true,
+          terminationReason: true,
+          terminationNotes: true,
+          notes: true,
           createdAt: true,
-          updatedAt: true, // completedAt proxy
+          updatedAt: true,
           listing: {
             select: {
               id: true,
@@ -329,7 +351,7 @@ export class RentalHistoryService {
           },
         },
       }),
-      this.prisma.viewingRequest.count({ where }),
+      this.prisma.rentalContract.count({ where }),
     ]);
 
     return {
@@ -343,4 +365,3 @@ export class RentalHistoryService {
     };
   }
 }
-

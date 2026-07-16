@@ -10,6 +10,8 @@ import {
   useUploadIdCard,
   useChangePassword,
 } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/auth.api";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { getIdentityVerificationStatus } from "@/types";
@@ -33,8 +35,21 @@ import {
   AlertCircle,
   Camera,
   FileText,
+  Mail,
+  MessageSquare,
+  Bell,
+  Trash2,
+  Laptop,
+  Smartphone,
+  Tablet,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import {
+  usePushSubscriptions,
+  useSubscribePush,
+  useUnsubscribePush,
+  useDeleteSubscriptionDevice,
+} from "@/hooks/usePushNotifications";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -59,9 +74,112 @@ type PasswordValues = z.infer<typeof passwordSchema>;
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
+  // Telegram linking state for settings page
+  const [telegramCode, setTelegramCode] = useState<string>("");
+  const [telegramLinked, setTelegramLinked] = useState<boolean>(false);
+  const [checkingLink, setCheckingLink] = useState<boolean>(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startLinkPolling = (code: string) => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    setCheckingLink(true);
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await authApi.checkTelegramLinkStatus(code);
+        if (res.data?.linked) {
+          setTelegramLinked(true);
+          setCheckingLink(false);
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          toast({
+            title: "نجاح",
+            description: "تم ربط حساب تليجرام بنجاح! يمكنك الآن تفعيل قناة تليجرام لتلقي الرموز.",
+            type: "success",
+          });
+          queryClient.invalidateQueries({ queryKey: ["users", "profile"] });
+          queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+        }
+      } catch (err) {
+        // ignore errors
+      }
+    }, 3000);
+  };
+
+  const stopLinkPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setCheckingLink(false);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  const handleGenerateLinkCode = async () => {
+    const activeUser = userProfile || guardUser;
+    const identifier = activeUser?.email || activeUser?.phone;
+    if (!identifier) {
+      toast({
+        title: "خطأ",
+        description: "البريد الإلكتروني أو رقم الهاتف غير متوفر لربط الحساب.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setTelegramLinked(false);
+      const res = await authApi.generateTelegramLinkCode(identifier);
+      const code = res.data?.linkCode;
+      if (code) {
+        setTelegramCode(code);
+        startLinkPolling(code);
+      }
+    } catch (err) {
+      toast({
+        title: "خطأ",
+        description: "فشل إنشاء رمز ربط تليجرام. يرجى المحاولة مرة أخرى.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleToggleOtpChannel = async (channel: "EMAIL" | "TELEGRAM") => {
+    const activeUser = userProfile || guardUser;
+    if (channel === "TELEGRAM" && !activeUser?.telegramChatId) {
+      toast({
+        title: "تنبيه",
+        description: "يرجى ربط حساب تليجرام أولاً قبل تعيينه كقناة استقبال.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      const res = await authApi.updateOtpChannel(channel);
+      toast({
+        title: "نجاح",
+        description: res.data?.message || "تم تحديث قناة استقبال الرمز بنجاح.",
+        type: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["users", "profile"] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    } catch (err: any) {
+      toast({
+        title: "خطأ",
+        description: err.response?.data?.message || "حدث خطأ أثناء تحديث قناة استقبال الرمز.",
+        type: "error",
+      });
+    }
+  };
+
   // Guard role options: none (shared)
-  const { user: guardUser, isLoading: isAuthLoading } = useAuthGuard({ role: ["tenant", "landlord"] });
+  const { user: guardUser, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant", "landlord"] });
   
   // React Query Profile Data
   const { data: userProfile, isLoading: isProfileLoading } = useProfile();
@@ -71,6 +189,113 @@ export default function ProfilePage() {
   const { mutate: uploadAvatar, isPending: isUploadingAvatar } = useUploadAvatar();
   const { mutate: uploadIdCard, isPending: isUploadingIdCard } = useUploadIdCard();
   const { mutate: changePassword, isPending: isChangingPassword } = useChangePassword();
+
+  // Web Push Queries & Mutations
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const { data: pushDevices = [], isLoading: isLoadingPushDevices } = usePushSubscriptions();
+  const { mutate: subscribeDevice, isPending: isSubscribingDevice } = useSubscribePush();
+  const { mutate: unsubscribeDevice, isPending: isUnsubscribingDevice } = useUnsubscribePush();
+  const { mutate: deleteDevice } = useDeleteSubscriptionDevice();
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  const handleTogglePush = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      toast({
+        title: "غير مدعوم",
+        description: "إشعارات الدفع غير مدعومة في متصفحك الحالي.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (notificationPermission === "denied") {
+      toast({
+        title: "الإذن مرفوض",
+        description: "يرجى تغيير إعدادات إذن الإشعارات للموقع من المتصفح يدوياً لتفعيلها.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (notificationPermission === "granted") {
+      unsubscribeDevice(undefined, {
+        onSuccess: () => {
+          setNotificationPermission("default");
+          toast({
+            title: "تم التعطيل",
+            description: "تم إلغاء تفعيل إشعارات الدفع على هذا الجهاز بنجاح.",
+            type: "success",
+          });
+        },
+        onError: (err: any) => {
+          toast({
+            title: "خطأ",
+            description: err.message || "حدث خطأ أثناء تعطيل إشعارات الدفع.",
+            type: "error",
+          });
+        }
+      });
+    } else {
+      try {
+        const result = await Notification.requestPermission();
+        setNotificationPermission(result);
+        if (result === "granted") {
+          subscribeDevice(undefined, {
+            onSuccess: () => {
+              toast({
+                title: "تم التفعيل",
+                description: "تم تفعيل إشعارات الدفع على هذا الجهاز بنجاح.",
+                type: "success",
+              });
+            },
+            onError: (err: any) => {
+              toast({
+                title: "خطأ",
+                description: err.message || "حدث خطأ أثناء الاشتراك بإشعارات الدفع.",
+                type: "error",
+              });
+            }
+          });
+        } else {
+          toast({
+            title: "تم الرفض",
+            description: "لم يتم تفعيل الإشعارات بسبب رفض طلب الإذن.",
+            type: "error",
+          });
+        }
+      } catch (err: any) {
+        toast({
+          title: "خطأ",
+          description: err.message || "حدث خطأ أثناء طلب إذن الإشعارات.",
+          type: "error",
+        });
+      }
+    }
+  };
+
+  const handleDeleteDevice = (id: string) => {
+    deleteDevice(id, {
+      onSuccess: () => {
+        toast({
+          title: "تم الحذف",
+          description: "تمت إزالة الجهاز من قائمة الاشتراكات بنجاح.",
+          type: "success",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err.message || "حدث خطأ أثناء محاولة حذف الجهاز.",
+          type: "error",
+        });
+      }
+    });
+  };
 
   // File Inputs Refs
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -580,6 +805,249 @@ export default function ProfilePage() {
                     {isChangingPassword ? "جاري التغيير..." : "تحديث كلمة المرور"}
                   </Button>
                 </form>
+              </CardBody>
+            </Card>
+
+            {/* Card: OTP Channel Preferences */}
+            <Card className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden mt-6">
+              <CardBody className="p-6 md:p-8 space-y-6 font-cairo">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <MessageSquare size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                      قناة استقبال رمز التحقق (OTP)
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      تحديد الوسيلة المفضلة لتلقي أكواد التحقق عند تسجيل الدخول أو تغيير كلمة المرور.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleOtpChannel("EMAIL")}
+                      className={`p-3.5 border rounded-2xl flex items-center justify-between transition-all text-sm font-medium ${
+                        user.otpChannel === "EMAIL"
+                          ? "border-primary bg-primary/5 text-primary font-bold"
+                          : "border-slate-200 hover:border-slate-300 text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Mail size={18} />
+                        البريد الإلكتروني
+                      </span>
+                      {user.otpChannel === "EMAIL" && <span className="text-xs font-bold bg-primary/20 text-primary px-2.5 py-0.5 rounded-full">نشط</span>}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleOtpChannel("TELEGRAM")}
+                      className={`p-3.5 border rounded-2xl flex items-center justify-between transition-all text-sm font-medium ${
+                        user.otpChannel === "TELEGRAM"
+                          ? "border-primary bg-primary/5 text-primary font-bold"
+                          : "border-slate-200 hover:border-slate-300 text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-sky-500 font-bold text-lg">📱</span>
+                        تليجرام (Telegram)
+                      </span>
+                      {user.otpChannel === "TELEGRAM" && <span className="text-xs font-bold bg-primary/20 text-primary px-2.5 py-0.5 rounded-full">نشط</span>}
+                    </button>
+                  </div>
+
+                  {/* Telegram Link Box */}
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-900/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        حالة ربط تليجرام:
+                      </span>
+                      {user.telegramChatId ? (
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                          مربوط ✅
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          غير مربوط
+                        </span>
+                      )}
+                    </div>
+
+                    {!user.telegramChatId ? (
+                      <div className="space-y-3 pt-1">
+                        <Button
+                          type="button"
+                          onClick={handleGenerateLinkCode}
+                          disabled={checkingLink}
+                          className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl py-2 text-xs flex items-center justify-center gap-1.5"
+                        >
+                          {checkingLink ? "جاري ربط البوت..." : "ربط حساب تليجرام 🔗"}
+                        </Button>
+
+                        {telegramCode && (
+                          <div className="border border-sky-100 bg-sky-50/80 p-3.5 rounded-xl space-y-2 mt-2">
+                            <ol className="text-[11px] text-sky-700 space-y-1 list-decimal list-inside">
+                              <li>
+                                افتح البوت:
+                                <a
+                                  href="https://t.me/SakaniOtp_bot"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-bold text-primary hover:underline mx-1"
+                                >
+                                  t.me/SakaniOtp_bot
+                                </a>
+                              </li>
+                              <li>أرسل له هذا الكود:</li>
+                            </ol>
+                            
+                            <div className="flex items-center justify-between bg-white border border-sky-200 rounded-lg p-2 mt-1">
+                              <span className="font-mono text-base font-bold text-slate-800 tracking-wider">
+                                {telegramCode}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(telegramCode);
+                                  toast({
+                                    title: "تم النسخ",
+                                    description: "تم نسخ كود الربط إلى الحافظة.",
+                                    type: "success",
+                                  });
+                                }}
+                                className="text-[10px] text-primary font-bold hover:underline"
+                              >
+                                نسخ
+                              </button>
+                            </div>
+                            {checkingLink && (
+                              <div className="flex items-center gap-1 text-[10px] text-sky-600">
+                                <span className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
+                                <span>في انتظار ربط تليجرام...</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 pt-1 text-center">
+                        <p className="text-[11px] text-slate-450 leading-relaxed">
+                          حسابك مربوط بالبوت بنجاح. إذا كنت ترغب في إلغاء الربط، أرسل <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-red-600 font-bold">/unlink</code> مباشرة إلى البوت.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Card: Web Push Notifications Settings */}
+            <Card className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden mt-6">
+              <CardBody className="p-6 md:p-8 space-y-6 font-cairo">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-650 dark:text-rose-450 flex items-center justify-center shrink-0">
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                      إشعارات المتصفح (Web Push)
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      تلقي تنبيهات منبثقة مباشرة على أجهزتك للدردشة وتحديثات الحساب الهامة.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Toggle Button */}
+                  <div className="flex items-center justify-between p-3.5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-bold text-slate-850 dark:text-slate-200 block">
+                        إشعارات هذا الجهاز
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {notificationPermission === "granted"
+                          ? "مفعلة على هذا المتصفح"
+                          : notificationPermission === "denied"
+                          ? "مرفوضة (تحتاج تعديل من إعدادات المتصفح)"
+                          : "غير نشطة حالياً"}
+                      </span>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      disabled={isSubscribingDevice || isUnsubscribingDevice}
+                      onClick={handleTogglePush}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        notificationPermission === "granted" ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          notificationPermission === "granted" ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Permission Alert for Denied Status */}
+                  {notificationPermission === "denied" && (
+                    <div className="flex items-start gap-2.5 p-3.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-2xl border border-amber-500/20 text-xs leading-relaxed">
+                      <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                      <div>
+                        <strong>تم رفض إذن الإشعارات:</strong> يرجى الضغط على علامة القفل بجوار رابط الموقع في شريط العنوان بالمتصفح وتغيير إذن الإشعارات إلى "سماح" لتتمكن من تشغيل الخدمة.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Registered Devices List */}
+                  {pushDevices.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                        الأجهزة المسجلة النشطة ({pushDevices.length})
+                      </span>
+                      
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                        {pushDevices.map((device) => {
+                          const isDesktop = device.deviceName?.toLowerCase().includes("pc") || device.deviceName?.toLowerCase().includes("mac");
+                          return (
+                            <div
+                              key={device.id}
+                              className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/40 text-xs"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="text-slate-400">
+                                  {isDesktop ? <Laptop size={16} /> : <Smartphone size={16} />}
+                                </div>
+                                <div>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                                    {device.deviceName} ({device.browser})
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                                    آخر نشاط: {device.lastUsedAt ? new Date(device.lastUsedAt).toLocaleDateString() : "غير مستخدم بعد"}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteDevice(device.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
+                                title="إلغاء تسجيل هذا الجهاز"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardBody>
             </Card>
           </div>

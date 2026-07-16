@@ -341,8 +341,18 @@ Base path: `/admin`
 | Method | Endpoint | Role | Description |
 |--------|----------|------|-------------|
 | `POST` | `/admin/ban` | Admin | Ban a user from the platform |
-| `GET` | `/admin/banned` | Admin | List all banned users |
+| `GET` | `/admin/banned` | Admin | List all banned users (with search and user profiles) |
 | `DELETE` | `/admin/banned/:id` | **Super Admin only** | Lift a ban (unban a user) |
+
+### Query Parameters — `GET /admin/banned`
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `page` | `number` | Page number (default: 1) |
+| `limit` | `number` | Items per page (default: 10) |
+| `search` | `string` | Filter/search by phone number, nationalIdHash, or reason |
+
+> **User Integration:** Each blacklist entry in the response array is dynamically joined with the associated `user` object containing `{ id, name, email, role, plan, identityStatus, isActive, createdAt }` if a registered user exists with that phone number.
 
 ### Dashboard & Monitoring
 
@@ -412,11 +422,27 @@ Error responses:
   "status": "ok",
   "database": {
     "status": "connected",
-    "latencyMs": 3
+    "latencyMs": 12
   },
-  "uptime": 12345,
+  "process": {
+    "uptime": 1542,
+    "pid": 14344,
+    "memoryUsage": {
+      "rssMb": 87.25,
+      "heapTotalMb": 54.12,
+      "heapUsedMb": 32.45,
+      "externalMb": 2.1
+    }
+  },
+  "system": {
+    "platform": "win32",
+    "cpuCount": 8,
+    "loadAverage": [0, 0, 0],
+    "freeMemoryGb": 4.25,
+    "totalMemoryGb": 16.0
+  },
   "version": "1.0.0",
-  "timestamp": "2026-06-24T01:00:00.000Z"
+  "timestamp": "2026-07-13T02:57:10.123Z"
 }
 ```
 </details>

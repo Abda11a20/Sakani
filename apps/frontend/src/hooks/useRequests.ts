@@ -1,6 +1,8 @@
 // apps/frontend/src/hooks/useRequests.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { requestsApi } from "@/lib/api/requests.api";
+import { useAuthStore } from "@/store/auth.store";
 import type { Listing, ViewingRequest, ViewingRequestStatus } from "@/types";
 
 export interface RequestStats {
@@ -40,14 +42,15 @@ const normalizeRequestsData = (data: RequestsData | BackendRequestsData | Viewin
 };
 
 export const useLandlordRequests = (page = 1) => {
+  const token = useAuthStore((s) => s.token);
+
   return useQuery<RequestsData>({
     queryKey: ["requests", "landlord", page],
     queryFn: async () => {
-      const response = await api.get<RequestsData | BackendRequestsData | ViewingRequest[]>(
-        `/requests/my/landlord?page=${page}&limit=10`
-      );
-      return normalizeRequestsData(response.data);
+      const response = await requestsApi.getMyAsLandlord(page);
+      return normalizeRequestsData(response.data as RequestsData | BackendRequestsData | ViewingRequest[]);
     },
+    enabled: !!token,
   });
 };
 
@@ -55,8 +58,8 @@ export const useLandlordRequestStats = () => {
   return useQuery<RequestStats>({
     queryKey: ["requests", "landlord", "stats"],
     queryFn: async (): Promise<RequestStats> => {
-      const response = await api.get<RequestStats>("/requests/my/landlord/stats");
-      return response.data;
+      const response = await requestsApi.getLandlordStats();
+      return response.data as RequestStats;
     },
   });
 };
@@ -65,8 +68,8 @@ export const useRequestDetails = (requestId: string | null | undefined) => {
   return useQuery<ViewingRequest>({
     queryKey: ["requests", requestId],
     queryFn: async (): Promise<ViewingRequest> => {
-      const response = await api.get<ViewingRequest>(`/requests/${requestId}`);
-      return response.data;
+      const response = await requestsApi.getOne(requestId!);
+      return response.data as ViewingRequest;
     },
     enabled: !!requestId,
   });
@@ -83,11 +86,8 @@ export const useUpdateRequestStatus = () => {
     mutationFn: async ({ requestId, status }): Promise<ViewingRequest> => {
       // The backend expects 'accepted' instead of 'approved'
       const backendStatus = status === "approved" ? "accepted" : status;
-      const response = await api.patch<ViewingRequest>(
-        `/requests/${requestId}/status`,
-        { status: backendStatus }
-      );
-      return response.data;
+      const response = await requestsApi.updateStatus(requestId, { status: backendStatus });
+      return response.data as ViewingRequest;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
@@ -108,6 +108,7 @@ export interface FinalizeUnitRentalPayload {
   endDate: string;
 }
 
+// Special endpoints — kept with api directly
 export const useFinalizeBedRental = () => {
   const queryClient = useQueryClient();
 
@@ -174,14 +175,15 @@ export const useFinalizeUnitRental = () => {
 };
 
 export const useTenantRequests = (page = 1) => {
+  const token = useAuthStore((s) => s.token);
+
   return useQuery<RequestsData>({
     queryKey: ["requests", "tenant", page],
     queryFn: async () => {
-      const response = await api.get<RequestsData | BackendRequestsData | ViewingRequest[]>(
-        `/requests/my/tenant?page=${page}&limit=10`
-      );
-      return normalizeRequestsData(response.data);
+      const response = await requestsApi.getMyAsTenant(page);
+      return normalizeRequestsData(response.data as RequestsData | BackendRequestsData | ViewingRequest[]);
     },
+    enabled: !!token,
   });
 };
 
@@ -190,7 +192,7 @@ export const useCancelRequest = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: async (requestId): Promise<void> => {
-      await api.delete(`/requests/${requestId}`);
+      await requestsApi.cancel(requestId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
@@ -198,6 +200,7 @@ export const useCancelRequest = () => {
   });
 };
 
+// Special quick-rent endpoint — kept with api directly
 export const useQuickRent = () => {
   const queryClient = useQueryClient();
 
@@ -228,6 +231,7 @@ export const useQuickRent = () => {
   });
 };
 
+// Special contact-access endpoint — kept with api directly
 export const useListingContactAccess = (listingId: string, enabled: boolean) => {
   return useQuery({
     queryKey: ["contact-access", listingId],
@@ -238,7 +242,6 @@ export const useListingContactAccess = (listingId: string, enabled: boolean) => 
       return response.data;
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000,
   });
 };
-

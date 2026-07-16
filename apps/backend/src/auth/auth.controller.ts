@@ -11,7 +11,9 @@ import {
   HttpStatus,
   Req,
   Headers,
+  Param,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthThrottlerGuard } from './guards/auth-throttler.guard';
 import type { Request } from 'express';
@@ -23,12 +25,15 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { GenerateLinkCodeDto } from './dto/generate-link-code.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Auth')
 @Controller('auth')
 @UseGuards(AuthThrottlerGuard)
 export class AuthController {
@@ -45,6 +50,28 @@ export class AuthController {
     return { success: true, ...result };
   }
 
+  // ── POST /auth/telegram/generate-link-code ─────────────────────────────────
+  @Post('telegram/generate-link-code')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
+  async generateTelegramLinkCode(
+    @Body() dto: GenerateLinkCodeDto,
+  ): Promise<{ success: boolean; data: { linkCode: string; expiresAt: Date } }> {
+    const result = await this.authService.generateTelegramLinkCode(dto.identifier);
+    return { success: true, data: result };
+  }
+
+  // ── GET /auth/telegram/link-status/:code ───────────────────────────────────
+  @Get('telegram/link-status/:code')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  async checkTelegramLinkStatus(
+    @Param('code') code: string,
+  ): Promise<{ success: boolean; data: { linked: boolean } }> {
+    const result = await this.authService.checkTelegramLinkStatus(code);
+    return { success: true, data: result };
+  }
+
   // ── POST /auth/verify-email ────────────────────────────────────────────────
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -53,6 +80,17 @@ export class AuthController {
     @Body() dto: VerifyEmailDto,
   ): Promise<{ success: boolean; message: string }> {
     const result = await this.authService.verifyEmail(dto);
+    return { success: true, ...result };
+  }
+
+  // ── POST /auth/resend-verification ──────────────────────────────────────────
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 per 5 mins
+  async resendVerification(
+    @Body() dto: ResendVerificationDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.authService.resendVerification(dto);
     return { success: true, ...result };
   }
 
@@ -100,6 +138,7 @@ export class AuthController {
   }
 
   // ── GET /auth/me ───────────────────────────────────────────────────────────
+  @ApiBearerAuth()
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -143,6 +182,7 @@ export class AuthController {
   }
 
   // ── PATCH /auth/change-password ────────────────────────────────────────────
+  @ApiBearerAuth()
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

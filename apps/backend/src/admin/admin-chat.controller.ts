@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConversationService } from '../chat/conversation.service';
 import { MessageService } from '../chat/message.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,6 +22,8 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Admin Chat')
+@ApiBearerAuth()
 @Controller('admin/chat')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.admin, UserRole.super_admin)

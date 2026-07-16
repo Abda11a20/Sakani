@@ -13,6 +13,7 @@ const badgeVariants = cva(
         danger: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800",
         info: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
         gold: "bg-yellow-50 text-gold dark:bg-yellow-900/20 dark:text-yellow-500 border border-gold/30",
+        gray: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600",
         default: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
       },
     },
@@ -22,10 +23,17 @@ const badgeVariants = cva(
   }
 );
 
+export type BadgeColor = "success" | "warning" | "danger" | "info" | "gray" | "gold" | "default";
+
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  /** color هو alias لـ variant — يُفيد عند الاستخدام مع LISTING_STATUS_CONFIG */
+  color?: BadgeColor;
+}
 
-export function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+export function Badge({ className, variant, color, ...props }: BadgeProps) {
+  // color يُقدَّم على variant إذا كانا معاً — backward compat
+  const resolvedVariant = (color ?? variant) as VariantProps<typeof badgeVariants>["variant"];
+  return <div className={cn(badgeVariants({ variant: resolvedVariant }), className)} {...props} />;
 }

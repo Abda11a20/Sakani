@@ -2,6 +2,8 @@
 
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { RequestIdMiddleware } from './common/middlewares/request-id.middleware';
+import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware';
+import { LoggerModule } from './common/logger/logger.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -25,9 +27,12 @@ import { ChatModule } from './chat/chat.module';
 import { HealthModule } from './health/health.module';
 import { RentalHistoryModule } from './rental-history/rental-history.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RentalContractsModule } from './rental-contracts/rental-contracts.module';
+import { CommunityModule } from './community/community.module';
 
 @Module({
   imports: [
+    LoggerModule,
     // إعداد متغيرات البيئة — متاحة في كل التطبيق
     ConfigModule.forRoot({
       isGlobal: true,
@@ -71,12 +76,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
     HealthModule,
     RentalHistoryModule,
     DashboardModule,
+    RentalContractsModule,
+    CommunityModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestIdMiddleware).forRoutes('*');
+    consumer.apply(RequestIdMiddleware, RequestLoggerMiddleware).forRoutes('*');
   }
 }

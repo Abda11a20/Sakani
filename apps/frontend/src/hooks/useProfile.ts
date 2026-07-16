@@ -1,6 +1,7 @@
 // apps/frontend/src/hooks/useProfile.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { usersApi } from "@/lib/api/users.api";
 import { useAuthStore } from "@/store/auth.store";
 import type { User } from "@/types";
 
@@ -20,8 +21,8 @@ export const useProfile = () => {
   return useQuery<User>({
     queryKey: ["users", "profile"],
     queryFn: async (): Promise<User> => {
-      const response = await api.get<User>("/users/profile");
-      const user = response.data;
+      const response = await usersApi.getProfile();
+      const user = response.data as User;
       setUser(user); // hydrate the store with the latest profile data
       return user;
     },
@@ -35,8 +36,8 @@ export const useUpdateProfile = () => {
 
   return useMutation<User, Error, UpdateProfilePayload>({
     mutationFn: async (data): Promise<User> => {
-      const response = await api.patch<User>("/users/profile", data);
-      return response.data;
+      const response = await usersApi.updateProfile(data);
+      return response.data as User;
     },
     onSuccess: (user) => {
       setUser(user);
@@ -46,6 +47,8 @@ export const useUpdateProfile = () => {
   });
 };
 
+// useUploadAvatar و useUploadIdCard يحتفظان بـ api مباشرة
+// لأن لهما منطق auth store خاص (تحديث avatarUrl في الـ store)
 export const useUploadAvatar = () => {
   const queryClient = useQueryClient();
   const { setUser } = useAuthStore();
@@ -83,7 +86,7 @@ export const useUploadIdCard = () => {
   return useMutation<{ success: boolean; message: string }, Error, File>({
     mutationFn: async (file): Promise<{ success: boolean; message: string }> => {
       const formData = new FormData();
-      formData.append("idCard", file); // key name in backend is idCard
+      formData.append("idCard", file);
 
       const response = await api.post<{ success: boolean; message: string }>(
         "/uploads/id-card",

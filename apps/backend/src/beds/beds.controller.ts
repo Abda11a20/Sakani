@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { BedsService } from './beds.service';
 import { RentBedDto } from './dto/rent-bed.dto';
 import { UpdateBedDto } from './dto/update-bed.dto';
@@ -20,6 +21,7 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Beds')
 @Controller()
 export class BedsController {
   constructor(private readonly bedsService: BedsService) {}
@@ -32,6 +34,7 @@ export class BedsController {
   }
 
   // ── جلب كل الأسرة للمؤجر ──────────────────────────────────────────────────
+  @ApiBearerAuth()
   @Get('listings/:listingId/beds/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -57,6 +60,7 @@ export class BedsController {
   }
 
   // ── 4. تأجير سرير (Landlord فقط) ─────────────────────────────────────────
+  @ApiBearerAuth()
   @Patch('beds/:bedId/rent')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -69,6 +73,7 @@ export class BedsController {
   }
 
   // ── 5. إخلاء سرير (Landlord فقط) ─────────────────────────────────────────
+  @ApiBearerAuth()
   @Patch('beds/:bedId/vacate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)
@@ -80,6 +85,7 @@ export class BedsController {
   }
 
   // ── 6. تغيير نوع السرير (Landlord فقط) ───────────────────────────────────
+  @ApiBearerAuth()
   @Patch('beds/:bedId/type')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.landlord)

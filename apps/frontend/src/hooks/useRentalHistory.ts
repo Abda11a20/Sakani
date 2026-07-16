@@ -13,6 +13,7 @@ function buildParams(query: RentalHistoryQuery): string {
   if (query.from) params.set("from", query.from);
   if (query.to) params.set("to", query.to);
   if (query.sort) params.set("sort", query.sort);
+  if (query.status) params.set("status", query.status);
   return params.toString();
 }
 
@@ -28,9 +29,8 @@ export const useLandlordRentalHistory = (query: RentalHistoryQuery = {}) => {
       );
       return response.data;
     },
-    // Keep previous data while new page loads (seamless pagination)
     placeholderData: (prev) => prev,
-    staleTime: 30_000, // 30 s — rental history doesn't change often
+    staleTime: 30_000,
   });
 };
 
@@ -48,5 +48,37 @@ export const useTenantRentalHistory = (query: RentalHistoryQuery = {}) => {
     },
     placeholderData: (prev) => prev,
     staleTime: 30_000,
+  });
+};
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+// ── Terminate Contract Mutation ───────────────────────────────────────────────
+export const useTerminateContract = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { reason: string; notes?: string; checkoutDate?: string } }) => {
+      const response = await api.patch(`/rental-contracts/${id}/terminate`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+    },
+  });
+};
+
+// ── Renew Contract Mutation ───────────────────────────────────────────────────
+export const useRenewContract = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { newEndDate: string; newMonthlyRent?: number; isAutoRenew?: boolean; notes?: string } }) => {
+      const response = await api.patch(`/rental-contracts/${id}/renew`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+    },
   });
 };

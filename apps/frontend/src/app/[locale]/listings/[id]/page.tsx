@@ -51,7 +51,7 @@ async function getSuggested(listingId: string): Promise<Listing[]> {
 }
 
 export async function generateMetadata({ params }: ListingPageProps): Promise<Metadata> {
-  const { id, locale } = await params;
+  const { id } = await params;
   const listing = await getListing(id);
   if (!listing) return { title: "إعلان غير موجود" };
 

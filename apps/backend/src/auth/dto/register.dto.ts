@@ -25,10 +25,10 @@ export class RegisterDto {
   })
   name!: string;
 
-  // ── البريد الإلكتروني: إجباري ────────────────────────────
+  // ── البريد الإلكتروني: اختياري ────────────────────────────
+  @IsOptional()
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
-  @IsNotEmpty({ message: 'البريد الإلكتروني مطلوب' })
-  email!: string;
+  email?: string;
 
   // ── رقم الموبايل: 11 رقم — شبكات مصرية فعلاً ────────────
   @IsString()
@@ -64,4 +64,15 @@ export class RegisterDto {
     message: 'الدور المسموح بيه في التسجيل: tenant أو landlord فقط',
   })
   role?: AllowedRegisterRole;
+
+  // ── تفضيل الـ OTP وقناة الاستقبال ──────────────────────────
+  @IsOptional()
+  @IsString()
+  otpChannel?: 'EMAIL' | 'TELEGRAM';
+
+  // ── كود ربط Telegram لو اختار TELEGRAM ────────────────────
+  @IsOptional()
+  @IsString()
+  linkCode?: string;
 }
+

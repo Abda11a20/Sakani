@@ -28,70 +28,16 @@ import {
   Search,
 } from "lucide-react";
 import { useLocale } from "next-intl";
+import { EGYPTIAN_GOVERNORATES, UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG } from "@/lib/constants";
+import { generateAlertSummary } from "@/lib/helpers";
 import type { Alert, GenderTarget } from "@/types";
 
-// ── Egypt Governorates ──
-const GOVERNORATES = [
-  { value: "القاهرة", label: "القاهرة" },
-  { value: "الجيزة", label: "الجيزة" },
-  { value: "الإسكندرية", label: "الإسكندرية" },
-  { value: "القليوبية", label: "القليوبية" },
-  { value: "المنوفية", label: "المنوفية" },
-  { value: "الغربية", label: "الغربية" },
-  { value: "الدقهلية", label: "الدقهلية" },
-  { value: "الشرقية", label: "الشرقية" },
-  { value: "دمياط", label: "دمياط" },
-  { value: "بورسعيد", label: "بورسعيد" },
-  { value: "السويس", label: "السويس" },
-  { value: "الإسماعيلية", label: "الإسماعيلية" },
-  { value: "الفيوم", label: "الفيوم" },
-  { value: "بني سويف", label: "بني سويف" },
-  { value: "المنيا", label: "المنيا" },
-  { value: "أسيوط", label: "أسيوط" },
-  { value: "سوهاج", label: "سوهاج" },
-  { value: "قنا", label: "قنا" },
-  { value: "الأقصر", label: "الأقصر" },
-  { value: "أسوان", label: "أسوان" },
-];
 
-const UNIT_TYPE_LABELS = {
-  apartment: "شقة",
-  bed: "سرير",
-};
-
-const GENDER_LABELS: Record<string, string> = {
-  mixed: "الجميع / عائلات",
-  male: "شباب فقط",
-  female: "بنات فقط",
-  family: "عائلات فقط",
-  any: "الجميع",
-};
-
-// Alert Description Generator
-const generateAlertSummary = (alert: Alert) => {
-  const typeMap: Record<string, string> = { apartment: "شقة", bed: "سرير" };
-  const genderMap: Record<string, string> = {
-    male: "شباب",
-    female: "بنات",
-    mixed: "الجميع",
-    family: "عائلات",
-    any: "الجميع",
-  };
-
-  const typeStr = alert.unitType ? typeMap[alert.unitType] : "";
-  const genderStr = alert.genderTarget ? genderMap[alert.genderTarget] : "";
-  const locStr = alert.district ? `في ${alert.district}` : alert.governorate ? `في ${alert.governorate}` : "";
-  const priceStr = alert.maxPrice ? `أقل من ${alert.maxPrice} ج.م` : "";
-  const specStr = alert.specialty ? `تخصص ${alert.specialty}` : "";
-
-  const parts = [typeStr, genderStr, locStr, priceStr, specStr].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "تنبيه عام";
-};
 
 export default function TenantAlerts() {
   const locale = useLocale();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Queries & Mutations
   const { data: rawAlerts = [], isLoading: isAlertsLoading } = useMyAlerts();
@@ -325,7 +271,7 @@ export default function TenantAlerts() {
                       )}
                       {alert.unitType && (
                         <Badge variant="default" className="text-[10px] font-cairo bg-blue-500/5 text-blue-600 dark:text-blue-400">
-                          <span>{UNIT_TYPE_LABELS[alert.unitType]}</span>
+                          <span>{UNIT_TYPE_CONFIG[alert.unitType as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? alert.unitType}</span>
                         </Badge>
                       )}
                       {alert.maxPrice && (
@@ -337,7 +283,7 @@ export default function TenantAlerts() {
                       {alert.genderTarget && (
                         <Badge variant="default" className="text-[10px] font-cairo flex items-center gap-1">
                           <User size={10} />
-                          <span>{GENDER_LABELS[alert.genderTarget]}</span>
+                          <span>{GENDER_TARGET_CONFIG[alert.genderTarget as keyof typeof GENDER_TARGET_CONFIG]?.labelAr ?? alert.genderTarget}</span>
                         </Badge>
                       )}
                       {alert.specialty && (
@@ -400,9 +346,9 @@ export default function TenantAlerts() {
                   onChange={(e) => setGov(e.target.value)}
                   className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {GOVERNORATES.map((g) => (
-                    <option key={g.value} value={g.value}>
-                      {g.label}
+                  {EGYPTIAN_GOVERNORATES.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
                     </option>
                   ))}
                 </select>

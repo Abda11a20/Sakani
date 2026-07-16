@@ -7,9 +7,13 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { CustomLogger } from './common/logger/custom-logger.service';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(CustomLogger));
 
   // ── 1. إعدادات السيرفر الأساسية (Server Configs) ─────────────
   
@@ -65,14 +69,20 @@ async function bootstrap(): Promise<void> {
   );
 
   // ── 4. Swagger Documentation ──────────────────────────────
-  const config = new DocumentBuilder()
-    .setTitle('Sakani API')
-    .setDescription('The Sakani Enterprise API Documentation')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const disableSwagger =
+    process.env.DISABLE_SWAGGER === 'true' ||
+    (isProduction && process.env.ENABLE_SWAGGER_IN_PROD !== 'true');
+
+  if (!disableSwagger) {
+    const config = new DocumentBuilder()
+      .setTitle('Sakani API')
+      .setDescription('The Sakani Enterprise API Documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // ── 5. Global Exception Filter ─────────────────────────────
   app.useGlobalFilters(new GlobalExceptionFilter());

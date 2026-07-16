@@ -94,7 +94,7 @@ model User {
   id                 String    @id @default(cuid())
   name               String
   phone              String    @unique
-  email              String    @unique
+  email              String?   @unique
   passwordHash       String?
   role               UserRole  @default(tenant)
   plan               UserPlan  @default(free)
@@ -110,25 +110,39 @@ model User {
   isActive           Boolean   @default(true)
   ratingAvg          Float     @default(0)
   reviewsCount       Int       @default(0)
+  otpChannel         OtpChannel @default(EMAIL)
+  telegramChatId     String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+
   // Relations
-  listings                 Listing[]
-  requests                 ViewingRequest[]
-  currentListingRentals    Listing[]                 @relation("ListingCurrentTenant")
-  reviewsGiven             Review[]                  @relation("ReviewsGiven")
-  reviewsReceived          Review[]                  @relation("ReviewsReceived")
-  alerts                   Alert[]
-  subscriptions            Subscription[]
-  sentMessages             ChatMessage[]             @relation("SentMessages")
+  listings          Listing[]
+  requests          ViewingRequest[]
+  reviewsGiven      Review[]           @relation("ReviewsGiven")
+  reviewsReceived   Review[]           @relation("ReviewsReceived")
+  alerts            Alert[]
+  subscriptions     Subscription[]
+  sentMessages      ChatMessage[]      @relation("SentMessages")
   conversationParticipants ConversationParticipant[]
-  verificationCodes        VerificationCode[]
-  deviceSessions           DeviceSession[]
-  favorites                Favorite[]
-  searchHistory            SearchHistory[]
-  viewedListings           ViewedListing[]
-  notifications            Notification[]
+  verificationCodes VerificationCode[]
+  deviceSessions    DeviceSession[]
+  favorites         Favorite[]
+  searchHistory     SearchHistory[]
+  viewedListings    ViewedListing[]
+  notifications     Notification[]
+  currentListingRentals Listing[]        @relation("ListingCurrentTenant")
+  contractsAsLandlord RentalContract[] @relation("ContractsAsLandlord")
+  contractsAsTenant   RentalContract[] @relation("ContractsAsTenant")
+  pushSubscriptions   PushSubscription[]
+  communityRatingAvg    Float                  @default(0)
+  communityReviewsCount Int                    @default(0)
+  communityPosts        CommunityPost[]
+  communityAlerts       CommunityAlert[]
+  communityParticipants CommunityParticipant[]
+  communityReportsMade  CommunityReport[]
+  communityReviewsGiven   CommunityReview[]  @relation("CommunityReviewsGiven")
+  communityReviewsReceived CommunityReview[]  @relation("CommunityReviewsReceived")
 
   @@map("users")
 }
@@ -160,16 +174,15 @@ model Listing {
   rentedUntil            DateTime?
   isFeatured             Boolean         @default(false)
   rejectionReason        String?
+  // ── Soft Delete ─────────────────────────────────────────
+  isDeleted              Boolean         @default(false)
+  deletedAt              DateTime?
+  deletedById            String?
+  deletedByRole          UserRole?
+  deletedReason          String?
+  statusBeforeDelete     ListingStatus?
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
-
-  // ── Soft Delete ────────────────────────────────────────────────────────────
-  isDeleted          Boolean       @default(false)
-  deletedAt          DateTime?
-  deletedById        String?
-  deletedByRole      UserRole?
-  deletedReason      String?
-  statusBeforeDelete ListingStatus?
 
   // Relations
   landlord      User             @relation(fields: [landlordId], references: [id])
@@ -180,6 +193,8 @@ model Listing {
   reviews       Review[]
   favorites     Favorite[]
   viewedBy      ViewedListing[]
+  auditLogs     ListingAuditLog[]
+  contracts     RentalContract[]
 
   @@index([status, governorate, district])
   @@index([price])
@@ -188,6 +203,24 @@ model Listing {
   @@index([currentTenantId])
   @@index([isDeleted])
   @@map("listings")
+}
+
+model ListingAuditLog {
+  id                   String   @id @default(cuid())
+  listingId            String
+  listingTitleSnapshot String
+  actorId              String
+  actorRole            UserRole
+  actorName            String
+  action               String   // soft_delete | restore | delete_images | permanent_delete
+  detail               String?
+  createdAt            DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([actorId])
+  @@map("listing_audit_logs")
 }
 
 model ListingImage {
@@ -203,22 +236,6 @@ model ListingImage {
   @@map("listing_images")
 }
 
-model ListingAuditLog {
-  id                   String   @id @default(cuid())
-  listingId            String
-  listingTitleSnapshot String
-  actorId              String
-  actorRole            UserRole
-  actorName            String
-  action               String
-  detail               String?
-  createdAt            DateTime @default(now())
-
-  @@index([listingId])
-  @@index([actorId])
-  @@map("listing_audit_logs")
-}
-
 model ListingBed {
   id              String    @id @default(cuid())
   listingId       String
@@ -232,6 +249,7 @@ model ListingBed {
   updatedAt       DateTime  @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  contracts       RentalContract[]
 
   @@unique([listingId, bedNumber])
   @@map("listing_beds")
@@ -250,6 +268,7 @@ model ViewingRequest {
 
   tenant  User    @relation(fields: [tenantId], references: [id])
   listing Listing @relation(fields: [listingId], references: [id])
+  contract RentalContract?
 
   @@map("viewing_requests")
 }
@@ -439,23 +458,23 @@ enum ParticipantRole {
 }
 
 model Conversation {
-  id            String             @id @default(cuid())
-  type          ConversationType   @default(PRIVATE)
-  status        ConversationStatus @default(ACTIVE)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  type           ConversationType   @default(PRIVATE)
+  status         ConversationStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   // Moderation fields
-  blockedAt     DateTime?
-  blockedBy     String?
-  blockReason   String?
+  blockedAt      DateTime?
+  blockedBy      String?
+  blockReason    String?
 
   // Intelligent last message indicators (simplified as scalars)
-  lastMessageId String?
-  lastMessageAt DateTime?
+  lastMessageId  String?
+  lastMessageAt  DateTime?
 
-  participants  ConversationParticipant[]
-  messages      ChatMessage[]
+  participants   ConversationParticipant[]
+  messages       ChatMessage[]
 
   @@map("conversations")
 }
@@ -468,8 +487,8 @@ model ConversationParticipant {
   lastReadAt     DateTime        @default(now())
   isMuted        Boolean         @default(false)
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([conversationId, userId])
   @@map("conversation_participants")
@@ -487,3 +506,268 @@ model ChatMessage {
 
   @@map("chat_messages")
 }
+
+// ── RENTAL CONTRACT ENUMS & MODEL ────────────────────────
+
+enum ContractStatus {
+  active
+  expired
+  terminated
+  renewed
+}
+
+enum PaymentCycle {
+  monthly
+  quarterly
+  yearly
+}
+
+enum TerminationReason {
+  tenant_request
+  landlord_request
+  violation
+  mutual_agreement
+  other
+}
+
+enum ContractCreatedBy {
+  VIEWING_REQUEST
+  MANUAL
+  AUTO_RENEW
+  MIGRATION
+}
+
+model RentalContract {
+  id               String            @id @default(cuid())
+  contractNumber   String            @unique
+  
+  listingId        String
+  landlordId       String
+  tenantId         String
+  bedId            String?
+
+  viewingRequestId String?           @unique
+  viewingRequest   ViewingRequest?   @relation(fields: [viewingRequestId], references: [id], onDelete: SetNull)
+
+  createdByType    ContractCreatedBy @default(VIEWING_REQUEST)
+
+  monthlyRent      Int
+  securityDeposit  Int               @default(0)
+  paymentCycle     PaymentCycle      @default(monthly)
+  currency         String            @default("EGP")
+
+  startDate        DateTime
+  endDate          DateTime
+  actualCheckout   DateTime?
+
+  isAutoRenew      Boolean           @default(false)
+
+  status             ContractStatus     @default(active)
+  terminationReason  TerminationReason?
+  terminationNotes   String?
+
+  notes            String?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  listing  Listing     @relation(fields: [listingId],  references: [id])
+  landlord User        @relation("ContractsAsLandlord", fields: [landlordId], references: [id])
+  tenant   User        @relation("ContractsAsTenant",   fields: [tenantId],   references: [id])
+  bed      ListingBed? @relation(fields: [bedId],       references: [id])
+
+  @@index([listingId])
+  @@index([landlordId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([endDate])
+  @@index([isAutoRenew])
+  @@map("rental_contracts")
+}
+
+enum OtpChannel {
+  EMAIL
+  TELEGRAM
+}
+
+model PendingTelegramLink {
+  id         String    @id @default(cuid())
+  identifier String    @unique
+  linkCode   String    @unique
+  chatId     String?
+  linkedAt   DateTime?
+  usedAt     DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([linkCode])
+  @@index([identifier])
+  @@map("pending_telegram_links")
+}
+
+model PushSubscription {
+  id          String    @id @default(cuid())
+  userId      String
+  endpoint    String    @unique
+  p256dh      String
+  auth        String
+  deviceName  String?
+  browser     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model CommunityCategory {
+  id        String   @id @default(cuid())
+  nameAr    String
+  nameEn    String
+  icon      String   // e.g. "⚽", "🎮", "☕"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     CommunityPost[]
+  alerts    CommunityAlert[]
+
+  @@map("community_categories")
+}
+
+enum CommunityPostStatus {
+  ACTIVE
+  ARCHIVED
+  CANCELLED
+  BLOCKED
+}
+
+enum CommunityParticipantStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  LEFT
+  EXPIRED
+}
+
+enum GenderPreference {
+  MALES_ONLY
+  FEMALES_ONLY
+  ALL
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE
+  FAKE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+model CommunityPost {
+  id               String              @id @default(cuid())
+  userId           String
+  title            String
+  description      String
+  categoryId       String
+  governorateId    String
+  cityId           String
+  genderPreference GenderPreference    @default(ALL)
+  maxParticipants  Int
+  eventDate        DateTime
+  timeSlot         String              
+  status           CommunityPostStatus @default(ACTIVE)
+  isDeleted        Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         CommunityCategory   @relation(fields: [categoryId], references: [id])
+  participants     CommunityParticipant[]
+  reports          CommunityReport[]
+  reviews          CommunityReview[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([governorateId, cityId])
+  @@index([status])
+  @@index([eventDate])
+  @@map("community_posts")
+}
+
+model CommunityParticipant {
+  id        String                     @id @default(cuid())
+  postId    String
+  userId    String
+  status    CommunityParticipantStatus @default(PENDING)
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  post      CommunityPost              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("community_participants")
+}
+
+model CommunityAlert {
+  id               String            @id @default(cuid())
+  userId           String
+  categoryId       String
+  governorateId    String
+  cityId           String
+  genderPreference GenderPreference  @default(ALL)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         CommunityCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([categoryId])
+  @@map("community_alerts")
+}
+
+model CommunityReview {
+  id          String   @id @default(cuid())
+  postId      String
+  authorId    String
+  targetId    String   
+  rating      Int      
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post        CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author      User          @relation("CommunityReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
+  target      User          @relation("CommunityReviewsReceived", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, authorId])
+  @@map("community_reviews")
+}
+
+model CommunityReport {
+  id         String       @id @default(cuid())
+  postId     String
+  reporterId String
+  reason     ReportReason
+  details    String?      
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  post       CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporter   User          @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@map("community_reports")
+}
+

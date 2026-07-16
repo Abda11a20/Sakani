@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
@@ -30,7 +31,7 @@ interface ChatMessage {
   id: string;
   content: string;
   senderId: string;
-  senderName?: string;
+  senderName: string;
   createdAt: string;
   isOwn?: boolean;
 }
@@ -61,9 +62,12 @@ export default function SupportPage() {
   
   // Guard role options: tenant or landlord
   const { user, isLoading: isAuthLoading } = useAuthGuard({ role: ["tenant", "landlord"] });
+  const searchParams = useSearchParams();
+  const paramConvId = searchParams?.get("conversationId") || null;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [chatPartnerName, setChatPartnerName] = useState<string | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockReason, setBlockReason] = useState<string | null>(null);
   
@@ -82,6 +86,23 @@ export default function SupportPage() {
   useEffect(() => {
     if (isAuthLoading || !token || !user) return;
     
+    if (paramConvId) {
+      setConversationId(paramConvId);
+      api.get(`/chat/conversations/${paramConvId}`)
+        .then(res => {
+          if (res.data.blockedAt) {
+            setIsBlocked(true);
+            setBlockReason(res.data.blockReason);
+          }
+          const partner = res.data.participants?.find((p: any) => p.userId !== user.id);
+          if (partner && res.data.type === 'PRIVATE') {
+            setChatPartnerName(partner.user.name);
+          }
+        })
+        .catch(err => console.error("Failed to load conversation details", err));
+      return;
+    }
+    
     const initSupportConversation = async () => {
       setIsLoadingHistory(true);
       try {
@@ -98,7 +119,7 @@ export default function SupportPage() {
       }
     };
     initSupportConversation();
-  }, [isAuthLoading, token, user]);
+  }, [isAuthLoading, token, user, paramConvId]);
 
   // Load history when conversation ID is available
   useEffect(() => {
@@ -301,12 +322,18 @@ export default function SupportPage() {
         <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-amber-500 to-amber-600 shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-              <HeadphonesIcon size={22} />
+              {chatPartnerName ? <MessageCircle size={22} /> : <HeadphonesIcon size={22} />}
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-white font-cairo">الدعم الفني والمساندة</h1>
+              <h1 className="text-base sm:text-lg font-bold text-white font-cairo">
+                {chatPartnerName || (isRtl ? "الدعم الفني والمساندة" : "Technical Support & Help")}
+              </h1>
               <p className="text-xs text-amber-100 font-cairo mt-0.5">
-                {isConnected ? (isRtl ? "متصل بالدعم المباشر" : "Live chat connected") : (isRtl ? "جاري الاتصال..." : "Connecting...")}
+                {isConnected
+                  ? chatPartnerName
+                    ? (isRtl ? "متصل الآن" : "Online")
+                    : (isRtl ? "متصل بالدعم المباشر" : "Live chat connected")
+                  : (isRtl ? "جاري الاتصال..." : "Connecting...")}
               </p>
             </div>
           </div>

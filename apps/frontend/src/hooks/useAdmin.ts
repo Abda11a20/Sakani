@@ -1,6 +1,7 @@
 // apps/frontend/src/hooks/useAdmin.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api/admin.api";
 import type { 
   Listing, 
   User, 
@@ -66,8 +67,8 @@ export const useAdminStats = () => {
   return useQuery<DashboardStats>({
     queryKey: ["admin", "stats"],
     queryFn: async (): Promise<DashboardStats> => {
-      const res = await api.get<DashboardStats>("/admin/dashboard/stats");
-      return res.data;
+      const res = await adminApi.getStats();
+      return res.data as DashboardStats;
     },
     staleTime: 60_000,
     refetchInterval: 120_000,
@@ -107,7 +108,7 @@ export const useReviewListing = () => {
 
   return useMutation<unknown, Error, { id: string; payload: ReviewListingPayload }>({
     mutationFn: async ({ id, payload }) => {
-      const res = await api.patch(`/admin/listings/${id}/review`, payload);
+      const res = await adminApi.reviewListing(id, payload);
       return res.data;
     },
     onSuccess: () => {
@@ -249,7 +250,7 @@ export const useVerifyUser = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (userId: string) => {
-      const res = await api.patch(`/admin/users/${userId}/verify`);
+      const res = await adminApi.verifyUser(userId);
       return res.data;
     },
     onSuccess: () => {
@@ -277,7 +278,7 @@ export const useToggleUserStatus = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (userId: string) => {
-      const res = await api.patch(`/admin/users/${userId}/toggle-status`);
+      const res = await adminApi.toggleUserStatus(userId);
       return res.data;
     },
     onSuccess: () => {
@@ -320,8 +321,8 @@ export const useIdCardUrl = (userId: string, enabled = false) => {
   return useQuery<{ url: string }>({
     queryKey: ["admin", "idCard", userId],
     queryFn: async () => {
-      const res = await api.get(`/uploads/id-card/${userId}`);
-      return res.data;
+      const res = await adminApi.getIdCardUrl(userId);
+      return res.data as { url: string };
     },
     enabled: !!userId && enabled,
     staleTime: 9 * 60 * 1000, // 9 minutes (presigned URLs usually expire in 10-15 mins)
@@ -330,14 +331,12 @@ export const useIdCardUrl = (userId: string, enabled = false) => {
 
 // ── Blacklist / Banned ────────────────────────────────────────────────────────
 
-export const useBannedUsers = (page = 1, limit = 10) => {
+export const useBannedUsers = (page = 1, limit = 10, search?: string) => {
   return useQuery<BannedUsersResponse>({
-    queryKey: ["admin", "banned", page, limit],
+    queryKey: ["admin", "banned", page, limit, search],
     queryFn: async (): Promise<BannedUsersResponse> => {
-      const res = await api.get<BannedUsersResponse>("/admin/banned", {
-        params: { page, limit },
-      });
-      return res.data;
+      const res = await adminApi.getBanned(page, search);
+      return res.data as BannedUsersResponse;
     },
     staleTime: 30_000,
   });
@@ -348,7 +347,7 @@ export const useBanUser = () => {
 
   return useMutation<unknown, Error, BanUserPayload>({
     mutationFn: async (payload: BanUserPayload) => {
-      const res = await api.post("/admin/ban", payload);
+      const res = await adminApi.banUser(payload);
       return res.data;
     },
     onSuccess: () => {
@@ -379,7 +378,7 @@ export const useUnbanUser = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (blacklistId: string) => {
-      const res = await api.delete(`/admin/banned/${blacklistId}`);
+      const res = await adminApi.unban(blacklistId);
       return res.data;
     },
     onSuccess: () => {
@@ -457,7 +456,20 @@ export const useUnblockConversation = () => {
 export interface AdminRentalsResponse {
   data: Array<{
     id: string;
+    contractNumber?: string;
     status: string;
+    createdByType?: string;
+    monthlyRent?: number;
+    securityDeposit?: number;
+    paymentCycle?: string;
+    currency?: string;
+    startDate?: string;
+    endDate?: string;
+    actualCheckout?: string | null;
+    isAutoRenew?: boolean;
+    terminationReason?: string | null;
+    terminationNotes?: string | null;
+    notes?: string | null;
     createdAt: string;
     updatedAt: string;
     listing: {

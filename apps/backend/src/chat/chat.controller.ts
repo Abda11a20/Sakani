@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConversationService } from './conversation.service';
 import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,6 +22,8 @@ import { SendMessageDto } from './dto/send-message.dto';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Chat')
+@ApiBearerAuth()
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
@@ -33,6 +36,24 @@ export class ChatController {
   @Get('support/me')
   async getSupportConversation(@CurrentUser() user: SafeUser) {
     return this.conversationService.findOrCreateSupportConversation(user.id);
+  }
+
+  // ── Get or create private conversation ─────────────────────────────────────
+  @Post('conversations/private')
+  async getOrCreatePrivateConversation(
+    @CurrentUser() user: SafeUser,
+    @Body('userId') recipientId: string,
+  ) {
+    return this.conversationService.findOrCreatePrivateConversation(user.id, recipientId);
+  }
+
+  // ── Get conversation details ──────────────────────────────────────────────
+  @Get('conversations/:id')
+  async getConversationDetails(
+    @CurrentUser() user: SafeUser,
+    @Param('id') conversationId: string,
+  ) {
+    return this.conversationService.getConversationDetails(conversationId, user.id);
   }
 
   // ── Get paginated messages for a conversation ─────────────────────────────

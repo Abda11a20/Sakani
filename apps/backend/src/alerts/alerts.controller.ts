@@ -11,6 +11,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AlertsService } from './alerts.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
@@ -26,6 +27,8 @@ interface RequestWithUser {
   };
 }
 
+@ApiTags('Alerts')
+@ApiBearerAuth()
 @Controller('alerts')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.tenant)

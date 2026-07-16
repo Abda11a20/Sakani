@@ -29,6 +29,9 @@ export const envSchema = z
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
+    TELEGRAM_BOT_TOKEN: z.string().optional(),
+    TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
+    TELEGRAM_WEBHOOK_URL: z.string().optional(),
   })
   .passthrough()
   .superRefine((data, ctx) => {

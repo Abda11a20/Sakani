@@ -24,6 +24,7 @@ import { useLocale } from "next-intl";
 import { getImageUrl } from "@/lib/utils";
 import { useTenantDashboardStats } from "@/hooks/useDashboard";
 import ActivityFeed, { ActivityItem } from "@/components/dashboard/ActivityFeed";
+import { StatsCard, formatStatsNumber } from "@/components/dashboard/StatsCard";
 
 // ── Egypt Governorates ──
 const GOVERNORATES = [
@@ -52,7 +53,7 @@ const GOVERNORATES = [
 export default function TenantDashboard() {
   const locale = useLocale();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Fetch Requests & Alerts & Backend Stats
   const { data: stats, isLoading: isStatsLoading } = useTenantDashboardStats();
@@ -188,64 +189,38 @@ export default function TenantDashboard() {
             {isRtl ? "الإحصائيات الرئيسية" : "Key Statistics"}
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {/* Active Requests */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">طلبات نشطة</span>
-                  <h3 className="text-2xl font-bold font-sans text-blue-600 dark:text-blue-400">{stats?.activeRequests ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">قيد المعاينة أو المقبولة</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <FileText size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Active Alerts */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">تنبيهات نشطة</span>
-                  <h3 className="text-2xl font-bold font-sans text-green-600 dark:text-green-400">{stats?.activeAlerts ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">للبحث التلقائي عن سكن</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0">
-                  <Bell size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Rented Units */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">الإيجارات المكتملة</span>
-                  <h3 className="text-2xl font-bold font-sans text-amber-600 dark:text-amber-400">{stats?.rentedUnits ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">عقود سكنية مكتملة</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Monthly Rent */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">إجمالي الإيجار الشهري</span>
-                  <h3 className="text-2xl font-bold font-sans text-emerald-600 dark:text-emerald-400">
-                    {new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(stats?.monthlyRent ?? 0)}{" "}
-                    <span className="text-xs font-normal text-slate-500 font-cairo">{isRtl ? "ج.م" : "EGP"}</span>
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">مجموع مبالغ الإيجار الحالي</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <TrendingUp size={22} />
-                </div>
-              </CardBody>
-            </Card>
+            <StatsCard
+              title="طلبات نشطة"
+              value={stats?.activeRequests ?? 0}
+              locale={locale}
+              icon={<FileText size={22} />}
+              color="blue"
+              subtitle="قيد المعاينة أو المقبولة"
+            />
+            <StatsCard
+              title="تنبيهات نشطة"
+              value={stats?.activeAlerts ?? 0}
+              locale={locale}
+              icon={<Bell size={22} />}
+              color="green"
+              subtitle="للبحث التلقائي عن سكن"
+            />
+            <StatsCard
+              title="الإيجارات المكتملة"
+              value={stats?.rentedUnits ?? 0}
+              locale={locale}
+              icon={<CheckCircle2 size={22} />}
+              color="gold"
+              subtitle="عقود سكنية مكتملة"
+            />
+            <StatsCard
+              title="إجمالي الإيجار الشهري"
+              value={stats?.monthlyRent === 0 ? "0" : `${formatStatsNumber(stats?.monthlyRent ?? 0, locale)} ${isRtl ? "ج.م" : "EGP"}`}
+              locale={locale}
+              icon={<TrendingUp size={22} />}
+              color="green"
+              subtitle="مجموع مبالغ الإيجار الحالي"
+            />
           </div>
         </div>
 

@@ -32,6 +32,7 @@ import {
   Maximize2
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG } from "@/lib/constants";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { useAuthStore } from "@/store/auth.store";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -56,11 +57,7 @@ interface ListingDetailClientProps {
   locale: string;
 }
 
-// ── Constants ─────────────────────────────────────────────────
-const TYPE_LABELS: Record<string, string> = {
-  apartment: "شقة",
-  bed: "سرير",
-};
+
 
 const AMENITY_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
   wifi: { icon: <Wifi size={14} />, label: "واي فاي" },
@@ -331,10 +328,9 @@ export function ListingDetailClient({
 
   // Map gender targets cleanly
   const getGenderTargetLabel = (gender?: string) => {
-    if (gender === "male") return isRtl ? "شباب" : "Male";
-    if (gender === "female") return isRtl ? "بنات" : "Female";
-    if (gender === "family") return isRtl ? "عائلات" : "Families";
-    return isRtl ? "مشترك" : "Mixed";
+    if (!gender) return isRtl ? "مشترك" : "Mixed";
+    const cfg = GENDER_TARGET_CONFIG[gender as keyof typeof GENDER_TARGET_CONFIG];
+    return isRtl ? (cfg?.labelAr ?? gender) : (cfg?.labelEn ?? gender);
   };
 
   // Map electricity meter
@@ -482,7 +478,11 @@ export function ListingDetailClient({
               <Building2 size={16} />
             </div>
             <span className="text-[9px] text-slate-400 font-semibold">{isRtl ? "نوع العقار" : "Type"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">{TYPE_LABELS[listing.type] || listing.type}</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+              {isRtl
+                ? (UNIT_TYPE_CONFIG[(listing.unitType || listing.type) as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? (listing.unitType || listing.type))
+                : (UNIT_TYPE_CONFIG[(listing.unitType || listing.type) as keyof typeof UNIT_TYPE_CONFIG]?.labelEn ?? (listing.unitType || listing.type))}
+            </span>
           </div>
 
           {/* Card 2: Target occupant */}

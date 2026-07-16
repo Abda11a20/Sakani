@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useMyAlerts } from "@/hooks/useAlerts";
 import { useMatchingAlert } from "@/hooks/useAlertMatching";
+import { useAuthStore } from "@/store/auth.store";
 import {
   Search,
   Filter,
@@ -21,15 +22,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { EGYPTIAN_GOVERNORATES, UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG } from "@/lib/constants";
 import { ListingCard, ListingCardSkeleton } from "@/components/listings/ListingCard";
 import type { Listing, SearchFilters, UnitType, GenderTarget } from "@/types";
 
-// ── Constants ─────────────────────────────────────────────────
-const GOVERNORATES = [
-  "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "الشرقية",
-  "المنوفية", "الغربية", "البحيرة", "القليوبية", "الإسماعيلية",
-  "بورسعيد", "السويس", "دمياط", "أسيوط", "سوهاج", "قنا",
-];
+
 
 const AMENITIES = [
   { key: "wifi", label: "واي فاي", icon: Wifi },
@@ -171,7 +168,7 @@ function FilterSidebar({
           className="input-field w-full text-sm py-2"
         >
           <option value="">كل المحافظات</option>
-          {GOVERNORATES.map((gov) => (
+          {EGYPTIAN_GOVERNORATES.map((gov) => (
             <option key={gov} value={gov}>{gov}</option>
           ))}
         </select>
@@ -195,9 +192,9 @@ function FilterSidebar({
         <div className="grid grid-cols-2 gap-2">
           {[
             { value: undefined, label: "الجميع" },
-            { value: "male", label: "شباب" },
-            { value: "female", label: "بنات" },
-            { value: "family", label: "عائلات" },
+            { value: "male", label: GENDER_TARGET_CONFIG.male.labelAr },
+            { value: "female", label: GENDER_TARGET_CONFIG.female.labelAr },
+            { value: "family", label: GENDER_TARGET_CONFIG.family.labelAr },
           ].map(({ value, label }) => (
             <button
               key={label}
@@ -305,8 +302,8 @@ function ActiveFilterChips({
   const chips: { label: string; onRemove: () => void }[] = [];
 
   if (filters.unitType) {
-    const labels: Record<string, string> = { apartment: "شقة", bed: "سرير" };
-    chips.push({ label: labels[filters.unitType], onRemove: () => onChange({ unitType: undefined, page: 1 }) });
+    const label = UNIT_TYPE_CONFIG[filters.unitType as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? filters.unitType;
+    chips.push({ label, onRemove: () => onChange({ unitType: undefined, page: 1 }) });
   }
   if (filters.governorate) chips.push({ label: filters.governorate, onRemove: () => onChange({ governorate: "", page: 1 }) });
   if (filters.district) chips.push({ label: filters.district, onRemove: () => onChange({ district: "", page: 1 }) });
@@ -314,8 +311,8 @@ function ActiveFilterChips({
   if (filters.maxPrice) chips.push({ label: `حتى ${filters.maxPrice} جنيه`, onRemove: () => onChange({ maxPrice: undefined, page: 1 }) });
   if (filters.verifiedOnly) chips.push({ label: "موثق فقط", onRemove: () => onChange({ verifiedOnly: false, page: 1 }) });
   if (filters.genderTarget) {
-    const labels: Record<string, string> = { male: "شباب", female: "بنات", family: "عائلات", any: "الجميع" };
-    chips.push({ label: labels[filters.genderTarget] ?? "", onRemove: () => onChange({ genderTarget: undefined, page: 1 }) });
+    const label = GENDER_TARGET_CONFIG[filters.genderTarget as keyof typeof GENDER_TARGET_CONFIG]?.labelAr ?? filters.genderTarget;
+    chips.push({ label, onRemove: () => onChange({ genderTarget: undefined, page: 1 }) });
   }
   filters.amenities?.forEach((a) => {
     const found = AMENITIES.find((am) => am.key === a);
@@ -401,10 +398,11 @@ function Pagination({
   );
 }
 
-// Wrapper card to fetch alert matching for search results without breaking hooks rules
-function SearchListingCard({ listing }: { listing: Listing }) {
+// Wrapper card — استدعاء useMatchingAlert فقط للمستخدمين المسجّلين
+// لمنع 401 على صفحة البحث للزوار العامين
+function SearchListingCard({ listing, isAuthenticated }: { listing: Listing; isAuthenticated: boolean }) {
   const matchingAlert = useMatchingAlert(listing);
-  return <ListingCard listing={listing} matchingAlert={matchingAlert} />;
+  return <ListingCard listing={listing} matchingAlert={isAuthenticated ? matchingAlert : undefined} />;
 }
 
 // ── Main Search Client Component ──────────────────────────────
@@ -416,8 +414,13 @@ export function SearchPageClient({
   initialFilters: Record<string, string>;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
+  // التحقق من المصادقة — صفحة البحث عامة للزوار
+  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = !!token;
+
+  // useMyAlerts مشروط بـ enabled: !!token داخل الـ hook نفسه
   const { data: alerts } = useMyAlerts();
 
   const [filters, setFilters] = useState<SearchFilters>(() =>
@@ -639,7 +642,7 @@ export function SearchPageClient({
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                 {result.items.map((listing) => (
-                  <SearchListingCard key={listing.id} listing={listing} />
+                  <SearchListingCard key={listing.id} listing={listing} isAuthenticated={isAuthenticated} />
                 ))}
               </div>
             )}

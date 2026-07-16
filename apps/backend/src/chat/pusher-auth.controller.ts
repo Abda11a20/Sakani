@@ -7,6 +7,7 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PusherService } from './pusher.service';
@@ -15,6 +16,8 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Chat')
+@ApiBearerAuth()
 @Controller('chat/pusher')
 @UseGuards(JwtAuthGuard)
 export class PusherAuthController {

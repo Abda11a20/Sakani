@@ -1,7 +1,6 @@
 // apps/frontend/src/app/[locale]/search/page.tsx
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
 import { SearchPageClient } from "./search-client";
 
 interface SearchPageProps {

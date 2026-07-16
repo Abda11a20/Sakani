@@ -28,7 +28,7 @@ export default function LandlordRentals() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
   const { data: rawListings = [], isLoading: isListingsLoading } = useMyListings();
   const requestId = searchParams?.get("requestId");
   const { data: rentalRequest, isLoading: isRequestLoading } = useRequestDetails(requestId);

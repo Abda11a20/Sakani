@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TelegramLinkCleanupService } from './telegram-link-cleanup.service';
 
 // تحويل JWT_EXPIRES_IN من string إلى ثوانٍ
 function parseExpiry(value: string): number {
@@ -47,7 +48,15 @@ function parseExpiry(value: string): number {
     NotificationsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard, ConfigService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    OptionalJwtAuthGuard,
+    RolesGuard,
+    ConfigService,
+    TelegramLinkCleanupService,
+  ],
   exports: [AuthService, JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard, JwtModule],
 })
 export class AuthModule {}

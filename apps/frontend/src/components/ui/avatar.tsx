@@ -2,13 +2,14 @@
 import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 
 const avatarVariants = cva(
   "relative flex shrink-0 overflow-hidden rounded-full border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800",
   {
     variants: {
       size: {
+        xs: "h-6 w-6 text-xs",
         sm: "h-8 w-8 text-xs",
         md: "h-10 w-10 text-sm",
         lg: "h-14 w-14 text-base",
@@ -44,11 +45,11 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         <div ref={ref} className={cn(avatarVariants({ size }), className)} {...props}>
           {src ? (
             <img
-              src={src}
+              src={getAvatarUrl(src) ?? src}
               alt={name}
               className="aspect-square h-full w-full object-cover"
               onError={(e) => {
-                // Fallback to initials on error
+                // Fallback to initials on image load error
                 e.currentTarget.style.display = "none";
               }}
             />

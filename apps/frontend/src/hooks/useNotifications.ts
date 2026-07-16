@@ -38,8 +38,6 @@ export const useUnreadNotificationsCount = () => {
       );
       return response.data;
     },
-    refetchInterval: 60_000, // poll every 60 seconds
-    refetchIntervalInBackground: false,
   });
 };
 

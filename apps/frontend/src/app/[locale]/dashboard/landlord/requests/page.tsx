@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus } from "@/hooks/useRequests";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast, Avatar } from "@/components/ui";
@@ -25,7 +26,7 @@ type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
 export default function LandlordRequests() {
   const locale = useLocale();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
   const [page, setPage] = useState(1);
 
   const { data: requestsData, isLoading: isRequestsLoading } = useLandlordRequests(page);
@@ -94,19 +95,13 @@ export default function LandlordRequests() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-bold font-cairo">جديد</Badge>;
-      case "accepted":
-      case "approved":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400 font-bold font-cairo">مقبول</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold font-cairo">مرفوض</Badge>;
-      case "completed":
-        return <Badge className="bg-slate-100 text-slate-800 dark:bg-slate-900/40 dark:text-slate-400 font-bold font-cairo">مكتمل</Badge>;
-      default:
-        return <Badge className="bg-slate-100 text-slate-800 font-cairo">{status}</Badge>;
-    }
+    const normalized = status === "approved" ? "accepted" : status;
+    const cfg = REQUEST_STATUS_CONFIG[normalized as keyof typeof REQUEST_STATUS_CONFIG];
+    return (
+      <Badge variant={cfg?.color ?? "gray"} className="font-bold font-cairo">
+        {cfg?.labelAr ?? status}
+      </Badge>
+    );
   };
 
   // Get Stats numbers

@@ -36,7 +36,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             dir={dir ?? (isLtrContent ? "ltr" : undefined)}
             className={cn(
-              "flex w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:border-gray-700",
+              "flex w-full rounded-lg border bg-white ps-3 pe-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:border-gray-700",
               error ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300 dark:border-gray-700",
               leftIcon ? "ps-10" : "",
               rightIcon ? "pe-10" : "",

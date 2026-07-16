@@ -4,7 +4,7 @@ import { Injectable, NotFoundException, ForbiddenException, ConflictException } 
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserRole } from '@prisma/client';
+import { User, UserRole, OtpChannel } from '@prisma/client';
 import { UploadsService } from '../uploads/uploads.service';
 import * as bcrypt from 'bcrypt';
 
@@ -207,5 +207,31 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  // ── تحديث قناة استقبال الـ OTP ───────────────────────────────────────────
+  async setOtpChannel(userId: string, channel: OtpChannel): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    if (channel === OtpChannel.TELEGRAM && !user.telegramChatId) {
+      throw new ConflictException('يرجى ربط حسابك بتليجرام أولاً قبل تعيينه كقناة استقبال.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { otpChannel: channel },
+    });
+
+    const successMsg = channel === OtpChannel.TELEGRAM 
+      ? 'تم تغيير قناة استقبال الرمز إلى تليجرام بنجاح.' 
+      : 'تم تغيير قناة استقبال الرمز إلى البريد الإلكتروني بنجاح.';
+
+    return { message: successMsg };
   }
 }

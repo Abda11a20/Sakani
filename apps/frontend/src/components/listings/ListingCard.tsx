@@ -4,7 +4,6 @@
 import React from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
 import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone, Loader2 } from "lucide-react";
 import type { Listing } from "@/types";
 import { getIdentityVerificationStatus, isUserVerified } from "@/types";
@@ -59,7 +58,6 @@ const STATUS_LABELS: Record<string, string> = {
 
 export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating, matchingAlert }) => {
   const locale = useLocale();
-  const router = useRouter();
   const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
   const [showPreview, setShowPreview] = React.useState(false);
 
@@ -80,177 +78,195 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
     showPreview && currentUser?.role === "tenant"
   );
 
+  // Handler for landlord badge click — opens modal without navigating
+  const handleLandlordClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowPreview(true);
+  };
+
+  // Handler for heart button — toggles wishlist without navigating
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(listing.id);
+  };
+
   return (
-    <div
-      onClick={(e) => {
-        const target = e.target as HTMLElement;
-        if (target.closest("button") || target.closest(".cursor-pointer")) {
-          return;
-        }
-        router.push(`/${locale}/listings/${listing.id}`);
-      }}
-      className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer",
-        className
-      )}
-    >
-      {/* Image */}
-      <div className="relative h-[200px] overflow-hidden bg-gray-100 dark:bg-gray-800">
-        {listing.images && listing.images.length > 0 ? (
-          <img
-            src={getImageUrl(listing.images[0])}
-            alt={listing.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
-            <Building2 size={48} />
-          </div>
+    <>
+      {/* Outer wrapper is a Link — clicking anywhere on the card navigates to detail page */}
+      <Link
+        href={`/${locale}/listings/${listing.id}`}
+        className={cn(
+          "group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer",
+          className
         )}
-
-        {/* Badges overlay */}
-        <div className="absolute start-2 top-2 flex flex-col gap-1.5 items-start">
-          <Badge variant="default" className="bg-white/90 text-gray-800 backdrop-blur-sm dark:bg-gray-900/90 dark:text-gray-100 font-bold font-cairo">
-            {TYPE_LABELS[listing.type]}
-          </Badge>
-          <Badge variant={STATUS_VARIANT[listing.status]} className="font-bold font-cairo">
-            {STATUS_LABELS[listing.status]}
-          </Badge>
-          {matchingAlert && (
-            <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white gap-1 shadow-md border-none font-bold animate-pulse font-cairo text-[10px] px-2 py-0.5">
-              <Sparkles size={10} className="animate-spin text-amber-300" style={{ animationDuration: '3s' }} />
-              تطابق ذكي
-            </Badge>
-          )}
-        </div>
-
-        <div className="absolute end-2 top-2 flex flex-col gap-1.5">
-          {listing.landlord && (() => {
-            const status = getIdentityVerificationStatus(listing.landlord);
-            if (status === 'verified') {
-              return (
-                <Badge variant="success" className="gap-1">
-                  <CheckCircle size={11} />
-                  موثق
-                </Badge>
-              );
-            }
-            if (status === 'pending') {
-              return (
-                <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
-                  <Clock size={11} />
-                  قيد المراجعة
-                </Badge>
-              );
-            }
-            if (status === 'rejected') {
-              return (
-                <Badge className="bg-red-500 hover:bg-red-600 text-white gap-1">
-                  <AlertCircle size={11} />
-                  مرفوض
-                </Badge>
-              );
-            }
-            return (
-              <Badge variant="default" className="gap-1 bg-gray-500/10 text-gray-500 hover:bg-gray-500/20 border-none dark:bg-gray-800 dark:text-gray-400">
-                غير موثق
-              </Badge>
-            );
-          })()}
-          {listing.isFeatured && (
-            <Badge variant="gold" className="gap-1">
-              <Sparkles size={11} />
-              مميز
-            </Badge>
-          )}
-        </div>
-
-        {/* Favorite */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleWishlist(listing.id);
-          }}
-          className={cn(
-            "absolute bottom-2 end-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm transition-colors shadow-sm",
-            isFavorite ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
-          )}
-          aria-label="Add to favourites"
-        >
-          <Heart size={16} className={isFavorite ? "fill-red-500 text-red-500" : ""} />
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 flex-col p-4 gap-3">
-        {/* Location */}
-        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-          <span style={{ direction: "ltr" }}>
-            <MapPin size={14} className="shrink-0 text-gold" />
-          </span>
-          <span className="text-xs truncate">
-            {listing.district}، {listing.city}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-cairo text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">
-          {listing.title}
-        </h3>
-
-        {/* Price */}
-        <div className="flex items-baseline gap-1">
-          <span className="text-xl font-bold text-primary dark:text-blue-400">
-            {formattedPrice}
-          </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            جنيه/شهر
-          </span>
-        </div>
-
-        {/* Beds available */}
-        {listing.type === "bed" && availableBeds !== null && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {availableBeds} {availableBeds === 1 ? "سرير متاح" : "أسرة متاحة"}
-          </p>
-        )}
-
-        {/* Amenities */}
-        {listing.amenities && listing.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {listing.amenities.slice(0, 4).map((amenity) => (
-              <span
-                key={amenity}
-                className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-md px-2 py-1"
-                style={{ direction: "ltr" }}
-              >
-                {AMENITY_ICONS[amenity] ?? null}
-                <span>{AMENITY_LABELS[amenity] ?? amenity}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Landlord + Rating */}
-        {listing.landlord && (
-          <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity" onClick={(e) => {
-              e.stopPropagation();
-              setShowPreview(true);
-            }}>
-              <Avatar
-                src={listing.landlord.avatarUrl || null}
-                name={listing.landlord.name}
-                size="sm"
-                verified={isUserVerified(listing.landlord)}
-              />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[90px] hover:text-primary transition-colors">
-                {listing.landlord.name}
-              </span>
+      >
+        {/* Image */}
+        <div className="relative h-[200px] overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
+          {listing.images && listing.images.length > 0 ? (
+            <img
+              src={getImageUrl(listing.images[0])}
+              alt={listing.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-400">
+              <Building2 size={48} />
             </div>
+          )}
+
+          {/* Badges overlay — start side */}
+          <div className="absolute start-2 top-2 flex flex-col gap-1.5 items-start">
+            <Badge variant="default" className="bg-white/90 text-gray-800 backdrop-blur-sm dark:bg-gray-900/90 dark:text-gray-100 font-bold font-cairo">
+              {TYPE_LABELS[listing.unitType || listing.type] || (listing.unitType || listing.type)}
+            </Badge>
+            <Badge variant={STATUS_VARIANT[listing.status]} className="font-bold font-cairo">
+              {STATUS_LABELS[listing.status]}
+            </Badge>
+            {matchingAlert && (
+              <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white gap-1 shadow-md border-none font-bold animate-pulse font-cairo text-[10px] px-2 py-0.5">
+                <Sparkles size={10} className="animate-spin text-amber-300" style={{ animationDuration: '3s' }} />
+                تطابق ذكي
+              </Badge>
+            )}
+          </div>
+
+          {/* Badges overlay — end side */}
+          <div className="absolute end-2 top-2 flex flex-col gap-1.5">
+            {listing.landlord && (() => {
+              const status = getIdentityVerificationStatus(listing.landlord);
+              if (status === 'verified') {
+                return (
+                  <Badge variant="success" className="gap-1">
+                    <CheckCircle size={11} />
+                    موثق
+                  </Badge>
+                );
+              }
+              if (status === 'pending') {
+                return (
+                  <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
+                    <Clock size={11} />
+                    قيد المراجعة
+                  </Badge>
+                );
+              }
+              if (status === 'rejected') {
+                return (
+                  <Badge className="bg-red-500 hover:bg-red-600 text-white gap-1">
+                    <AlertCircle size={11} />
+                    مرفوض
+                  </Badge>
+                );
+              }
+              return (
+                <Badge variant="default" className="gap-1 bg-gray-500/10 text-gray-500 hover:bg-gray-500/20 border-none dark:bg-gray-800 dark:text-gray-400">
+                  غير موثق
+                </Badge>
+              );
+            })()}
+            {listing.isFeatured && (
+              <Badge variant="gold" className="gap-1">
+                <Sparkles size={11} />
+                مميز
+              </Badge>
+            )}
+          </div>
+
+          {/* Heart / Wishlist button — stopPropagation so card link doesn't fire */}
+          <button
+            onClick={handleWishlistClick}
+            className={cn(
+              "absolute bottom-2 end-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm transition-colors shadow-sm",
+              isFavorite ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
+            )}
+            aria-label="Add to favourites"
+          >
+            <Heart size={16} className={isFavorite ? "fill-red-500 text-red-500" : ""} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-1 flex-col p-4 gap-3">
+          {/* Location */}
+          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+            <span style={{ direction: "ltr" }}>
+              <MapPin size={14} className="shrink-0 text-gold" />
+            </span>
+            <span className="text-xs truncate">
+              {listing.district}، {listing.city}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className="font-cairo text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">
+            {listing.title}
+          </h3>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold text-primary dark:text-blue-400">
+              {formattedPrice}
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              جنيه/شهر
+            </span>
+          </div>
+
+          {/* Beds available */}
+          {listing.type === "bed" && availableBeds !== null && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {availableBeds} {availableBeds === 1 ? "سرير متاح" : "أسرة متاحة"}
+            </p>
+          )}
+
+          {/* Amenities */}
+          {listing.amenities && listing.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {listing.amenities.slice(0, 4).map((amenity) => (
+                <span
+                  key={amenity}
+                  className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-md px-2 py-1"
+                  style={{ direction: "ltr" }}
+                >
+                  {AMENITY_ICONS[amenity] ?? null}
+                  <span>{AMENITY_LABELS[amenity] ?? amenity}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Spacer to push landlord section to bottom */}
+          <div className="flex-1" />
+
+          {/* Landlord + Rating — fixed height section at the bottom */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 min-h-[44px]">
+            {listing.landlord ? (
+              <button
+                type="button"
+                onClick={handleLandlordClick}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0"
+                title="عرض معلومات المؤجر"
+              >
+                <Avatar
+                  src={listing.landlord.avatarUrl || null}
+                  name={listing.landlord.name}
+                  size="sm"
+                  verified={isUserVerified(listing.landlord)}
+                />
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[90px] hover:text-primary transition-colors">
+                  {listing.landlord.name}
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 shrink-0" />
+                <span className="text-xs text-gray-400">—</span>
+              </div>
+            )}
             {rating !== undefined && (
-              <div className="flex items-center gap-1" style={{ direction: "ltr" }}>
+              <div className="flex items-center gap-1 shrink-0" style={{ direction: "ltr" }}>
                 <Star size={13} className="text-gold fill-gold" />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                   {rating.toFixed(1)}
@@ -258,23 +274,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Footer action */}
-      <div className="px-4 pb-4 hidden sm:block">
-        <Link
-          href={`/${locale}/listings/${listing.id}`}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 text-primary dark:text-blue-400 px-4 py-2.5 text-sm font-semibold transition-colors"
-        >
-          عرض التفاصيل
-          <span style={{ direction: "ltr" }}>
-            <ArrowIcon size={16} />
-          </span>
-        </Link>
-      </div>
+        {/* Footer action */}
+        <div className="px-4 pb-4">
+          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 text-primary dark:text-blue-400 px-4 py-2.5 text-sm font-semibold transition-colors">
+            عرض التفاصيل
+            <span style={{ direction: "ltr" }}>
+              <ArrowIcon size={16} />
+            </span>
+          </div>
+        </div>
+      </Link>
 
-      {/* Landlord Profile Preview Modal */}
+      {/* Landlord Profile Preview Modal — rendered outside the Link to avoid nesting issues */}
       {listing.landlord && (
         <Modal
           isOpen={showPreview}
@@ -387,15 +400,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
           </div>
         </Modal>
       )}
-    </div>
+    </>
   );
 };
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 export const ListingCardSkeleton: React.FC = () => (
   <div className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse">
-    <div className="h-[200px] bg-gray-200 dark:bg-gray-800" />
-    <div className="p-4 space-y-3">
+    <div className="h-[200px] bg-gray-200 dark:bg-gray-800 shrink-0" />
+    <div className="p-4 space-y-3 flex-1">
       <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-800" />
       <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
       <div className="h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-800" />
@@ -403,6 +416,10 @@ export const ListingCardSkeleton: React.FC = () => (
         <div className="h-6 w-16 rounded bg-gray-200 dark:bg-gray-800" />
         <div className="h-6 w-16 rounded bg-gray-200 dark:bg-gray-800" />
       </div>
+      <div className="flex-1" />
+      <div className="h-8 w-full rounded-xl bg-gray-200 dark:bg-gray-800 mt-auto" />
+    </div>
+    <div className="px-4 pb-4">
       <div className="h-9 w-full rounded-xl bg-gray-200 dark:bg-gray-800" />
     </div>
   </div>

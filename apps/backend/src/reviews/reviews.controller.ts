@@ -1,5 +1,6 @@
 // c:\Users\pc\Desktop\Sakany\sakani\apps\backend\src\reviews\reviews.controller.ts
 import { Controller, Post, Get, Delete, Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe, Req } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,10 +15,12 @@ interface RequestWithUser {
   };
 }
 
+@ApiTags('Reviews')
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.tenant)
   @Post()
@@ -25,6 +28,7 @@ export class ReviewsController {
     return this.reviewsService.create(req.user.id, dto);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.tenant)
   @Get('my')
@@ -55,6 +59,7 @@ export class ReviewsController {
     return this.reviewsService.getLandlordRating(landlordId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteReview(@Req() req: RequestWithUser, @Param('id') id: string) {

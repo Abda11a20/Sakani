@@ -12,8 +12,10 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateOtpChannelDto } from './dto/update-otp-channel.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -22,11 +24,13 @@ import { User, UserRole } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
+@ApiTags('Users')
 @Controller()
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   // ── 1. Get Current User Profile ─────────────────────────────────────────────
+  @ApiBearerAuth()
   @Get('users/profile')
   @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser() user: SafeUser) {
@@ -34,6 +38,7 @@ export class UsersController {
   }
 
   // ── 2. Update Current User Profile ───────────────────────────────────────
+  @ApiBearerAuth()
   @Patch('users/profile')
   @UseGuards(JwtAuthGuard)
   async updateProfile(
@@ -43,7 +48,19 @@ export class UsersController {
     return this.usersService.updateProfile(user.id, dto);
   }
 
+  // ── 2.5. Update OTP Channel preference ──────────────────────────────────
+  @ApiBearerAuth()
+  @Patch('users/me/otp-channel')
+  @UseGuards(JwtAuthGuard)
+  async updateOtpChannel(
+    @CurrentUser() user: SafeUser,
+    @Body() dto: UpdateOtpChannelDto,
+  ) {
+    return this.usersService.setOtpChannel(user.id, dto.channel);
+  }
+
   // ── 3. Delete Current User Profile ───────────────────────────────────────
+  @ApiBearerAuth()
   @Delete('users/profile')
   @UseGuards(JwtAuthGuard)
   async deleteProfile(@CurrentUser() user: SafeUser) {

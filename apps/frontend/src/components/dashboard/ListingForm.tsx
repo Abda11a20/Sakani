@@ -132,7 +132,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
     electricityType: initialData?.electricityType || "modern_meter",
     description: initialData?.description || "",
     price: initialData?.price || "",
-    securityDeposit: initialData?.securityDeposit || 0,
+    securityDeposit: initialData?.securityDeposit !== undefined ? initialData.securityDeposit : "",
     includesBills: initialData?.includesBills || false,
     roommateFeatureEnabled: initialData?.isFeatured || false,
   });
@@ -734,7 +734,7 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
                 value={formData.price}
                 onChange={e => setFormData({ ...formData, price: e.target.value })}
                 error={errors.price}
-                className="font-sans"
+                className="font-sans pe-24"
               />
 
               <Input
@@ -743,9 +743,9 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
                 label="مبلغ التأمين المسترد"
                 rightIcon={<span className="text-xs font-semibold font-cairo">ج.م</span>}
                 value={formData.securityDeposit}
-                onChange={e => setFormData({ ...formData, securityDeposit: parseInt(e.target.value) || 0 })}
+                onChange={e => setFormData({ ...formData, securityDeposit: e.target.value })}
                 error={errors.securityDeposit}
-                className="font-sans"
+                className="font-sans pe-16"
               />
             </div>
 

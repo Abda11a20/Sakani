@@ -19,6 +19,8 @@ export interface User {
   emailVerifiedAt: string | null;
   phoneVerifiedAt: string | null;
   isActive?: boolean;
+  otpChannel?: "EMAIL" | "TELEGRAM";
+  telegramChatId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -314,15 +316,30 @@ export interface RentalHistoryListing {
   };
 }
 
+export type ContractStatus = "active" | "expired" | "terminated" | "renewed";
+export type PaymentCycle = "monthly" | "quarterly" | "yearly";
+export type TerminationReason = "tenant_request" | "landlord_request" | "violation" | "mutual_agreement" | "other";
+export type ContractCreatedBy = "VIEWING_REQUEST" | "MANUAL" | "AUTO_RENEW" | "MIGRATION";
+
 export interface RentalHistoryItem {
-  /** The ViewingRequest ID — useful for debugging / audit trails */
   id: string;
-  status: "completed";
+  contractNumber?: string;
+  status: ContractStatus;
+  createdByType?: ContractCreatedBy;
+  monthlyRent?: number;
+  securityDeposit?: number;
+  paymentCycle?: PaymentCycle;
+  currency?: string;
+  startDate?: string;
+  endDate?: string;
+  actualCheckout?: string | null;
+  isAutoRenew?: boolean;
+  terminationReason?: TerminationReason | null;
+  terminationNotes?: string | null;
+  notes?: string | null;
   createdAt: string;
-  /** updatedAt is used as completedAt proxy until a dedicated field is introduced */
   updatedAt: string;
   listing: RentalHistoryListing;
-  /** Present in landlord history */
   tenant?: {
     id: string;
     name: string;
@@ -350,4 +367,5 @@ export interface RentalHistoryQuery {
   from?: string;
   to?: string;
   sort?: "asc" | "desc";
+  status?: string; // Add filter by status
 }

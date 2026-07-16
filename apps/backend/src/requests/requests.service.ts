@@ -13,10 +13,11 @@ import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { FinalizeBedRentalDto } from './dto/finalize-bed-rental.dto';
 import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
 import { QuickRentDto } from './dto/quick-rent.dto';
-import { NotificationType, RequestStatus, ListingStatus, UserRole, UnitType, BedStatus, Prisma } from '@prisma/client';
+import { NotificationType, RequestStatus, ListingStatus, UserRole, UnitType, BedStatus, Prisma, ContractCreatedBy } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 import { BedsService } from '../beds/beds.service';
 import { NotificationService } from '../notifications/notifications.service';
+import { RentalContractsService } from '../rental-contracts/rental-contracts.service';
 
 @Injectable()
 export class RequestsService {
@@ -24,6 +25,7 @@ export class RequestsService {
     private readonly prisma: PrismaService,
     private readonly bedsService: BedsService,
     private readonly notificationService: NotificationService,
+    private readonly rentalContractsService: RentalContractsService,
   ) {}
 
   // ── 0. التأجير السريع المباشر (Landlord فقط) ──────────────────────────────────
@@ -457,6 +459,19 @@ export class RequestsService {
       },
     });
 
+    await this.rentalContractsService.createContract({
+      listingId: request.listingId,
+      landlordId,
+      tenantId: request.tenantId,
+      bedId: dto.bedId,
+      viewingRequestId: requestId,
+      createdByType: request.message === 'direct_rent' ? ContractCreatedBy.MANUAL : ContractCreatedBy.VIEWING_REQUEST,
+      monthlyRent: request.listing.price,
+      securityDeposit: request.listing.securityDeposit,
+      startDate: dto.rentedSince,
+      endDate: dto.rentedUntil,
+    }, tx);
+
     await this.notificationService.createUnique(
       {
         userId: request.listing.landlordId,
@@ -576,6 +591,18 @@ export class RequestsService {
           },
         },
       });
+
+      await this.rentalContractsService.createContract({
+        listingId: request.listingId,
+        landlordId,
+        tenantId: request.tenantId,
+        viewingRequestId: requestId,
+        createdByType: request.message === 'direct_rent' ? ContractCreatedBy.MANUAL : ContractCreatedBy.VIEWING_REQUEST,
+        monthlyRent: request.listing.price,
+        securityDeposit: request.listing.securityDeposit,
+        startDate: dto.rentedSince,
+        endDate: dto.rentedUntil,
+      }, tx);
 
       await this.notificationService.createUnique(
         {

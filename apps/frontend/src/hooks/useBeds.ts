@@ -1,6 +1,7 @@
 // apps/frontend/src/hooks/useBeds.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { bedsApi } from "@/lib/api/beds.api";
 import type { Bed } from "@/types";
 
 export interface BedStats {
@@ -20,11 +21,16 @@ export const useListingBeds = (listingId: string | null | undefined, isLandlord 
     queryKey: ["listings", listingId, "beds", isLandlord],
     queryFn: async (): Promise<Bed[]> => {
       if (!listingId) return [];
-      const endpoint = isLandlord
-        ? `/listings/${listingId}/beds/all`
-        : `/listings/${listingId}/beds`;
-      const response = await api.get<any[]>(endpoint);
-      return response.data.map((bed: any) => ({
+      // المؤجر يستخدم endpoint /all خاص — يبقى مع api مباشرة
+      if (isLandlord) {
+        const response = await api.get<any[]>(`/listings/${listingId}/beds/all`);
+        return response.data.map((bed: any) => ({
+          ...bed,
+          isAvailable: bed.status === "available",
+        }));
+      }
+      const response = await bedsApi.getByListing(listingId);
+      return (response.data as any[]).map((bed: any) => ({
         ...bed,
         isAvailable: bed.status === "available",
       }));
@@ -38,8 +44,8 @@ export const useListingBedStats = (listingId: string | null | undefined) => {
     queryKey: ["listings", listingId, "beds", "stats"],
     queryFn: async (): Promise<BedStats> => {
       if (!listingId) return { total: 0, available: 0, rented: 0 };
-      const response = await api.get<BedStats>(`/listings/${listingId}/beds/stats`);
-      return response.data;
+      const response = await bedsApi.getStats(listingId);
+      return response.data as BedStats;
     },
     enabled: !!listingId,
   });
@@ -50,7 +56,7 @@ export const useRentBed = () => {
 
   return useMutation<any, Error, { bedId: string; data: RentBedPayload }>({
     mutationFn: async ({ bedId, data }): Promise<any> => {
-      const response = await api.patch<any>(`/beds/${bedId}/rent`, {
+      const response = await bedsApi.rent(bedId, {
         tenantId: data.tenantId,
         rentedSince: data.startDate,
         rentedUntil: data.endDate,
@@ -73,7 +79,7 @@ export const useVacateBed = () => {
 
   return useMutation<any, Error, string>({
     mutationFn: async (bedId): Promise<any> => {
-      const response = await api.patch<any>(`/beds/${bedId}/vacate`);
+      const response = await bedsApi.vacate(bedId);
       return response.data;
     },
     onSuccess: (data) => {

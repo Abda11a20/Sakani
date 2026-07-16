@@ -38,3 +38,26 @@ export function getImageUrl(img: any): string {
   return String(img);
 }
 
+/**
+ * جلب رابط صورة الأفاتار بشكل موحّد — يعالج جميع الحالات:
+ * - رابط كامل (https://...) → يعود كما هو
+ * - مسار نسبي (/uploads/...) → يضيف الـ API_BASE
+ * - null | undefined → يعود null (يعرض الآفاتار الافتراضي بالحروف الأولى)
+ *
+ * استخدم هذه الدالة في جميع مكانات عرض صور المستخدمين (بروفايل، كارد الإعلان، نافبار اللوحة)
+ */
+export function getAvatarUrl(avatarUrl: string | null | undefined): string | null {
+  if (!avatarUrl) return null;
+
+  // إذا كان رابط كاملاً أو بيانات (data:)، أعده كما هو
+  if (avatarUrl.startsWith("http") || avatarUrl.startsWith("data:")) {
+    return avatarUrl;
+  }
+
+  // إذا كان مساراً نسبياً، أضف الـ API base URL
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "";
+  // أزل /api/v1 من النهاية للحصول على origin الخادم فقط
+  const origin = base.replace(/\/api\/v\d+\/?$/, "");
+  const path = avatarUrl.startsWith("/") ? avatarUrl : `/${avatarUrl}`;
+  return `${origin}${path}`;
+}

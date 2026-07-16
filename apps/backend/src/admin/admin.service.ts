@@ -576,19 +576,54 @@ export class AdminService {
     return blacklisted;
   }
 
-  async getBannedUsers(page: number = 1, limit: number = 10) {
+  async getBannedUsers(page: number = 1, limit: number = 10, search?: string) {
     const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { phone: { contains: search, mode: 'insensitive' } },
+        { nationalIdHash: { contains: search, mode: 'insensitive' } },
+        { reason: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [banned, total] = await Promise.all([
       this.prisma.blacklist.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.blacklist.count(),
+      this.prisma.blacklist.count({ where }),
     ]);
 
-    return { banned, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    const bannedWithUser = await Promise.all(
+      banned.map(async (entry) => {
+        let user: any = null;
+        if (entry.phone) {
+          user = await this.prisma.user.findFirst({
+            where: { phone: entry.phone },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              plan: true,
+              identityStatus: true,
+              isActive: true,
+              createdAt: true,
+            },
+          });
+        }
+        return {
+          ...entry,
+          user,
+        };
+      })
+    );
+
+    return { banned: bannedWithUser, meta: { total, page, lastPage: Math.ceil(total / limit) } };
   }
 
   async unbanUser(blacklistId: string, superAdminId: string) {
@@ -631,7 +666,7 @@ export class AdminService {
       pendingRequests,
       bannedUsers,
       archivedListings,
-    ] = await this.prisma.$transaction([
+    ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.listing.count({ where: { isDeleted: false } }),
       this.prisma.listing.count({ where: { status: ListingStatus.pending_review, isDeleted: false } }),

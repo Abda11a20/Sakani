@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 // eslint-disable-next-line import/no-named-as-default-member
 import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
 import { useCreateReview, useMyReviews } from "@/hooks/useReviews";
@@ -31,7 +32,7 @@ export default function TenantRequests() {
   const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "tenant" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
   const [page, setPage] = useState(1);
 
   // Queries & Mutations
@@ -127,19 +128,13 @@ export default function TenantRequests() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-bold font-cairo">جديد</Badge>;
-      case "accepted":
-      case "approved":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400 font-bold font-cairo">مقبول</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold font-cairo">مرفوض</Badge>;
-      case "completed":
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 font-bold font-cairo">مكتمل</Badge>;
-      default:
-        return <Badge className="bg-slate-100 text-slate-800 font-cairo">{status}</Badge>;
-    }
+    const normalized = status === "approved" ? "accepted" : status;
+    const cfg = REQUEST_STATUS_CONFIG[normalized as keyof typeof REQUEST_STATUS_CONFIG];
+    return (
+      <Badge variant={cfg?.color ?? "gray"} className="font-bold font-cairo">
+        {cfg?.labelAr ?? status}
+      </Badge>
+    );
   };
 
   return (

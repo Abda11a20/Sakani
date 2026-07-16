@@ -320,7 +320,7 @@ export default function AdvertisementDetailPage() {
               <Building2 size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "نوع العقار" : "Type"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{TYPE_LABELS[listing.type] || listing.type}</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{TYPE_LABELS[listing.unitType || listing.type] || (listing.unitType || listing.type)}</span>
           </div>
 
           {/* Gender Target */}

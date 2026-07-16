@@ -139,8 +139,8 @@ npx prisma migrate dev --name init
 # توليد الـ Prisma Client
 npx prisma generate
 
-# (اختياري) بيانات تجريبية
-npx prisma db seed
+# (اختياري) توليد بيانات تجريبية واقعية باللغة العربية (Idempotent Database Seed)
+npm run db:seed
 ```
 
 ### التشغيل المحلي | Local Development
@@ -165,6 +165,10 @@ http://localhost:3001/api/docs
 ```
 
 **Base URL:** `http://localhost:3001/api/v1`
+
+* **إيقاف وتفعيل Swagger:** يتم تعطيل Swagger تلقائياً في بيئة الإنتاج.
+  - لتفعيله في الإنتاج: عيّن `ENABLE_SWAGGER_IN_PROD=true`.
+  - لتعطيله كلياً في أي بيئة: عيّن `DISABLE_SWAGGER=true`.
 
 ### أهم الـ Modules
 

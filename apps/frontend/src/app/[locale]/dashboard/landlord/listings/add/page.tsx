@@ -9,7 +9,7 @@ import ListingForm from "@/components/dashboard/ListingForm";
 import { Spinner } from "@/components/ui";
 
 export default function AddListingPage() {
-  const { user, isLoading } = useAuthGuard({ role: "landlord" });
+  const { user, isLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
   const { mutateAsync: createListing, isPending } = useCreateListing();
 
   if (isLoading || !user) {

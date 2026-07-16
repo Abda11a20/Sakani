@@ -23,10 +23,11 @@ import Link from "next/link";
 import { useLocale } from "next-intl";
 import { getImageUrl } from "@/lib/utils";
 import ActivityFeed, { ActivityItem } from "@/components/dashboard/ActivityFeed";
+import { StatsCard } from "@/components/dashboard/StatsCard";
 
 export default function LandlordDashboard() {
   const locale = useLocale();
-  const { user, isLoading: isAuthLoading } = useAuthGuard({ role: "landlord" });
+  const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
 
   const { data: stats, isLoading: isStatsLoading, refetch: refetchStats } = useLandlordDashboardStats();
   const { data: listings = [], isLoading: isListingsLoading } = useMyListings();
@@ -105,61 +106,38 @@ export default function LandlordDashboard() {
             {isRtl ? "الإحصائيات الرئيسية" : "Key Statistics"}
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {/* Total Views */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">إجمالي المشاهدات</span>
-                  <h3 className="text-2xl font-bold font-sans text-blue-600 dark:text-blue-400">{new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(stats?.totalViews ?? 0)}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">على جميع إعلاناتك</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                  <Eye size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Active Listings */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">الإعلانات النشطة</span>
-                  <h3 className="text-2xl font-bold font-sans text-amber-600 dark:text-amber-400">{stats?.activeListings ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">منشورة ومتاحة للبحث</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                  <Building size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Occupied Units */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">الوحدات المؤجرة</span>
-                  <h3 className="text-2xl font-bold font-sans text-green-600 dark:text-green-400">{stats?.occupiedUnits ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">عقود إيجار جارية</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={22} />
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Pending Requests */}
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all">
-              <CardBody className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold font-cairo">طلبات معلقة</span>
-                  <h3 className="text-2xl font-bold font-sans text-orange-600 dark:text-orange-400">{stats?.pendingRequests ?? 0}</h3>
-                  <p className="text-[10px] text-slate-400 font-cairo">تنتظر ردك وقبولك</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
-                  <FileText size={22} />
-                </div>
-              </CardBody>
-            </Card>
+            <StatsCard
+              title="إجمالي المشاهدات"
+              value={stats?.totalViews ?? 0}
+              locale={locale}
+              icon={<Eye size={22} />}
+              color="blue"
+              subtitle="على جميع إعلاناتك"
+            />
+            <StatsCard
+              title="الإعلانات النشطة"
+              value={stats?.activeListings ?? 0}
+              locale={locale}
+              icon={<Building size={22} />}
+              color="gold"
+              subtitle="منشورة ومتاحة للبحث"
+            />
+            <StatsCard
+              title="الوحدات المؤجرة"
+              value={stats?.occupiedUnits ?? 0}
+              locale={locale}
+              icon={<CheckCircle2 size={22} />}
+              color="green"
+              subtitle="عقود إيجار جارية"
+            />
+            <StatsCard
+              title="طلبات معلقة"
+              value={stats?.pendingRequests ?? 0}
+              locale={locale}
+              icon={<FileText size={22} />}
+              color="yellow"
+              subtitle="تنتظر ردك وقبولك"
+            />
           </div>
         </div>
 

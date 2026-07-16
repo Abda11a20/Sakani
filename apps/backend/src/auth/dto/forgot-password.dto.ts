@@ -1,9 +1,15 @@
-// apps/backend/src/auth/dto/forgot-password.dto.ts
-
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class ForgotPasswordDto {
-  @IsNotEmpty({ message: 'البريد الإلكتروني مطلوب' })
+  @IsOptional()
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
-  email!: string;
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEnum(['EMAIL', 'TELEGRAM'])
+  channel?: 'EMAIL' | 'TELEGRAM';
 }

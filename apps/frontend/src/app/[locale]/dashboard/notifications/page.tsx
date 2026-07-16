@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
@@ -16,6 +17,7 @@ import {
   useDeleteAllNotifications,
   useUnreadNotificationsCount,
 } from "@/hooks/useNotifications";
+import { resolveNotificationRoute } from "@/lib/utils/notification-router";
 import {
   Card,
   CardBody,
@@ -138,6 +140,7 @@ export default function NotificationsPage() {
   const { toast } = useToast();
   const isRtl = locale === "ar";
   const dateLocale = isRtl ? arSA : enUS;
+  const queryClient = useQueryClient();
 
   const { user, isLoading: isAuthLoading } = useAuthGuard();
   const [page, setPage] = useState(1);
@@ -155,27 +158,8 @@ export default function NotificationsPage() {
   const meta = data?.meta;
 
   const handleNotificationClick = (notification: any) => {
-    // Determine redirect destination
-    let navigateTo = null;
-    const isLandlord = user?.role === "landlord";
-
-    if (
-      notification.entityType === "listing" ||
-      notification.entityType === "listing.approved" ||
-      notification.entityType === "listing.rejected"
-    ) {
-      if (notification.entityId) {
-        navigateTo = isLandlord
-          ? `/${locale}/dashboard/landlord/advertisements/${notification.entityId}`
-          : `/${locale}/listings/${notification.entityId}`;
-      }
-    } else if (notification.entityType?.startsWith("viewing_request")) {
-      navigateTo = isLandlord
-        ? `/${locale}/dashboard/landlord/requests`
-        : `/${locale}/dashboard/tenant`; // or tenant request page if any
-    } else if (notification.type === "CHAT") {
-      navigateTo = `/${locale}/dashboard/support`;
-    }
+    const rawPath = resolveNotificationRoute(notification, user?.role);
+    const navigateTo = rawPath ? `/${locale}${rawPath}` : null;
 
     const navigate = () => {
       if (navigateTo) {
@@ -188,22 +172,76 @@ export default function NotificationsPage() {
       return;
     }
 
+    // Optimistic Update: Set isRead = true in the notifications query data
+    queryClient.setQueryData(
+      ["notifications", page, limit],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          notifications: old.notifications.map((n: any) =>
+            n.id === notification.id ? { ...n, isRead: true } : n
+          ),
+        };
+      }
+    );
+
+    // Optimistic Update: Decrement unread notifications count
+    queryClient.setQueryData(
+      ["notifications", "unread-count"],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unreadCount: Math.max(0, old.unreadCount - 1),
+        };
+      }
+    );
+
     markRead.mutate(notification.id, {
       onSuccess: () => {
         refetchUnreadCount();
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         navigate();
       },
       onError: (err) => {
         console.error("Failed to mark as read:", err);
+        // Rollback state by refetching
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         navigate(); // Navigate anyway if mark fails
       },
     });
   };
 
   const handleMarkAllRead = () => {
+    // Optimistic Update: Set all as read
+    queryClient.setQueryData(
+      ["notifications", page, limit],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          notifications: old.notifications.map((n: any) => ({ ...n, isRead: true })),
+        };
+      }
+    );
+
+    // Optimistic Update: Set unread count to 0
+    queryClient.setQueryData(
+      ["notifications", "unread-count"],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unreadCount: 0,
+        };
+      }
+    );
+
     markAllRead.mutate(undefined, {
       onSuccess: () => {
         refetchUnreadCount();
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         toast({
           title: isRtl ? "تم تعيين الكل كمقروء" : "Marked all as read",
           description: isRtl ? "تم تحديث جميع الإشعارات بنجاح." : "All notifications marked as read.",
@@ -211,6 +249,7 @@ export default function NotificationsPage() {
         });
       },
       onError: () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         toast({
           title: isRtl ? "خطأ" : "Error",
           description: isRtl ? "فشل تحديث الإشعارات." : "Failed to mark all as read.",
@@ -222,9 +261,40 @@ export default function NotificationsPage() {
 
   const handleDeleteNotification = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+
+    const targetNotification = notifications.find((n: any) => n.id === id);
+    const wasUnread = targetNotification ? !targetNotification.isRead : false;
+
+    // Optimistic Update: Remove from list
+    queryClient.setQueryData(
+      ["notifications", page, limit],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          notifications: old.notifications.filter((n: any) => n.id !== id),
+        };
+      }
+    );
+
+    // Optimistic Update: Decrement unread count
+    if (wasUnread) {
+      queryClient.setQueryData(
+        ["notifications", "unread-count"],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            unreadCount: Math.max(0, old.unreadCount - 1),
+          };
+        }
+      );
+    }
+
     deleteNotification.mutate(id, {
       onSuccess: () => {
         refetchUnreadCount();
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         toast({
           title: isRtl ? "تم حذف الإشعار" : "Notification Deleted",
           description: isRtl ? "تم إزالة الإشعار بنجاح." : "Notification was successfully deleted.",
@@ -232,6 +302,7 @@ export default function NotificationsPage() {
         });
       },
       onError: () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
         toast({
           title: isRtl ? "خطأ" : "Error",
           description: isRtl ? "فشل حذف الإشعار." : "Failed to delete notification.",
