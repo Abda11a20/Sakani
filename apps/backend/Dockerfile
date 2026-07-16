@@ -7,15 +7,17 @@ WORKDIR /app
 # ─── Stage 2: Production Dependencies ────────────────────────────────────────
 FROM base AS deps
 COPY package*.json ./
-# ✅ تم التعديل هنا: استخدام npm install مع تجاهل الـ devDependencies لتجنب تطلب الـ lockfile
 RUN npm install --omit=dev --ignore-scripts
 
 # ─── Stage 3: Build ──────────────────────────────────────────────────────────
 FROM base AS builder
 COPY package*.json ./
-# ✅ تم التعديل هنا أيضاً لنفس السبب
 RUN npm install
 COPY . .
+
+# 💡 تم إضافة هذا السطر لحل مشكلة البناء في هجينج فيس
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+
 # Generate Prisma client before building
 RUN npx prisma generate
 RUN npm run build
