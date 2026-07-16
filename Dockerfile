@@ -19,6 +19,8 @@ COPY package*.json ./
 COPY apps/backend/package*.json ./apps/backend/
 RUN npm ci
 COPY . .
+# 💡 تم إضافة هذا السطر لحل مشكلة البناء في هجينج فيس
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 # توليد عميل Prisma باستخدام مسار المخطط الصحيح
 RUN npx prisma generate --schema=apps/backend/prisma/schema.prisma
 # بناء تطبيق NestJS الباك إند
