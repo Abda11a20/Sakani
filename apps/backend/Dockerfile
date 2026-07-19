@@ -1,48 +1,53 @@
 # apps/backend/Dockerfile
+# مخصص لـ HuggingFace Spaces - يستمع على port 7860
 
 # ─── Stage 1: Base ───────────────────────────────────────────────────────────
 FROM node:22-alpine AS base
 WORKDIR /app
 
-# ─── Stage 2: Production Dependencies ────────────────────────────────────────
+# ─── Stage 2: Production Dependencies (بدون devDependencies) ─────────────────
 FROM base AS deps
 COPY package*.json ./
 RUN npm install --omit=dev --ignore-scripts
 
-# ─── Stage 3: Build ──────────────────────────────────────────────────────────
+# ─── Stage 3: Build ───────────────────────────────────────────────────────────
 FROM base AS builder
 COPY package*.json ./
 RUN npm install
 COPY . .
 
-# 💡 تم إضافة هذا السطر لحل مشكلة البناء في هجينج فيس
+# DATABASE_URL مؤقت فقط لتوليد Prisma client أثناء البناء
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
-# Generate Prisma client before building
+# توليد Prisma client (prisma.config.ts يشير لـ ./prisma/schema.prisma)
 RUN npx prisma generate
+
+# بناء تطبيق NestJS
 RUN npm run build
 
 # ─── Stage 4: Runner (Production) ────────────────────────────────────────────
 FROM base AS runner
 ENV NODE_ENV=production
+# HuggingFace Spaces تشترط port 7860
+ENV PORT=7860
+EXPOSE 7860
 
-# Copy production node_modules
+# نسخ node_modules (production فقط)
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy built output
+# نسخ الكود المبني
 COPY --from=builder /app/dist ./dist
 
-# Copy Prisma schema + migrations (needed for migrate deploy)
+# نسخ Prisma schema + migrations (للـ migrate deploy عند الstart)
 COPY --from=builder /app/prisma ./prisma
 
-# Copy generated Prisma client
+# نسخ Prisma client المولّد
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Non-root user for security
+# مستخدم غير root للأمان
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 USER nestjs
 
-EXPOSE 3001
-
-CMD ["node", "dist/src/main"]
+# تشغيل migrations ثم بدء السيرفر
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
