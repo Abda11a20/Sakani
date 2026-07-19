@@ -1,11 +1,10 @@
 import path from "node:path";
-import { config } from "dotenv";
-import { defineConfig } from "prisma/config";
+import { defineConfig, env } from "prisma/config";
 
-// تحميل متغيرات البيئة من ملف .env المحلي إن وجد
-config({
-  path: path.join(__dirname, ".env"),
-});
+// prisma.config.ts لـ HuggingFace و local development
+// __dirname = المجلد الذي يحتوي هذا الملف
+// في HuggingFace (subtree): /app  →  prisma/schema.prisma موجود في /app/prisma/
+// في local (monorepo):      apps/backend  →  prisma/schema.prisma موجود في apps/backend/prisma/
 
 export default defineConfig({
   schema: path.join(__dirname, "prisma", "schema.prisma"),
@@ -15,6 +14,7 @@ export default defineConfig({
   },
 
   datasource: {
-    url: process.env.DATABASE_URL || "",
+    // env() هي دالة Prisma الرسمية لقراءة متغيرات البيئة في prisma.config.ts
+    url: env("DATABASE_URL"),
   },
 });
