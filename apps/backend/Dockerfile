@@ -32,21 +32,22 @@ ENV NODE_ENV=production
 ENV PORT=7860
 EXPOSE 7860
 
-# نسخ node_modules (production فقط)
-COPY --from=deps /app/node_modules ./node_modules
-
-# نسخ الكود المبني
-COPY --from=builder /app/dist ./dist
-
-# نسخ Prisma schema + migrations (للـ migrate deploy عند الstart)
-COPY --from=builder /app/prisma ./prisma
-
-# نسخ Prisma client المولّد
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
 # مستخدم غير root للأمان
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
+
+# نسخ node_modules (production فقط) وتحديد الملكية للمستخدم غير الروت
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
+
+# نسخ الكود المبني وتحديد الملكية
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+
+# نسخ Prisma schema + migrations وتحديد الملكية
+COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
+
+# نسخ Prisma client المولّد وتحديد الملكية
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
 USER nestjs
 
 # تشغيل migrations ثم بدء السيرفر
