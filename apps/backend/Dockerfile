@@ -36,6 +36,9 @@ EXPOSE 7860
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
+# إنشاء مجلد logs ومنح الصلاحيات لـ nestjs قبل التبديل للمستخدم
+RUN mkdir -p /app/logs && chown -R nestjs:nodejs /app/logs
+
 # نسخ node_modules (production)
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 
