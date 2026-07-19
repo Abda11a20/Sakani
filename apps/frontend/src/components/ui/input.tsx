@@ -62,29 +62,69 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = "Input";
 
-export const PasswordInput = React.forwardRef<HTMLInputElement, Omit<InputProps, "type" | "rightIcon">>(
-  ({ className, ...props }, ref) => {
-    const [showPassword, setShowPassword] = useState(false);
+// ── PasswordInput ─────────────────────────────────────────────────────────────
+// أيقونة العين كـ element مستقل (flex row) بحيث لا تتداخل مع النص
+export const PasswordInput = React.forwardRef<
+  HTMLInputElement,
+  Omit<InputProps, "type" | "rightIcon">
+>(({ className, label, error, leftIcon, disabled, ...props }, ref) => {
+  const [showPassword, setShowPassword] = useState(false);
 
-    return (
-      <Input
-        type={showPassword ? "text" : "password"}
-        className={className}
-        ref={ref}
-        rightIcon={
+  return (
+    <div className="w-full">
+      {label && (
+        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+          {label}
+        </label>
+      )}
+      <div
+        className={cn(
+          "flex items-center gap-0 rounded-lg border bg-white dark:bg-gray-900 transition-colors focus-within:ring-2 focus-within:ring-primary",
+          error
+            ? "border-red-500 focus-within:ring-red-500"
+            : "border-gray-300 dark:border-gray-700"
+        )}
+        style={{ direction: "ltr" }}
+      >
+        {/* أيقونة اليسار (اختيارية) */}
+        {leftIcon && (
+          <div className="flex items-center ps-3 text-gray-500 pointer-events-none shrink-0">
+            {leftIcon}
+          </div>
+        )}
+
+        {/* حقل الإدخال */}
+        <input
+          type={showPassword ? "text" : "password"}
+          dir="ltr"
+          className={cn(
+            "flex-1 min-w-0 bg-transparent py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+            leftIcon ? "ps-2" : "ps-3",
+            error ? "placeholder:text-red-400" : "",
+            className
+          )}
+          ref={ref}
+          disabled={disabled}
+          {...props}
+        />
+
+        {/* أيقونة العين - كيان مستقل على اليمين */}
+        <div className="flex items-center pe-3 shrink-0">
           <button
             type="button"
-            className="pointer-events-auto text-gray-500 hover:text-primary transition-colors focus:outline-none"
+            className="text-gray-400 hover:text-primary transition-colors focus:outline-none"
             onClick={() => setShowPassword(!showPassword)}
             tabIndex={-1}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
-        }
-        {...props}
-      />
-    );
-  }
-);
+        </div>
+      </div>
+
+      {/* رسالة الخطأ */}
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+});
 PasswordInput.displayName = "PasswordInput";

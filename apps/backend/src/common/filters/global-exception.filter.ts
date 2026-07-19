@@ -12,20 +12,6 @@ import { Request, Response } from 'express';
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-  // List of sensitive keys to redact from logs
-  private readonly SENSITIVE_KEYS = [
-    'password',
-    'confirmPassword',
-    'currentPassword',
-    'newPassword',
-    'otp',
-    'refreshToken',
-    'accessToken',
-    'nationalId',
-    'authorization',
-    'cookie',
-  ];
-
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -47,36 +33,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         : errorResponse;
 
     const reqId = request['requestId'] || 'N/A';
-    // If you have a logged-in user attached to the request
-    const userId = (request.user as any)?.id || 'unauthenticated';
     const ip = (request.headers['x-forwarded-for'] as string)?.split(',')[0] || request.ip;
 
-    // Redact sensitive headers/body if we log them later (currently just logging standard fields)
-    
-    // Log format: Time, UserId, RequestId, IP, Method, Route, StatusCode, Error, Stack
-    const logData = {
-      timestamp: new Date().toISOString(),
-      userId,
-      requestId: reqId,
-      ip,
-      method: request.method,
-      path: request.url,
-      statusCode: status,
-      error: errorMessage,
-      stack: exception instanceof Error ? exception.stack : 'No stack trace',
-    };
+    // For 500 errors: log the exception class name + stack for easier production debugging
+    const exceptionName = exception instanceof Error ? exception.constructor.name : 'UnknownError';
+    const stackTrace = exception instanceof Error ? exception.stack : 'No stack trace';
 
-    // We use NestJS Logger. In production, this would be picked up by a log aggregator (like Datadog/ELK)
     this.logger.error(
-      `[${logData.requestId}] ${logData.method} ${logData.path} - ${logData.statusCode} - Error: ${JSON.stringify(logData.error)}`,
-      logData.stack,
+      `[${reqId}, ${reqId}] ${request.method} ${request.url} - ${status} - Error: ${JSON.stringify(errorMessage)}`,
+      status === 500 ? `[${exceptionName}] ${stackTrace}` : undefined,
     );
 
-    // Filter sensitive info from response body sent to client
+    // Safe response - never expose stack traces or internal details to the client
     const safeResponse = {
       success: false,
       statusCode: status,
-      timestamp: logData.timestamp,
+      timestamp: new Date().toISOString(),
       path: request.url,
       message: status === 500 ? 'Internal server error' : errorMessage,
       requestId: reqId,

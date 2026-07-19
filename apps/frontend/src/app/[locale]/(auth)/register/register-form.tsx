@@ -137,13 +137,13 @@ export function RegisterForm() {
     defaultValues: {
       role: "tenant",
       name: "",
-      email: "",
+      email: undefined,
       phone: "",
       nationalId: "",
       password: "",
       confirmPassword: "",
       otpChannel: "EMAIL",
-      linkCode: "",
+      linkCode: undefined,
     },
   });
 
@@ -228,7 +228,13 @@ export function RegisterForm() {
   };
 
   const onSubmit = (data: RegisterValues) => {
-    registerMutation(data, {
+    // Strip empty strings so optional fields are truly absent on the backend
+    const payload = {
+      ...data,
+      email: data.email?.trim() || undefined,
+      linkCode: data.linkCode?.trim() || undefined,
+    };
+    registerMutation(payload as RegisterValues, {
       onError: (error: any) => {
         toast({
           title: tCommon("error"),

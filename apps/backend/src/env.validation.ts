@@ -9,6 +9,9 @@ export const envSchema = z
     JWT_REFRESH_SECRET: z.string().min(10),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+    // مفتاح تشفير الرقم القومي (AES-256) - مطلوب
+    ENCRYPTION_KEY: z.string().min(16, 'ENCRYPTION_KEY يجب أن يكون على الأقل 16 حرفاً'),
+
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM: z.string().optional(),
     // Email provider selector

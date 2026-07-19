@@ -7,6 +7,8 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -22,7 +24,7 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { NotificationType, User, UserRole, VerificationType, Prisma, OtpChannel } from '@prisma/client';
+import { NotificationType, User, UserRole, VerificationType, OtpChannel } from '@prisma/client';
 import { TelegramService } from '../notifications/telegram.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -36,9 +38,19 @@ const MAX_OTP_ATTEMPTS = 5;
 const REFRESH_TOKEN_EXPIRY_DAYS = 30;
 
 // ── AES-256-CBC Encryption Helpers ────────────────────────────────────────────
+
+/**
+ * يحصل على مفتاح التشفير من متغيرات البيئة.
+ * يرمي InternalServerErrorException (HttpException) بدلاً من Error عادي
+ * حتى لا يتحول إلى 500 بدون رسالة واضحة.
+ */
 function getEncryptionKey(): Buffer {
   const raw = process.env.ENCRYPTION_KEY ?? '';
-  if (!raw) throw new Error('ENCRYPTION_KEY غير موجود في متغيرات البيئة');
+  if (!raw) {
+    throw new InternalServerErrorException(
+      'خطأ في إعداد الخادم: ENCRYPTION_KEY غير مضبوط. يرجى التواصل مع مسؤول النظام.',
+    );
+  }
   return Buffer.from(raw.padEnd(32, '0').slice(0, 32), 'utf8');
 }
 
@@ -53,7 +65,9 @@ function encryptAES(plainText: string): string {
 export function decryptAES(encryptedText: string): string {
   const key = getEncryptionKey();
   const [ivHex, dataHex] = encryptedText.split(':');
-  if (!ivHex || !dataHex) throw new Error('صيغة النص المشفر غير صحيحة');
+  if (!ivHex || !dataHex) {
+    throw new InternalServerErrorException('صيغة البيانات المشفرة غير صحيحة');
+  }
   const iv = Buffer.from(ivHex, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
   return Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]).toString('utf8');
@@ -67,8 +81,9 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+/** OTP آمن عشوائياً باستخدام crypto بدلاً من Math.random */
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return (crypto.randomInt(100000, 1000000)).toString();
 }
 
 function isEmail(value: string): boolean {
@@ -79,6 +94,8 @@ function isEmail(value: string): boolean {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -94,14 +111,22 @@ export class AuthService {
       throw new BadRequestException('كلمة المرور وتأكيدها غير متطابقين');
     }
 
+    // تطبيع الإيميل: string فارغ = null
+    const email = dto.email?.trim() || null;
+
+    // التحقق من أن قناة EMAIL تحتاج إيميل قبل أي عملية DB
+    if (dto.otpChannel !== 'TELEGRAM' && !email) {
+      throw new BadRequestException('البريد الإلكتروني مطلوب عند اختيار التفعيل عبر البريد الإلكتروني');
+    }
+
     // التحقق من عدم تكرار الهاتف أو الإيميل
     const [existingPhone, existingEmail] = await Promise.all([
       this.prisma.user.findUnique({ where: { phone: dto.phone } }),
-      dto.email ? this.prisma.user.findUnique({ where: { email: dto.email } }) : Promise.resolve(null),
+      email ? this.prisma.user.findUnique({ where: { email } }) : Promise.resolve(null),
     ]);
 
     if (existingPhone) throw new ConflictException('رقم الموبايل مسجل مسبقاً');
-    if (dto.email && existingEmail) throw new ConflictException('البريد الإلكتروني مسجل مسبقاً');
+    if (email && existingEmail) throw new ConflictException('البريد الإلكتروني مسجل مسبقاً');
 
     // التحقق من عدم تكرار الرقم القومي
     const nationalIdHash = hashNationalId(dto.nationalId);
@@ -112,7 +137,7 @@ export class AuthService {
 
     // تشفير البيانات الحساسة
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const nationalIdEncrypted = encryptAES(dto.nationalId);
+    const nationalIdEncrypted = encryptAES(dto.nationalId); // يرمي InternalServerErrorException لو ENCRYPTION_KEY مش موجود
     const nationalIdEnc = `${nationalIdHash}:${nationalIdEncrypted}`;
 
     const role: UserRole =
@@ -140,21 +165,24 @@ export class AuthService {
       telegramChatId = pending.chatId;
     }
 
-    // إنشاء المستخدم وإرسال كود التفعيل داخل Transaction لضمان التراجع في حالة حدوث خطأ
+    // إنشاء المستخدم في Transaction منفصلة (بدون إرسال OTP)
+    // فصل OTP عن التransaction يمنع rollback المستخدم لو فشل إرسال الإيميل
+    let userId: string;
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name: dto.name,
-          email: (dto.email ?? null) as any,
+          email: email as any,
           phone: dto.phone,
           passwordHash,
           nationalIdEnc,
           role,
-          emailVerifiedAt: null, // يُفعَّل عند التحقق
+          emailVerifiedAt: null,
           otpChannel: dto.otpChannel === 'TELEGRAM' ? OtpChannel.TELEGRAM : OtpChannel.EMAIL,
           telegramChatId,
         },
       });
+      userId = user.id;
 
       if (dto.otpChannel === 'TELEGRAM' && dto.linkCode) {
         await tx.pendingTelegramLink.update({
@@ -162,13 +190,19 @@ export class AuthService {
           data: { usedAt: new Date() },
         });
       }
-
-      // إرسال OTP للتحقق من الإيميل/تليجرام داخل الـ Transaction
-      await this.sendVerificationCodeTx(tx, user.id, dto.email, VerificationType.EMAIL_VERIFICATION);
     });
 
-    const channelMsg = dto.otpChannel === 'TELEGRAM' 
-      ? 'يرجى التحقق من تطبيق تليجرام لتفعيل الحساب.' 
+    // إرسال OTP خارج الـ Transaction حتى لا يؤدي فشل الإرسال إلى حذف المستخدم
+    // لو فشل الإرسال، المستخدم موجود ويقدر يستخدم "إعادة إرسال الكود"
+    try {
+      await this.sendVerificationCode(userId!, email, VerificationType.EMAIL_VERIFICATION);
+    } catch (err: any) {
+      this.logger.error(`[register] فشل إرسال OTP للمستخدم ${userId!}: ${err?.message}`);
+      // لا نرمي error - المستخدم اتنشأ بنجاح ويقدر يطلب إعادة إرسال
+    }
+
+    const channelMsg = dto.otpChannel === 'TELEGRAM'
+      ? 'يرجى التحقق من تطبيق تليجرام لتفعيل الحساب.'
       : 'يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب.';
 
     return { message: `تم إنشاء الحساب. ${channelMsg}` };
@@ -183,7 +217,6 @@ export class AuthService {
 
     await this.consumeVerificationCode(identifier, dto.otp, VerificationType.EMAIL_VERIFICATION);
 
-    // تفعيل الحساب
     const user = await this.prisma.user.findFirst({
       where: dto.email ? { email: dto.email } : { phone: dto.phone },
     });
@@ -228,7 +261,6 @@ export class AuthService {
     ip?: string,
     deviceName?: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: SafeUser }> {
-    // البحث بالإيميل أو الهاتف
     const user = await this.findUserByIdentifier(dto.identifier);
 
     if (!user) {
@@ -239,7 +271,6 @@ export class AuthService {
       throw new UnauthorizedException('هذا الحساب محظور. تواصل مع الدعم الفني');
     }
 
-    // التحقق من تفعيل الإيميل
     if (!user.emailVerifiedAt) {
       throw new UnauthorizedException(
         'الحساب لم يتم تفعيله بعد. يرجى فتح الإيميل وإدخال رمز التفعيل.',
@@ -275,7 +306,6 @@ export class AuthService {
       throw new UnauthorizedException('جلسة غير صالحة أو منتهية. يرجى تسجيل الدخول مجدداً.');
     }
 
-    // تحديث وقت آخر نشاط
     await this.prisma.deviceSession.update({
       where: { id: session.id },
       data: { lastSeen: new Date() },
@@ -359,7 +389,6 @@ export class AuthService {
       throw new BadRequestException('كلمة المرور وتأكيدها غير متطابقين');
     }
 
-    // التحقق من الكود واستهلاكه
     await this.consumeVerificationCode(dto.email, dto.otp, VerificationType.PASSWORD_RESET);
 
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -367,7 +396,6 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
 
-    // تغيير كلمة المرور + إلغاء كل الجلسات الحالية (أمان)
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { email: dto.email },
@@ -416,7 +444,6 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
 
-    // تغيير كلمة المرور + إلغاء كل الجلسات (تسجيل خروج من كل الأجهزة)
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
       this.prisma.deviceSession.deleteMany({ where: { userId } }),
@@ -446,18 +473,19 @@ export class AuthService {
     return safeUser;
   }
 
+  // ── Generate Telegram Link Code ────────────────────────────────────────────
   async generateTelegramLinkCode(identifier: string): Promise<{ linkCode: string; expiresAt: Date }> {
     if (!identifier) {
       throw new BadRequestException('البريد الإلكتروني أو رقم الهاتف مطلوب لإنشاء كود الربط');
     }
 
-    // Delete any existing code for this identifier to prevent spam/bloat
+    // حذف أي كود قديم لنفس المعرّف لمنع التراكم
     await this.prisma.pendingTelegramLink.deleteMany({
       where: { identifier },
     });
 
-    const linkCode = crypto.randomInt(100000, 1000000).toString(); // Generates 100000 to 999999 inclusive
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    const linkCode = crypto.randomInt(100000, 1000000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
 
     await this.prisma.pendingTelegramLink.create({
       data: { identifier, linkCode, expiresAt },
@@ -466,7 +494,12 @@ export class AuthService {
     return { linkCode, expiresAt };
   }
 
+  // ── Check Telegram Link Status ─────────────────────────────────────────────
   async checkTelegramLinkStatus(linkCode: string): Promise<{ linked: boolean }> {
+    if (!linkCode) {
+      return { linked: false };
+    }
+
     const record = await this.prisma.pendingTelegramLink.findUnique({
       where: { linkCode },
     });
@@ -494,9 +527,6 @@ export class AuthService {
     const refreshToken = crypto.randomBytes(64).toString('hex');
     const refreshTokenHash = hashToken(refreshToken);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
-
     await this.prisma.deviceSession.create({
       data: {
         userId,
@@ -509,6 +539,10 @@ export class AuthService {
     return refreshToken;
   }
 
+  /**
+   * يرسل رمز التحقق (OTP) عبر الإيميل أو تيليجرام.
+   * يُستخدم دائماً خارج الـ Transaction لضمان عدم rollback المستخدم لو فشل الإرسال.
+   */
   private async sendVerificationCode(
     userId: string,
     email: string | null | undefined,
@@ -521,7 +555,7 @@ export class AuthService {
     });
 
     const otp = generateOtp();
-    const codeHash = hashToken(otp); // نحفظ الـ Hash فقط (أمان)
+    const codeHash = hashToken(otp); // نحفظ الـ Hash فقط (أمان - لا نحفظ الـ OTP الأصلي)
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
     const user = await this.prisma.user.findUnique({
@@ -532,59 +566,6 @@ export class AuthService {
     if (!user) return;
 
     await this.prisma.verificationCode.create({
-      data: {
-        userId,
-        email: email ?? null,
-        phone: user.phone,
-        type,
-        codeHash,
-        expiresAt,
-      },
-    });
-
-    const channel = channelOverride ?? user.otpChannel;
-
-    if (channel === OtpChannel.TELEGRAM) {
-      if (!user.telegramChatId) {
-        throw new BadRequestException('حساب Telegram الخاص بك غير مربوط. يرجى الذهاب للإعدادات لربط حسابك.');
-      }
-      await this.telegramService.sendOtp(user.telegramChatId, otp, type);
-    } else {
-      if (!email) {
-        throw new BadRequestException('البريد الإلكتروني مطلوب لإرسال الكود عبر البريد');
-      }
-      if (type === VerificationType.EMAIL_VERIFICATION) {
-        await this.emailService.sendEmailVerification(email, otp);
-      } else if (type === VerificationType.PASSWORD_RESET) {
-        await this.emailService.sendPasswordReset(email, otp);
-      }
-    }
-  }
-
-  private async sendVerificationCodeTx(
-    tx: Prisma.TransactionClient,
-    userId: string,
-    email: string | null | undefined,
-    type: VerificationType,
-    channelOverride?: OtpChannel,
-  ): Promise<void> {
-    // حذف أي كودات قديمة من نفس النوع لنفس المستخدم
-    await tx.verificationCode.deleteMany({
-      where: { userId, type },
-    });
-
-    const otp = generateOtp();
-    const codeHash = hashToken(otp);
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: { otpChannel: true, telegramChatId: true, phone: true },
-    });
-
-    if (!user) return;
-
-    await tx.verificationCode.create({
       data: {
         userId,
         email: email ?? null,
@@ -647,7 +628,6 @@ export class AuthService {
     const isValid = record.codeHash === inputHash;
 
     if (!isValid) {
-      // زيادة عداد المحاولات
       await this.prisma.verificationCode.update({
         where: { id: record.id },
         data: { attempts: { increment: 1 } },
@@ -665,7 +645,6 @@ export class AuthService {
   ): Promise<void> {
     const { id } = await this.verifyCode(identifier, otp, type);
 
-    // تعليم الكود كـ "مستخدم" حتى لا يُستخدم مرة ثانية
     await this.prisma.verificationCode.update({
       where: { id },
       data: { usedAt: new Date() },
