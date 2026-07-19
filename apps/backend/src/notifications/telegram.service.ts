@@ -23,21 +23,45 @@ export class TelegramService implements OnModuleInit {
     const webhookSecret = this.configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
 
     if (this.botToken && webhookUrl) {
-      try {
-        const registerUrl = `https://api.telegram.org/bot${this.botToken}/setWebhook`;
-        await axios.post(registerUrl, {
-          url: `${webhookUrl}/api/v1/telegram/webhook`,
-          secret_token: webhookSecret,
-        });
-        this.logger.log(`🚀 Telegram Webhook registered successfully to: ${webhookUrl}/api/v1/telegram/webhook`);
-      } catch (err: any) {
-        const errMsg = err.response?.data?.description ?? err.message;
-        this.logger.error(`❌ Failed to register Telegram Webhook: ${errMsg}`);
-      }
+      // تأخير 5 ثوانٍ لانتظار استقرار الشبكة بعد بدء الـ container
+      await new Promise((r) => setTimeout(r, 5000));
+      await this.registerWebhookWithRetry(webhookUrl, webhookSecret);
     } else {
       this.logger.warn(
         '💡 لم يتم ضبط TELEGRAM_WEBHOOK_URL. يرجى تفعيل ngrok وتمرير الرابط العام لربط البوت محلياً.',
       );
+    }
+  }
+
+  private async registerWebhookWithRetry(
+    webhookUrl: string,
+    webhookSecret: string | undefined,
+    attempts = 3,
+  ): Promise<void> {
+    const registerUrl = `https://api.telegram.org/bot${this.botToken}/setWebhook`;
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await axios.post(registerUrl, {
+          url: `${webhookUrl}/api/v1/telegram/webhook`,
+          secret_token: webhookSecret,
+        });
+        this.logger.log(
+          `🚀 Telegram Webhook registered successfully to: ${webhookUrl}/api/v1/telegram/webhook`,
+        );
+        return;
+      } catch (err: any) {
+        const errMsg = err.response?.data?.description ?? err.message;
+        if (i < attempts) {
+          this.logger.warn(
+            `⚠️ Telegram Webhook attempt ${i}/${attempts} failed: ${errMsg}. Retrying in 10s...`,
+          );
+          await new Promise((r) => setTimeout(r, 10000));
+        } else {
+          this.logger.error(
+            `❌ Failed to register Telegram Webhook after ${attempts} attempts: ${errMsg}`,
+          );
+        }
+      }
     }
   }
 
@@ -48,19 +72,19 @@ export class TelegramService implements OnModuleInit {
     let messageText = '';
 
     if (type === VerificationType.EMAIL_VERIFICATION) {
-      messageText = 
+      messageText =
         `🔑 *رمز تفعيل حساب سَكني*\n\n` +
         `رمز التحقق الخاص بك هو: *${otp}*\n` +
         `صلاحية الرمز 10 دقائق.\n\n` +
         `إذا لم تطلب هذا الرمز، يرجى تجاهل هذه الرسالة.`;
     } else if (type === VerificationType.PASSWORD_RESET) {
-      messageText = 
+      messageText =
         `🔐 *إعادة تعيين كلمة المرور - سَكني*\n\n` +
         `رمز إعادة التعيين الخاص بك هو: *${otp}*\n` +
         `صلاحية الرمز 10 دقائق.\n\n` +
         `يرجى عدم مشاركة هذا الرمز مع أي شخص.`;
     } else {
-      messageText = 
+      messageText =
         `🔑 *رمز التحقق - سَكني*\n\n` +
         `رمز التحقق الخاص بك هو: *${otp}*\n` +
         `صلاحية الرمز 10 دقائق.`;
