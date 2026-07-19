@@ -1,9 +1,11 @@
 import path from "node:path";
-import { defineConfig, env } from "prisma/config";
+import { config } from "dotenv";
+import { defineConfig } from "prisma/config";
 
-// عند رفع الباك إند كـ subtree على HuggingFace،
-// الملفات تكون في root مباشرة (مش apps/backend/)
-// لذا المسارات نسبية من __dirname
+// تحميل متغيرات البيئة من ملف .env المحلي إن وجد
+config({
+  path: path.join(__dirname, ".env"),
+});
 
 export default defineConfig({
   schema: path.join(__dirname, "prisma", "schema.prisma"),
@@ -13,6 +15,6 @@ export default defineConfig({
   },
 
   datasource: {
-    url: env("DATABASE_URL"),
+    url: process.env.DATABASE_URL || "",
   },
 });
