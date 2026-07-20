@@ -15,6 +15,14 @@ jobs:
       matrix:
         node-version: [20.x, 22.x]
 
+    # متغيرات البيئة للـ CI فقط — قيم وهمية لتمكين prisma generate أثناء البناء
+    env:
+      DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+      JWT_SECRET: "ci-dummy-jwt-secret-32-characters"
+      JWT_REFRESH_SECRET: "ci-dummy-refresh-secret-32-chars"
+      ENCRYPTION_KEY: "ci-dummy-encryption-key-32-chars"
+      FRONTEND_URL: "http://localhost:3000"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
