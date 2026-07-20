@@ -92,10 +92,11 @@ services:
         sync: false  # ← سيكون رابط Render بعد أول deploy: https://sakani-backend.onrender.com
 
       # ─── Web Push Notifications (VAPID) ──────────────────────────────────
+      # ⚠️ أضف هذه القيم يدوياً في Render Dashboard — لا تحفظها هنا أبداً
       - key: VAPID_PUBLIC_KEY
-        value: BKDq7Tmu-SqA0pvFq_wXK0jOmZ4EoV6LLD816yXHTfgkp7rPAI8a1u9pikZOvKZcIh5EcVUtGJr2pWx7fpnCAgk
+        sync: false
       - key: VAPID_PRIVATE_KEY
-        value: CzY5teV8-vCa_VJYvoig-LysxjzyWloz-TGSuqdxw3E
+        sync: false
       - key: VAPID_SUBJECT
         value: mailto:admin@sakani.com
 
