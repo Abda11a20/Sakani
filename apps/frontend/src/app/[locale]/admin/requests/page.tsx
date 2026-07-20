@@ -9,7 +9,6 @@ import {
   ChevronRight,
   AlertCircle,
   Loader2,
-  User,
   Phone,
   Building2,
   Calendar,

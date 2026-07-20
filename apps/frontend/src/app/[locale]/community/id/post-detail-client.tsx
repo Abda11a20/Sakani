@@ -3,17 +3,14 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
 import { useAuthStore } from "@/store/auth.store";
 import {
-  Compass,
   MapPin,
   Calendar,
   Clock,
   Users,
   Star,
   CheckCircle,
-  AlertTriangle,
   X,
   MessageSquare,
   UserCheck,

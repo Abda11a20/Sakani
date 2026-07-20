@@ -11,8 +11,6 @@ import {
   CheckCircle2,
   ClipboardList,
   AlertCircle,
-  ShieldBan,
-  TrendingUp,
   ArrowUpRight,
   RefreshCw,
   Archive,
@@ -20,20 +18,15 @@ import {
   XCircle,
   UserPlus,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
   ShieldAlert,
   Server,
   Database,
-  Layers,
   Sparkles,
-  Info,
   X,
   Loader2,
   Lock,
   Mail,
   Phone,
-  FileText,
 } from "lucide-react";
 import {
   useAdminStats,
@@ -255,12 +248,12 @@ export default function AdminDashboardPage() {
 
   // Queries
   const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats, isFetching: statsFetching } = useAdminStats();
-  const { data: health, isLoading: healthLoading, isError: healthError, refetch: refetchHealth } = useHealthCheck();
+  const { data: health, isError: healthError, refetch: refetchHealth } = useHealthCheck();
   
   // Platform overview queries
   const { data: listingsData, isLoading: listingsLoading, refetch: refetchListings } = useAdminListings(1, 5);
   const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useAdminUsers(1, 5);
-  const { data: requestsData, isLoading: requestsLoading, refetch: refetchRequests } = useAdminRequests(1, 5);
+  const { refetch: refetchRequests } = useAdminRequests(1, 5);
 
   const handleRefresh = async () => {
     await Promise.allSettled([

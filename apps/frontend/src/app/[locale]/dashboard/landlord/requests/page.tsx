@@ -12,12 +12,9 @@ import { Card, CardBody, Spinner, Button, Badge, Modal, useToast, Avatar } from 
 import {
   FileText,
   Calendar,
-  Clock,
   User,
-  MessageSquare,
   CheckCircle,
   XCircle,
-  PlayCircle,
   HelpCircle,
 } from "lucide-react";
 
@@ -27,7 +24,7 @@ export default function LandlordRequests() {
   const locale = useLocale();
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   const { data: requestsData, isLoading: isRequestsLoading } = useLandlordRequests(page);
   const { data: stats, isLoading: isStatsLoading } = useLandlordRequestStats();

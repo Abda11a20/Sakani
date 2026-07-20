@@ -11,7 +11,6 @@ import { useBannedUsers, useBanUser, useUnbanUser } from "@/hooks/useAdmin";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
-import { maskPhone, maskNationalId } from "@/lib/formatters";
 
 export default function AdminBannedPage() {
   const locale = useLocale();

@@ -1,8 +1,8 @@
-// apps/frontend/src/components/ui/avatar.tsx
-import React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { Check } from "lucide-react";
-import { cn, getAvatarUrl } from "@/lib/utils";
+import React from 'react';
+import Image from 'next/image';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { Check } from 'lucide-react';
+import { cn, getAvatarUrl } from '@/lib/utils';
 
 const avatarVariants = cva(
   "relative flex shrink-0 overflow-hidden rounded-full border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800",
@@ -44,13 +44,15 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       <div className="relative inline-block">
         <div ref={ref} className={cn(avatarVariants({ size }), className)} {...props}>
           {src ? (
-            <img
+            <Image
               src={getAvatarUrl(src) ?? src}
               alt={name}
-              className="aspect-square h-full w-full object-cover"
+              fill
+              sizes="(max-width: 80px) 80px, 56px"
+              className="object-cover"
               onError={(e) => {
                 // Fallback to initials on image load error
-                e.currentTarget.style.display = "none";
+                e.currentTarget.style.display = 'none';
               }}
             />
           ) : (

@@ -34,14 +34,12 @@ import {
   Clock,
   AlertCircle,
   Camera,
-  FileText,
   Mail,
   MessageSquare,
   Bell,
   Trash2,
   Laptop,
   Smartphone,
-  Tablet,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
@@ -78,7 +76,7 @@ export default function ProfilePage() {
   
   // Telegram linking state for settings page
   const [telegramCode, setTelegramCode] = useState<string>("");
-  const [telegramLinked, setTelegramLinked] = useState<boolean>(false);
+  const [, setTelegramLinked] = useState<boolean>(false);
   const [checkingLink, setCheckingLink] = useState<boolean>(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -106,13 +104,6 @@ export default function ProfilePage() {
     }, 3000);
   };
 
-  const stopLinkPolling = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    setCheckingLink(false);
-  };
 
   React.useEffect(() => {
     return () => {
@@ -192,7 +183,7 @@ export default function ProfilePage() {
 
   // Web Push Queries & Mutations
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
-  const { data: pushDevices = [], isLoading: isLoadingPushDevices } = usePushSubscriptions();
+  const { data: pushDevices = [] } = usePushSubscriptions();
   const { mutate: subscribeDevice, isPending: isSubscribingDevice } = useSubscribePush();
   const { mutate: unsubscribeDevice, isPending: isUnsubscribingDevice } = useUnsubscribePush();
   const { mutate: deleteDevice } = useDeleteSubscriptionDevice();
@@ -999,7 +990,7 @@ export default function ProfilePage() {
                     <div className="flex items-start gap-2.5 p-3.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-2xl border border-amber-500/20 text-xs leading-relaxed">
                       <AlertCircle size={16} className="shrink-0 mt-0.5" />
                       <div>
-                        <strong>تم رفض إذن الإشعارات:</strong> يرجى الضغط على علامة القفل بجوار رابط الموقع في شريط العنوان بالمتصفح وتغيير إذن الإشعارات إلى "سماح" لتتمكن من تشغيل الخدمة.
+                        <strong>تم رفض إذن الإشعارات:</strong> يرجى الضغط على علامة القفل بجوار رابط الموقع في شريط العنوان بالمتصفح وتغيير إذن الإشعارات إلى {'"'}سماح{'"'} لتتمكن من تشغيل الخدمة.
                       </div>
                     </div>
                   )}

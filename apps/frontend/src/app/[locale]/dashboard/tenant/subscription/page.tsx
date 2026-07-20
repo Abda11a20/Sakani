@@ -21,15 +21,11 @@ import {
   useToast,
 } from "@/components/ui";
 import {
-  CreditCard,
   Check,
   X,
-  ShieldCheck,
-  TrendingUp,
   History,
   Sparkles,
   AlertTriangle,
-  HelpCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

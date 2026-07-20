@@ -13,7 +13,6 @@ import {
   Search,
   MapPin,
   Eye,
-  Trash2,
   BedDouble,
   Building2,
   Plus,

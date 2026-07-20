@@ -17,7 +17,6 @@ import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
-import { getIdentityVerificationStatus } from "@/types";
 import Image from "next/image";
 
 // ── Brand color role badges ───────────────────────────────────────────────────

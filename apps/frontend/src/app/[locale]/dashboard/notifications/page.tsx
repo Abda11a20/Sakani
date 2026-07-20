@@ -1,7 +1,7 @@
 // apps/frontend/src/app/[locale]/dashboard/notifications/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,7 +23,6 @@ import {
   CardBody,
   Spinner,
   Button,
-  Badge,
   useToast,
 } from "@/components/ui";
 import {
@@ -146,7 +145,7 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const limit = 15;
 
-  const { data, isLoading: isNotificationsLoading, isFetching, refetch } = useNotifications(page, limit);
+  const { data, isLoading: isNotificationsLoading, isFetching } = useNotifications(page, limit);
   const { refetch: refetchUnreadCount } = useUnreadNotificationsCount();
 
   const markRead = useMarkNotificationRead();

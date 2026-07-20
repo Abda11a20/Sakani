@@ -13,12 +13,9 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Users,
-  AlertCircle,
   Bell,
   Star,
   CheckCircle,
-  Trash2,
   AlertTriangle,
   X,
   ChevronLeft,
@@ -66,7 +63,7 @@ export default function CommunityPage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const router = useRouter();
-  const { user, token } = useAuthStore();
+  const { token } = useAuthStore();
   const isAuthenticated = !!token;
 
   // Search & Filter State

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint --max-warnings 9999"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

@@ -13,15 +13,11 @@ import {
   useResetPassword,
 } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
-import { useRouter, useParams } from "next/navigation";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
   const { toast } = useToast();
-  const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<"EMAIL" | "TELEGRAM">("EMAIL");

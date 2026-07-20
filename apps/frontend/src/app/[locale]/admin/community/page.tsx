@@ -7,20 +7,13 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import {
   Compass,
   Flag,
-  User,
-  MapPin,
-  Calendar,
-  Clock,
-  ShieldAlert,
   CheckCircle,
   XCircle,
   Eye,
-  Trash2,
   Ban,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  Info,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Link from "next/link";

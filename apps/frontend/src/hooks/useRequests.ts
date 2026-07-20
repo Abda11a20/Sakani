@@ -108,13 +108,30 @@ export interface FinalizeUnitRentalPayload {
   endDate: string;
 }
 
+// Response types derived from actual endpoint usage in onSuccess handlers
+interface FinalizeBedRentalResponse {
+  bed?: { listingId?: string; id?: string };
+  listing?: Listing;
+  message?: string;
+}
+
+interface FinalizeUnitRentalResponse {
+  listing?: Listing;
+  message?: string;
+}
+
+interface QuickRentResponse {
+  request?: ViewingRequest;
+  message?: string;
+}
+
 // Special endpoints — kept with api directly
 export const useFinalizeBedRental = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<any, Error, FinalizeBedRentalPayload>({
-    mutationFn: async ({ requestId, bedId, startDate, endDate }): Promise<any> => {
-      const response = await api.patch<any>(`/requests/${requestId}/finalize-bed-rental`, {
+  return useMutation<FinalizeBedRentalResponse, Error, FinalizeBedRentalPayload>({
+    mutationFn: async ({ requestId, bedId, startDate, endDate }): Promise<FinalizeBedRentalResponse> => {
+      const response = await api.patch<FinalizeBedRentalResponse>(`/requests/${requestId}/finalize-bed-rental`, {
         bedId,
         rentedSince: startDate,
         rentedUntil: endDate,
@@ -148,9 +165,9 @@ export const useFinalizeBedRental = () => {
 export const useFinalizeUnitRental = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<any, Error, FinalizeUnitRentalPayload>({
-    mutationFn: async ({ requestId, startDate, endDate }): Promise<any> => {
-      const response = await api.patch<any>(`/requests/${requestId}/finalize-unit-rental`, {
+  return useMutation<FinalizeUnitRentalResponse, Error, FinalizeUnitRentalPayload>({
+    mutationFn: async ({ requestId, startDate, endDate }): Promise<FinalizeUnitRentalResponse> => {
+      const response = await api.patch<FinalizeUnitRentalResponse>(`/requests/${requestId}/finalize-unit-rental`, {
         rentedSince: startDate,
         rentedUntil: endDate,
       });
@@ -205,7 +222,7 @@ export const useQuickRent = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
-    any,
+    QuickRentResponse,
     Error,
     { listingId: string; phone: string; startDate: string; endDate: string; bedId?: string }
   >({

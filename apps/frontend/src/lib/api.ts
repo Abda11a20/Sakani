@@ -74,23 +74,27 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-const mapListingTypes = (data: any): any => {
-  if (!data || typeof data !== "object") return data;
+// Recursive JSON value type — used by the response transformer below
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+const mapListingTypes = (data: JsonValue): JsonValue => {
+  if (!data || typeof data !== 'object') return data;
   if (Array.isArray(data)) {
     return data.map(mapListingTypes);
   }
+  const obj = data as { [key: string]: JsonValue };
   // مواءمة حقل نوع العقار وحالة طلب المعاينة
-  if (data.unitType && !data.type) {
-    data.type = data.unitType;
+  if (obj['unitType'] && !obj['type']) {
+    obj['type'] = obj['unitType'];
   }
-  
+
   // فحص الكائنات المتداخلة
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key) && typeof data[key] === "object") {
-      data[key] = mapListingTypes(data[key]);
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === 'object') {
+      obj[key] = mapListingTypes(obj[key]);
     }
   }
-  return data;
+  return obj;
 };
 
 // ── Response Interceptor ───────────────────────────────────────────────────────

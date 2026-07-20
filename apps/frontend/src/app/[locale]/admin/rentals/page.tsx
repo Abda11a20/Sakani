@@ -11,14 +11,9 @@ import {
   Phone,
   Building2,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   X,
   MapPin,
-  TrendingUp,
   Clock,
-  ArrowUpRight,
-  Info,
   CalendarDays,
   BadgeDollarSign,
   UserCheck,
@@ -27,7 +22,6 @@ import {
   Layers,
   RefreshCw,
   XCircle,
-  Hash,
   Mail,
 } from "lucide-react";
 import { useAdminRentals } from "@/hooks/useAdmin";
@@ -120,7 +114,6 @@ export default function AdminRentalsPage() {
   );
 
   const rawRentals = rentalsData?.data ?? [];
-  const meta = rentalsData?.meta;
 
   // Split and filter rentals by unitType
   const apartmentsRentals = useMemo(() => {
@@ -438,7 +431,7 @@ export default function AdminRentalsPage() {
                 </div>
 
                 {(() => {
-                  const { totalDays, elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
+                  const { elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
                   return (
                     <div className="space-y-1">
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

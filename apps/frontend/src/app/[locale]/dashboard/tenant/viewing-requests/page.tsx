@@ -33,7 +33,7 @@ export default function TenantRequests() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   // Queries & Mutations
   const { data: requestsData, isLoading: isRequestsLoading } = useTenantRequests(page);

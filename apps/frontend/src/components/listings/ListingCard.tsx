@@ -10,6 +10,7 @@ import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
+import Image from 'next/image';
 import { cn, getImageUrl } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getWhatsAppLink } from "@/lib/whatsapp";
@@ -22,7 +23,14 @@ interface ListingCardProps {
   listing: Listing;
   className?: string;
   rating?: number;
-  matchingAlert?: any;
+  matchingAlert?: {
+    id?: string;
+    title?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    unitType?: string;
+    governorate?: string;
+  };
 }
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -105,10 +113,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         {/* Image */}
         <div className="relative h-[200px] overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
           {listing.images && listing.images.length > 0 ? (
-            <img
+            <Image
               src={getImageUrl(listing.images[0])}
               alt={listing.title}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-gray-400">

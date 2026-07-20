@@ -7,20 +7,17 @@ import { useSearchParams } from "next/navigation";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import { Card, CardBody, Spinner, Button, Input, useToast } from "@/components/ui";
+import { Spinner, Button, useToast } from "@/components/ui";
 import {
   MessageCircle,
-  X,
   Send,
   Loader2,
   HeadphonesIcon,
   Bot,
   ShieldAlert,
   Paperclip,
-  Image as ImageIcon,
   FileText,
   Download,
-  CheckCircle,
 } from "lucide-react";
 import Pusher from "pusher-js";
 import { api } from "@/lib/api";

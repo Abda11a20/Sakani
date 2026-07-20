@@ -7,8 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import Providers from "@/components/providers";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+
 import { Toaster } from "@/components/ui/toast";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import "../globals.css";

@@ -160,7 +160,7 @@ export const useDeletedAdminListings = (filters: DeletedListingsFilters = {}) =>
   return useQuery<DeletedListingsResponse>({
     queryKey: ["admin", "deleted-listings", page, limit, deletedByRole, search, from, to],
     queryFn: async (): Promise<DeletedListingsResponse> => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number | undefined> = { page, limit };
       if (deletedByRole && deletedByRole !== "all") params.deletedByRole = deletedByRole;
       if (search) params.search = search;
       if (from) params.from = from;
@@ -232,7 +232,7 @@ export const useAdminUsers = (
   return useQuery<AllUsersResponse>({
     queryKey: ["admin", "users", page, limit, role, search, isActive, isVerified],
     queryFn: async (): Promise<AllUsersResponse> => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number | undefined> = { page, limit };
       if (role && role !== "all") params.role = role;
       if (search) params.search = search;
       if (isActive && isActive !== "all") params.isActive = isActive;
@@ -394,7 +394,7 @@ export const useAdminRequests = (page = 1, limit = 10, status?: string, search?:
   return useQuery<AllRequestsResponse>({
     queryKey: ["admin", "requests", page, limit, status, search],
     queryFn: async (): Promise<AllRequestsResponse> => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number | undefined> = { page, limit };
       if (status && status !== "all") params.status = status;
       if (search) params.search = search;
 
@@ -407,8 +407,19 @@ export const useAdminRequests = (page = 1, limit = 10, status?: string, search?:
 
 // ── Support Chat ──────────────────────────────────────────────────────────────
 
+export interface SupportConversation {
+  id: string;
+  status?: string;
+  blockedAt?: string | null;
+  blockReason?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  participants?: Array<{ id: string; name: string; avatarUrl?: string | null }>;
+  lastMessage?: { content: string; createdAt: string } | null;
+}
+
 export interface SupportConversationsResponse {
-  conversations: any[];
+  conversations: SupportConversation[];
   meta: PaginationMeta;
 }
 
@@ -503,7 +514,7 @@ export const useAdminRentals = (page = 1, limit = 10, search?: string, from?: st
   return useQuery<AdminRentalsResponse>({
     queryKey: ["admin", "rentals", page, limit, search, from, to],
     queryFn: async (): Promise<AdminRentalsResponse> => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number | undefined> = { page, limit };
       if (search) params.search = search;
       if (from) params.from = from;
       if (to) params.to = to;

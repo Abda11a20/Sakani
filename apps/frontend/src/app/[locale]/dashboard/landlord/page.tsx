@@ -7,21 +7,18 @@ import { useMyListings } from "@/hooks/useListings";
 import { useLandlordRequests } from "@/hooks/useRequests";
 import { useLandlordDashboardStats } from "@/hooks/useDashboard";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import { Card, CardBody, Spinner, Button } from "@/components/ui";
+import { Spinner, Button } from "@/components/ui";
 import {
   Building,
   CheckCircle2,
   FileText,
   Plus,
   ArrowUpRight,
-  Clock,
-  User,
   History,
   Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { getImageUrl } from "@/lib/utils";
 import ActivityFeed, { ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 
@@ -29,7 +26,7 @@ export default function LandlordDashboard() {
   const locale = useLocale();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
 
-  const { data: stats, isLoading: isStatsLoading, refetch: refetchStats } = useLandlordDashboardStats();
+  const { data: stats, isLoading: isStatsLoading } = useLandlordDashboardStats();
   const { data: listings = [], isLoading: isListingsLoading } = useMyListings();
   const { data: requestsData, isLoading: isRequestsLoading } = useLandlordRequests(1);
 

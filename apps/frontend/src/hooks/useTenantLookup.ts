@@ -1,6 +1,7 @@
 // apps/frontend/src/hooks/useTenantLookup.ts
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { isAxiosError } from "axios";
 
 export interface TenantLookupResult {
   id: string;
@@ -21,9 +22,9 @@ export const useLookupTenantByPhone = (phone: string) => {
           `/users/lookup-by-phone?phone=${cleaned}`
         );
         return response.data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Return null if tenant is not found (404)
-        if (err?.response?.status === 404) {
+        if (isAxiosError(err) && err.response?.status === 404) {
           return null;
         }
         throw err;

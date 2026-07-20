@@ -24,7 +24,6 @@ import {
   GraduationCap,
   BellOff,
   AlertTriangle,
-  HelpCircle,
   Search,
 } from "lucide-react";
 import { useLocale } from "next-intl";

@@ -15,7 +15,6 @@ import {
   ChevronRight,
   X,
   Phone,
-  Mail,
   Calendar,
   Zap,
   Shield,
@@ -41,9 +40,6 @@ import {
   Badge,
   Card,
   CardBody,
-  Spinner,
-  Button,
-  Modal,
   useToast
 } from "@/components/ui";
 import { getImageUrl } from "@/lib/utils";
@@ -81,7 +77,6 @@ function RequestViewingModal({
 }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("10:00");
-  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import {
   Archive,
   Search,
@@ -14,10 +14,8 @@ import {
   Building2,
   Calendar,
   User,
-  Shield,
   ChevronLeft,
   ChevronRight,
-  X,
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

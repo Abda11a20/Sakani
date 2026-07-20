@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/page.tsx
+// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/page.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -6,7 +6,7 @@ import LandlordLayout from "@/components/layout/LandlordLayout";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { useMyListings } from "@/hooks/useListings";
-import { Spinner, Card, CardBody, Button, Badge } from "@/components/ui";
+import { Spinner, Button, Badge } from "@/components/ui";
 import { Building2, Search, MapPin, Eye, ArrowUpDown, ChevronRight, User } from "lucide-react";
 
 type OccupancyFilter = "all" | "vacant" | "rented";

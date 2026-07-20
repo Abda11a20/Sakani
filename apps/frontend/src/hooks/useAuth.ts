@@ -122,10 +122,10 @@ export const useForgotPassword = () => {
       const response = await authApi.forgotPassword(data);
       return response.data;
     },
-    onSuccess: (res: any, variables) => {
-      if (typeof window !== "undefined") {
-        const resolvedEmail = res?.email || variables.email || "";
-        sessionStorage.setItem("reset_email", resolvedEmail);
+    onSuccess: (res: { email?: string; message?: string }, variables) => {
+      if (typeof window !== 'undefined') {
+        const resolvedEmail = res?.email || variables.email || '';
+        sessionStorage.setItem('reset_email', resolvedEmail);
       }
     },
   });

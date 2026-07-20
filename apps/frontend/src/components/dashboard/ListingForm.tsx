@@ -22,7 +22,7 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
-import { Input, Button, Select, Badge, useToast, Spinner } from "@/components/ui";
+import { Input, Button, Badge, useToast, Spinner } from "@/components/ui";
 import { useUploadListingImages, useDeleteImage, useReorderImages } from "@/hooks/useUploads";
 import { api } from "@/lib/api";
 import type { Listing } from "@/types";
@@ -141,9 +141,9 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
   
   // Image State Management
   const [images, setImages] = useState<ImageItem[]>([]);
-  const { mutateAsync: uploadImages } = useUploadListingImages(initialData?.id || "");
-  const { mutateAsync: deleteImage } = useDeleteImage();
-  const { mutateAsync: reorderImages } = useReorderImages(initialData?.id || "");
+  useUploadListingImages(initialData?.id || "");
+  useDeleteImage();
+  useReorderImages(initialData?.id || "");
 
   useEffect(() => {
     if (initialData?.images) {
@@ -391,7 +391,6 @@ export default function ListingForm({ initialData, onSubmit, isSubmitting }: Lis
     }
   };
 
-  const isRtl = locale === "ar";
 
   return (
     <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">

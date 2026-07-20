@@ -6,14 +6,12 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useTenantRequests } from "@/hooks/useRequests";
 import { useMyAlerts, useCreateAlert } from "@/hooks/useAlerts";
 import TenantLayout from "@/components/layout/TenantLayout";
-import { Card, CardBody, Spinner, Button, Badge, Modal, Input, useToast } from "@/components/ui";
+import { Spinner, Button, Modal, Input, useToast } from "@/components/ui";
 import {
   FileText,
   Bell,
   Search,
   Plus,
-  Calendar,
-  Building,
   ArrowUpRight,
   TrendingUp,
   History,
@@ -21,7 +19,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { getImageUrl } from "@/lib/utils";
 import { useTenantDashboardStats } from "@/hooks/useDashboard";
 import ActivityFeed, { ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { StatsCard, formatStatsNumber } from "@/components/dashboard/StatsCard";

@@ -14,7 +14,6 @@ import LandlordLayout from "@/components/layout/LandlordLayout";
 import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
   Bed as BedIcon,
-  TrendingUp,
   User,
   Calendar,
   AlertTriangle,
@@ -217,7 +216,7 @@ export default function LandlordBeds() {
             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 font-cairo">اختر الإعلان المشترك</label>
             {bedListings.length === 0 ? (
               <p className="text-sm text-red-500 font-cairo">
-                ليس لديك أي عقارات من نوع "سرير" (Bed) لتتمكن من إدارتها هنا.
+                {`ليس لديك أي عقارات من نوع "سرير" (Bed) لتتمكن من إدارتها هنا.`}
               </p>
             ) : (
               <select

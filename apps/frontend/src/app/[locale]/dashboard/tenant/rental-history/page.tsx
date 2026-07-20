@@ -572,7 +572,7 @@ export default function TenantRentalHistoryPage() {
 
                 {/* Progress bar */}
                 {(() => {
-                  const { totalDays, elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
+                  const { elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
                   return (
                     <div className="space-y-1">
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

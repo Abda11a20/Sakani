@@ -51,7 +51,6 @@ export const useUpdateProfile = () => {
 // لأن لهما منطق auth store خاص (تحديث avatarUrl في الـ store)
 export const useUploadAvatar = () => {
   const queryClient = useQueryClient();
-  const { setUser } = useAuthStore();
 
   return useMutation<{ url: string; message: string }, Error, File>({
     mutationFn: async (file): Promise<{ url: string; message: string }> => {

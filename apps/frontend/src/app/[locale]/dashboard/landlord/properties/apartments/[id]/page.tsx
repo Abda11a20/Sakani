@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { useListing, useVacateUnit } from "@/hooks/useListings";
@@ -30,7 +30,6 @@ import type { RentalHistoryItem } from "@/types";
 
 export default function LandlordApartmentDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const locale = useLocale();
   const isRtl = locale === "ar";
   const { toast } = useToast();

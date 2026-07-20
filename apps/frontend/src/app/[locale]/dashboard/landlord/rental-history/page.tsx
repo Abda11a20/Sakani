@@ -30,7 +30,6 @@ import {
   RefreshCw,
   XCircle,
   FileText,
-  CheckSquare,
 } from "lucide-react";
 import type { RentalHistoryItem, ContractStatus, TerminationReason } from "@/types";
 import { getImageUrl } from "@/lib/utils";
@@ -670,7 +669,7 @@ export default function LandlordRentalHistoryPage() {
 
                 {/* Progress bar */}
                 {(() => {
-                  const { totalDays, elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
+                  const { elapsed, remaining, percentage } = getLeaseProgress(selectedItem.startDate, selectedItem.endDate);
                   return (
                     <div className="space-y-1">
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

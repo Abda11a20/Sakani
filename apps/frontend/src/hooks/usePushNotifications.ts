@@ -99,12 +99,12 @@ export const useSubscribePush = () => {
       const rawP256dh = subscription.getKey("p256dh");
       const rawAuth = subscription.getKey("auth");
       
-      const p256dh = rawP256dh 
-        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(rawP256dh)) as any))
-        : "";
+      const p256dh = rawP256dh
+        ? btoa(String.fromCharCode(...new Uint8Array(rawP256dh)))
+        : '';
       const auth = rawAuth
-        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(rawAuth)) as any))
-        : "";
+        ? btoa(String.fromCharCode(...new Uint8Array(rawAuth)))
+        : '';
 
       // 3. Send subscription to backend
       const response = await api.post("/notifications/push/subscribe", {
