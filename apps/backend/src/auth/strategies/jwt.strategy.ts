@@ -30,7 +30,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('المستخدم غير موجود أو محظور');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _passwordHash, ...safeUser } = user;
     return safeUser;
   }

@@ -54,9 +54,7 @@ export class AuthController {
   @Post('telegram/generate-link-code')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
-  async generateTelegramLinkCode(
-    @Body() dto: GenerateLinkCodeDto,
-  ): Promise<{
+  async generateTelegramLinkCode(@Body() dto: GenerateLinkCodeDto): Promise<{
     success: boolean;
     data: { linkCode: string; expiresAt: Date };
   }> {

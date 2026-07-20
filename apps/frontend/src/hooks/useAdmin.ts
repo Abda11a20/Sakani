@@ -414,8 +414,19 @@ export interface SupportConversation {
   blockReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  unreadCount?: number;
+  clientUser?: {
+    id: string;
+    name: string;
+    role?: string;
+    avatarUrl?: string | null;
+  } | null;
   participants?: Array<{ id: string; name: string; avatarUrl?: string | null }>;
-  lastMessage?: { content: string; createdAt: string } | null;
+  lastMessage?: {
+    content: string;
+    createdAt: string;
+    sender: { id: string; name: string };
+  } | null;
 }
 
 export interface SupportConversationsResponse {

@@ -5,7 +5,7 @@ import React from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { MapPin, Star, Wifi, Wind, Building2, BedDouble, ArrowLeft, ArrowRight, Heart, CheckCircle, Sparkles, Clock, AlertCircle, Calendar, MessageSquare, Phone, Loader2 } from "lucide-react";
-import type { Listing } from "@/types";
+import type { Listing, Alert } from "@/types";
 import { getIdentityVerificationStatus, isUserVerified } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -23,14 +23,7 @@ interface ListingCardProps {
   listing: Listing;
   className?: string;
   rating?: number;
-  matchingAlert?: {
-    id?: string;
-    title?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    unitType?: string;
-    governorate?: string;
-  };
+  matchingAlert?: Alert | null;
 }
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {

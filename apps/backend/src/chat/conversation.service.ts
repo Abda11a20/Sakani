@@ -18,7 +18,7 @@ export class ConversationService {
 
   async findOrCreateSupportConversation(userId: string) {
     // Find if user already has a support conversation
-    let participant = await this.prisma.conversationParticipant.findFirst({
+    const participant = await this.prisma.conversationParticipant.findFirst({
       where: {
         userId,
         conversation: {

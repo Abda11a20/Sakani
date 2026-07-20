@@ -435,7 +435,7 @@ export class AuthService {
       user.id,
       user.email,
       VerificationType.PASSWORD_RESET,
-      channel as OtpChannel,
+      channel,
     );
 
     return {

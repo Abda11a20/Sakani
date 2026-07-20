@@ -32,11 +32,8 @@ describe('AuthController (e2e)', () => {
     // Clean up test users first
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: testUser.email },
-          { phone: testUser.phone }
-        ]
-      }
+        OR: [{ email: testUser.email }, { phone: testUser.phone }],
+      },
     });
   });
 
@@ -44,11 +41,8 @@ describe('AuthController (e2e)', () => {
     // Cleanup test users after tests
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: testUser.email },
-          { phone: testUser.phone }
-        ]
-      }
+        OR: [{ email: testUser.email }, { phone: testUser.phone }],
+      },
     });
     await app.close();
   });

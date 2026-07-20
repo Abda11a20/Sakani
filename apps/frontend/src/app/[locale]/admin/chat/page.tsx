@@ -152,7 +152,7 @@ export default function AdminChatPage() {
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.map((conv) => {
               const isConvBlocked = !!conv.blockedAt;
-              const hasUnread = conv.unreadCount > 0;
+              const hasUnread = (conv.unreadCount ?? 0) > 0;
               const client = conv.clientUser;
 
               return (
@@ -188,7 +188,7 @@ export default function AdminChatPage() {
                         </p>
                         <p className="text-xs text-slate-400 flex items-center gap-1 font-cairo">
                           <Calendar size={12} />
-                          {formatDate(conv.updatedAt)}
+                          {conv.updatedAt && formatDate(conv.updatedAt)}
                         </p>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo flex items-center gap-1">
