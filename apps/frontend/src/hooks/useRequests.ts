@@ -139,7 +139,6 @@ export const useFinalizeBedRental = () => {
       return response.data;
     },
     onSuccess: (data, variables) => {
-      const bed = data?.bed || data;
       const listing = data?.listing;
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["listings"] });
@@ -153,10 +152,12 @@ export const useFinalizeBedRental = () => {
           current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
         );
       }
-      if (bed?.listingId) {
-        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId] });
-        queryClient.invalidateQueries({ queryKey: ["listings", bed.listingId, "beds"] });
-        queryClient.refetchQueries({ queryKey: ["listings", bed.listingId, "beds"], type: "active" });
+      // Access listingId directly via data.bed — avoids ambiguous union with data itself
+      const bedListingId = data?.bed?.listingId;
+      if (bedListingId) {
+        queryClient.invalidateQueries({ queryKey: ["listings", bedListingId] });
+        queryClient.invalidateQueries({ queryKey: ["listings", bedListingId, "beds"] });
+        queryClient.refetchQueries({ queryKey: ["listings", bedListingId, "beds"], type: "active" });
       }
     },
   });

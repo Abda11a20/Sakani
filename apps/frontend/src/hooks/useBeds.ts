@@ -16,14 +16,17 @@ export interface RentBedPayload {
   endDate: string;
 }
 
+// The API returns Bed with a runtime 'status' field not in the shared type
+type BedFromApi = Bed & { status?: string };
+
 // Response types derived from actual endpoint usage in onSuccess handlers
 interface RentBedResponse {
-  bed?: Bed & { listingId?: string };
+  bed?: BedFromApi;
   message?: string;
 }
 
 interface VacateBedResponse {
-  bed?: Bed & { listingId?: string };
+  bed?: BedFromApi;
   message?: string;
 }
 
@@ -34,14 +37,14 @@ export const useListingBeds = (listingId: string | null | undefined, isLandlord 
       if (!listingId) return [];
       // المؤجر يستخدم endpoint /all خاص — يبقى مع api مباشرة
       if (isLandlord) {
-        const response = await api.get<Bed[]>(`/listings/${listingId}/beds/all`);
+        const response = await api.get<BedFromApi[]>(`/listings/${listingId}/beds/all`);
         return response.data.map((bed) => ({
           ...bed,
           isAvailable: bed.status === 'available',
         }));
       }
       const response = await bedsApi.getByListing(listingId);
-      return (response.data as Bed[]).map((bed) => ({
+      return (response.data as BedFromApi[]).map((bed) => ({
         ...bed,
         isAvailable: bed.status === 'available',
       }));
@@ -75,11 +78,12 @@ export const useRentBed = () => {
       return response.data as RentBedResponse;
     },
     onSuccess: (data) => {
-      const bed = data?.bed || data;
       queryClient.invalidateQueries({ queryKey: ['listings'] });
-      if (bed?.listingId) {
-        queryClient.invalidateQueries({ queryKey: ['listings', bed.listingId] });
-        queryClient.invalidateQueries({ queryKey: ['listings', bed.listingId, 'beds'] });
+      // Access listingId directly through data.bed — avoids ambiguous union type
+      const listingId = data?.bed?.listingId;
+      if (listingId) {
+        queryClient.invalidateQueries({ queryKey: ['listings', listingId] });
+        queryClient.invalidateQueries({ queryKey: ['listings', listingId, 'beds'] });
       }
     },
   });
@@ -94,11 +98,12 @@ export const useVacateBed = () => {
       return response.data as VacateBedResponse;
     },
     onSuccess: (data) => {
-      const bed = data?.bed || data;
       queryClient.invalidateQueries({ queryKey: ['listings'] });
-      if (bed?.listingId) {
-        queryClient.invalidateQueries({ queryKey: ['listings', bed.listingId] });
-        queryClient.invalidateQueries({ queryKey: ['listings', bed.listingId, 'beds'] });
+      // Access listingId directly through data.bed — avoids ambiguous union type
+      const listingId = data?.bed?.listingId;
+      if (listingId) {
+        queryClient.invalidateQueries({ queryKey: ['listings', listingId] });
+        queryClient.invalidateQueries({ queryKey: ['listings', listingId, 'beds'] });
       }
     },
   });
