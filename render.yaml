@@ -1,27 +1,79 @@
 # render.yaml
 # تكوين الاستضافة لـ Render.com (Blueprint Spec)
-# يساعدك على إنشاء الخدمة وضبط إعدادات البيئة بضغطة زر واحدة
+# لا تحذف هذا الملف — هو الرجعة الاحتياطية إذا فشل HuggingFace
 
 services:
   - type: web
     name: sakani-backend
     runtime: docker
-    dockerfilePath: apps/backend/Dockerfile
+    dockerfilePath: apps/backend/Dockerfile.render
     dockerContext: apps/backend
-    plan: free # استخدام الخطة المجانية تماماً
+    plan: free
     envVars:
+      # ─── App ──────────────────────────────────────────────────────────────
       - key: PORT
-        value: 3001
+        value: 10000
       - key: NODE_ENV
         value: production
+
+      # ─── Database (Neon PostgreSQL) ───────────────────────────────────────
       - key: DATABASE_URL
-        sync: false # سيطلب منك إدخال الرابط الخاص بقاعدة بيانات Neon
+        sync: false
+
+      # ─── JWT ─────────────────────────────────────────────────────────────
       - key: JWT_SECRET
         sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
       - key: JWT_REFRESH_SECRET
         sync: false
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+      # ─── Encryption ───────────────────────────────────────────────────────
       - key: ENCRYPTION_KEY
-        sync: false # مفتاح التشفير المكون من 32 حرفاً
+        sync: false
+
+      # ─── Frontend URL ─────────────────────────────────────────────────────
+      - key: FRONTEND_URL
+        sync: false
+
+      # ─── Email (Gmail OAuth2) ─────────────────────────────────────────────
+      - key: EMAIL_PROVIDER
+        value: gmail
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_SENDER_EMAIL
+        sync: false
+      # Gmail SMTP (بديل إذا لم يكن Gmail OAuth متاحاً)
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_SECURE
+        value: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+      # ─── Storage (Cloudinary) ─────────────────────────────────────────────
+      - key: STORAGE_PROVIDER
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # ─── Pusher (Real-time Chat) ──────────────────────────────────────────
       - key: PUSHER_APP_ID
         sync: false
       - key: PUSHER_KEY
@@ -30,21 +82,30 @@ services:
         sync: false
       - key: PUSHER_CLUSTER
         sync: false
-      - key: CLOUDINARY_CLOUD_NAME
+
+      # ─── Telegram Bot ─────────────────────────────────────────────────────
+      - key: TELEGRAM_BOT_TOKEN
         sync: false
-      - key: CLOUDINARY_API_KEY
+      - key: TELEGRAM_WEBHOOK_SECRET
         sync: false
-      - key: CLOUDINARY_API_SECRET
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false  # ← سيكون رابط Render بعد أول deploy: https://sakani-backend.onrender.com
+
+      # ─── Web Push Notifications (VAPID) ──────────────────────────────────
+      - key: VAPID_PUBLIC_KEY
+        value: BKDq7Tmu-SqA0pvFq_wXK0jOmZ4EoV6LLD816yXHTfgkp7rPAI8a1u9pikZOvKZcIh5EcVUtGJr2pWx7fpnCAgk
+      - key: VAPID_PRIVATE_KEY
+        value: CzY5teV8-vCa_VJYvoig-LysxjzyWloz-TGSuqdxw3E
+      - key: VAPID_SUBJECT
+        value: mailto:admin@sakani.com
+
+
+      # ─── Payments (Paymob) ────────────────────────────────────────────────
+      - key: SUBSCRIPTIONS_ENABLED
+        value: false
+      - key: PAYMOB_API_KEY
         sync: false
-      - key: RESEND_API_KEY
+      - key: PAYMOB_INTEGRATION_ID
         sync: false
-      - key: EMAIL_HOST
-        value: smtp.gmail.com
-      - key: EMAIL_PORT
-        value: 465
-      - key: EMAIL_USER
+      - key: PAYMOB_HMAC_SECRET
         sync: false
-      - key: EMAIL_APP_PASSWORD
-        sync: false
-      - key: FRONTEND_URL
-        sync: false # سيتم إدخال رابط فرونت إند Vercel هنا لاحقاً
