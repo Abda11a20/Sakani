@@ -62,7 +62,11 @@ export class PaymentsService {
   // ── 1. Get current plan ───────────────────────────────────────────────────
   async getCurrentPlan(userId: string): Promise<Record<string, unknown>> {
     if (!this.isSubscriptionsEnabled()) {
-      return { plan: 'premium', status: 'active', mock: true } satisfies MockPlanResult;
+      return {
+        plan: 'premium',
+        status: 'active',
+        mock: true,
+      } satisfies MockPlanResult;
     }
 
     const now = new Date();
@@ -92,8 +96,11 @@ export class PaymentsService {
     }
 
     const apiKey = this.configService.get<string>('PAYMOB_API_KEY');
-    const integrationId = this.configService.get<string>('PAYMOB_INTEGRATION_ID');
-    const iframeId = this.configService.get<string>('PAYMOB_IFRAME_ID') ?? '123456';
+    const integrationId = this.configService.get<string>(
+      'PAYMOB_INTEGRATION_ID',
+    );
+    const iframeId =
+      this.configService.get<string>('PAYMOB_IFRAME_ID') ?? '123456';
 
     const amountCents = dto.plan === UserPlan.premium ? 5000 : 0;
     const merchantOrderId = `SAKANI-${userId}-${Date.now()}`;
@@ -114,33 +121,34 @@ export class PaymentsService {
     const orderId = orderRes.data.id;
 
     // Step 2: Get payment key
-    const keyRes = await this.httpService.axiosRef.post<PaymobPaymentKeyResponse>(
-      'https://accept.paymob.com/api/acceptance/payment_keys',
-      {
-        auth_token: apiKey,
-        amount_cents: amountCents,
-        expiration: 3600,
-        order_id: orderId,
-        billing_data: {
-          first_name: dto.billingName,
-          phone_number: dto.billingPhone,
-          email: 'NA',
-          last_name: 'NA',
-          apartment: 'NA',
-          floor: 'NA',
-          street: 'NA',
-          building: 'NA',
-          city: 'Cairo',
-          country: 'EG',
-          postal_code: 'NA',
-          state: 'NA',
+    const keyRes =
+      await this.httpService.axiosRef.post<PaymobPaymentKeyResponse>(
+        'https://accept.paymob.com/api/acceptance/payment_keys',
+        {
+          auth_token: apiKey,
+          amount_cents: amountCents,
+          expiration: 3600,
+          order_id: orderId,
+          billing_data: {
+            first_name: dto.billingName,
+            phone_number: dto.billingPhone,
+            email: 'NA',
+            last_name: 'NA',
+            apartment: 'NA',
+            floor: 'NA',
+            street: 'NA',
+            building: 'NA',
+            city: 'Cairo',
+            country: 'EG',
+            postal_code: 'NA',
+            state: 'NA',
+          },
+          integration_id: integrationId,
         },
-        integration_id: integrationId,
-      },
-      {
-        headers: { Authorization: `Token ${apiKey}` },
-      },
-    );
+        {
+          headers: { Authorization: `Token ${apiKey}` },
+        },
+      );
 
     const paymentToken = keyRes.data.token;
     const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
@@ -201,7 +209,9 @@ export class PaymentsService {
         },
       });
 
-      this.logger.log(`Subscription activated for user ${userId} until ${expiresAt.toISOString()}`);
+      this.logger.log(
+        `Subscription activated for user ${userId} until ${expiresAt.toISOString()}`,
+      );
     } catch (err) {
       // Log but never throw — Paymob will retry if we throw 5xx
       this.logger.error('Error processing webhook', err);

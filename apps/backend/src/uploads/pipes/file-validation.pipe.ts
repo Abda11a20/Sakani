@@ -42,7 +42,9 @@ export class FileValidationPipe implements PipeTransform {
       // 1. Check size
       if (file.size > this.options.maxSize) {
         const maxSizeMB = this.options.maxSize / (1024 * 1024);
-        throw new BadRequestException(`حجم الملف يتجاوز الحد الأقصى (${maxSizeMB}MB)`);
+        throw new BadRequestException(
+          `حجم الملف يتجاوز الحد الأقصى (${maxSizeMB}MB)`,
+        );
       }
 
       // 2. Verify real MIME via magic bytes (prevents file type spoofing)

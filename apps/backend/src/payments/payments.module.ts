@@ -7,10 +7,7 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    HttpModule,
-  ],
+  imports: [ScheduleModule.forRoot(), HttpModule],
   providers: [PaymentsService],
   controllers: [PaymentsController],
   exports: [PaymentsService],

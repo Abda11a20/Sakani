@@ -1,6 +1,10 @@
 // apps/backend/src/chat/message.service.ts
 
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PusherService } from './pusher.service';
 import { ConversationService } from './conversation.service';
@@ -19,8 +23,8 @@ export class MessageService {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
-        participants: true
-      }
+        participants: true,
+      },
     });
 
     if (!conversation) {
@@ -29,7 +33,7 @@ export class MessageService {
 
     // 2. Fetch sender details
     const sender = await this.prisma.user.findUnique({
-      where: { id: senderId }
+      where: { id: senderId },
     });
 
     if (!sender) {
@@ -41,20 +45,28 @@ export class MessageService {
     // 3. Check if conversation is blocked
     if (conversation.blockedAt && !isAdmin) {
       throw new ForbiddenException(
-        conversation.blockReason 
+        conversation.blockReason
           ? `تم حظر هذه المحادثة من قِبل الإدارة. السبب: ${conversation.blockReason}`
-          : 'تم حظر هذه المحادثة من قِبل الإدارة.'
+          : 'تم حظر هذه المحادثة من قِبل الإدارة.',
       );
     }
 
     // 4. Ensure participant
-    const isParticipant = conversation.participants.some(p => p.userId === senderId);
+    const isParticipant = conversation.participants.some(
+      (p) => p.userId === senderId,
+    );
     if (!isParticipant) {
       if (isAdmin) {
         // Automatically add admin as SUPPORT participant
-        await this.conversationService.ensureParticipant(conversationId, senderId, ParticipantRole.SUPPORT);
+        await this.conversationService.ensureParticipant(
+          conversationId,
+          senderId,
+          ParticipantRole.SUPPORT,
+        );
       } else {
-        throw new ForbiddenException('You are not a participant in this conversation');
+        throw new ForbiddenException(
+          'You are not a participant in this conversation',
+        );
       }
     }
 
@@ -67,9 +79,9 @@ export class MessageService {
       },
       include: {
         sender: {
-          select: { id: true, name: true, avatarUrl: true, role: true }
-        }
-      }
+          select: { id: true, name: true, avatarUrl: true, role: true },
+        },
+      },
     });
 
     // 6. Update Conversation last message indicators
@@ -78,35 +90,44 @@ export class MessageService {
       data: {
         lastMessageId: message.id,
         lastMessageAt: message.createdAt,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     });
 
     // 7. Update lastReadAt for the sender (they read their own message)
     await this.prisma.conversationParticipant.update({
       where: {
-        conversationId_userId: { conversationId, userId: senderId }
+        conversationId_userId: { conversationId, userId: senderId },
       },
       data: {
-        lastReadAt: message.createdAt
-      }
+        lastReadAt: message.createdAt,
+      },
     });
 
     // 8. Broadcast via PusherService
-    await this.pusherService.broadcastToConversation(conversationId, 'message.created', {
-      id: message.id,
-      conversationId: message.conversationId,
-      content: message.content,
-      createdAt: message.createdAt,
-      sender: message.sender
-    });
+    await this.pusherService.broadcastToConversation(
+      conversationId,
+      'message.created',
+      {
+        id: message.id,
+        conversationId: message.conversationId,
+        content: message.content,
+        createdAt: message.createdAt,
+        sender: message.sender,
+      },
+    );
 
     return message;
   }
 
-  async getMessages(conversationId: string, userId: string, page: number = 1, limit: number = 30) {
+  async getMessages(
+    conversationId: string,
+    userId: string,
+    page: number = 1,
+    limit: number = 30,
+  ) {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -118,12 +139,14 @@ export class MessageService {
     // Verify user participates in the conversation or is admin
     const participant = await this.prisma.conversationParticipant.findUnique({
       where: {
-        conversationId_userId: { conversationId, userId }
-      }
+        conversationId_userId: { conversationId, userId },
+      },
     });
 
     if (!participant && !isAdmin) {
-      throw new ForbiddenException('Not authorized to view messages in this conversation');
+      throw new ForbiddenException(
+        'Not authorized to view messages in this conversation',
+      );
     }
 
     const skip = (page - 1) * limit;
@@ -136,33 +159,37 @@ export class MessageService {
         orderBy: { createdAt: 'desc' },
         include: {
           sender: {
-            select: { id: true, name: true, avatarUrl: true, role: true }
-          }
-        }
+            select: { id: true, name: true, avatarUrl: true, role: true },
+          },
+        },
       }),
       this.prisma.chatMessage.count({
-        where: { conversationId }
-      })
+        where: { conversationId },
+      }),
     ]);
 
     return {
       messages: messages.reverse(), // Chronological order for frontend
-      meta: { total, page, lastPage: Math.ceil(total / limit) }
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
     };
   }
 
   async markAsRead(conversationId: string, userId: string) {
     const participant = await this.prisma.conversationParticipant.findUnique({
       where: {
-        conversationId_userId: { conversationId, userId }
-      }
+        conversationId_userId: { conversationId, userId },
+      },
     });
 
     if (!participant) {
       // If admin, auto-join as SUPPORT to allow read tracking
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (user && (user.role === 'admin' || user.role === 'super_admin')) {
-        await this.conversationService.ensureParticipant(conversationId, userId, ParticipantRole.SUPPORT);
+        await this.conversationService.ensureParticipant(
+          conversationId,
+          userId,
+          ParticipantRole.SUPPORT,
+        );
       } else {
         throw new NotFoundException('Participant not found');
       }
@@ -170,18 +197,22 @@ export class MessageService {
 
     await this.prisma.conversationParticipant.update({
       where: {
-        conversationId_userId: { conversationId, userId }
+        conversationId_userId: { conversationId, userId },
       },
       data: {
-        lastReadAt: new Date()
-      }
+        lastReadAt: new Date(),
+      },
     });
 
     // Notify other conversation members of read event
-    await this.pusherService.broadcastToConversation(conversationId, 'message.read', {
-      userId,
-      readAt: new Date()
-    });
+    await this.pusherService.broadcastToConversation(
+      conversationId,
+      'message.read',
+      {
+        userId,
+        readAt: new Date(),
+      },
+    );
 
     return { success: true };
   }
@@ -191,22 +222,22 @@ export class MessageService {
       where: { userId },
       select: {
         conversationId: true,
-        lastReadAt: true
-      }
+        lastReadAt: true,
+      },
     });
 
     let totalUnread = 0;
     if (participants.length > 0) {
       const counts = await Promise.all(
-        participants.map(p =>
+        participants.map((p) =>
           this.prisma.chatMessage.count({
             where: {
               conversationId: p.conversationId,
               senderId: { not: userId },
-              createdAt: { gt: p.lastReadAt }
-            }
-          })
-        )
+              createdAt: { gt: p.lastReadAt },
+            },
+          }),
+        ),
       );
       totalUnread = counts.reduce((sum, count) => sum + count, 0);
     }

@@ -7,7 +7,10 @@ export const transactionStorage = new AsyncLocalStorage<Array<() => void>>();
 
 @Injectable()
 // PrismaService extends PrismaClient to provide database access
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     const adapter = new PrismaPg({
       connectionString: process.env.DATABASE_URL ?? '',

@@ -1,5 +1,9 @@
 // c:\Users\pc\Desktop\Sakany\sakani\apps\backend\src\reviews\reviews.service.ts
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { NotificationType, RequestStatus, UserRole } from '@prisma/client';
@@ -94,9 +98,13 @@ export class ReviewsService {
     return review;
   }
 
-  async getListingReviews(listingId: string, page: number = 1, limit: number = 10) {
+  async getListingReviews(
+    listingId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const skip = (page - 1) * limit;
-    
+
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
         where: { listingId },
@@ -135,7 +143,11 @@ export class ReviewsService {
     });
   }
 
-  async getLandlordReviews(landlordId: string, page: number = 1, limit: number = 10) {
+  async getLandlordReviews(
+    landlordId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const skip = (page - 1) * limit;
 
     const [reviews, total] = await Promise.all([
@@ -185,7 +197,13 @@ export class ReviewsService {
       },
     });
 
-    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const distribution: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
     groupedRatings.forEach((group) => {
       distribution[group.rating] = group._count.rating;
     });
@@ -206,7 +224,8 @@ export class ReviewsService {
       throw new NotFoundException('التقييم غير موجود');
     }
 
-    const isAdmin = userRole === UserRole.admin || userRole === UserRole.super_admin;
+    const isAdmin =
+      userRole === UserRole.admin || userRole === UserRole.super_admin;
     const isOwner = userRole === UserRole.tenant && review.tenantId === userId;
 
     if (!isAdmin && !isOwner) {

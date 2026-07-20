@@ -23,10 +23,14 @@ export class TelegramLinkCleanupService {
       });
 
       if (result.count > 0) {
-        this.logger.log(`🧹 تم تنظيف ${result.count} من أكواد ربط تليجرام المنتهية الصلاحية.`);
+        this.logger.log(
+          `🧹 تم تنظيف ${result.count} من أكواد ربط تليجرام المنتهية الصلاحية.`,
+        );
       }
     } catch (error: any) {
-      this.logger.error(`❌ فشل تنظيف أكواد ربط تليجرام المنتهية الصلاحية: ${error.message}`);
+      this.logger.error(
+        `❌ فشل تنظيف أكواد ربط تليجرام المنتهية الصلاحية: ${error.message}`,
+      );
     }
   }
 }

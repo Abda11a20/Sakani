@@ -27,7 +27,7 @@ type SafeUser = Omit<User, 'passwordHash'>;
 @ApiTags('Users')
 @Controller()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   // ── 1. Get Current User Profile ─────────────────────────────────────────────
   @ApiBearerAuth()

@@ -1,5 +1,10 @@
 // apps/backend/src/requests/dto/quick-rent.dto.ts
-import { IsNotEmpty, IsString, IsDateString, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsDateString,
+  IsOptional,
+} from 'class-validator';
 
 export class QuickRentDto {
   @IsNotEmpty()
@@ -22,4 +27,3 @@ export class QuickRentDto {
   @IsString()
   bedId?: string;
 }
-

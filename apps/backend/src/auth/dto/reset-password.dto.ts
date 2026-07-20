@@ -1,6 +1,12 @@
 // apps/backend/src/auth/dto/reset-password.dto.ts
 
-import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class ResetPasswordDto {
   @IsNotEmpty({ message: 'البريد الإلكتروني مطلوب' })

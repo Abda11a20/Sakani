@@ -1,5 +1,14 @@
 // apps/backend/src/notifications/telegram-webhook.controller.ts
-import { Controller, Post, Body, Headers, UnauthorizedException, Logger, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  UnauthorizedException,
+  Logger,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram.service';
@@ -21,11 +30,17 @@ export class TelegramWebhookController {
     @Headers('x-telegram-bot-api-secret-token') secretHeader: string,
     @Body() update: any,
   ) {
-    const configuredSecret = this.configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
+    const configuredSecret = this.configService.get<string>(
+      'TELEGRAM_WEBHOOK_SECRET',
+    );
 
     if (!configuredSecret || secretHeader !== configuredSecret) {
-      this.logger.warn('🚫 محاولة وصول غير مصرح بها إلى Webhook الخاص بـ Telegram.');
-      throw new UnauthorizedException('Secret token mismatch or not configured.');
+      this.logger.warn(
+        '🚫 محاولة وصول غير مصرح بها إلى Webhook الخاص بـ Telegram.',
+      );
+      throw new UnauthorizedException(
+        'Secret token mismatch or not configured.',
+      );
     }
 
     const message = update?.message;
@@ -38,7 +53,7 @@ export class TelegramWebhookController {
 
     try {
       if (text === '/start' || text === '/link') {
-        const welcomeText = 
+        const welcomeText =
           `👋 مرحباً بك في سَكني!\n\n` +
           `لتفعيل وتلقي رموز التحقق (OTP) عبر تليجرام، يرجى إرسال كود الربط المكون من 6 أرقام الذي يظهر لك في صفحة التسجيل أو الإعدادات على موقع سَكني.`;
         await this.telegramService.sendMessage(chatId, welcomeText);
@@ -100,7 +115,7 @@ export class TelegramWebhookController {
           await this.telegramService.sendMessage(
             chatId,
             `✅ تم ربط حسابك بنجاح!\n\n` +
-            `يمكنك الآن العودة لموقع سَكني وإكمال الخطوات. ستصلك رموز التحقق هنا بشكل آمن.`,
+              `يمكنك الآن العودة لموقع سَكني وإكمال الخطوات. ستصلك رموز التحقق هنا بشكل آمن.`,
           );
         }
       } else {
@@ -110,7 +125,10 @@ export class TelegramWebhookController {
         );
       }
     } catch (err: any) {
-      this.logger.error(`Error processing Telegram webhook message: ${err.message}`, err.stack);
+      this.logger.error(
+        `Error processing Telegram webhook message: ${err.message}`,
+        err.stack,
+      );
     }
 
     return { success: true };

@@ -16,27 +16,29 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     // إذا مفيش Roles مطلوبة، السماح بالدخول
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request & { user: Omit<User, 'passwordHash'> }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user: Omit<User, 'passwordHash'> }>();
     const user = request.user;
 
     if (!user) {
       throw new ForbiddenException('يجب تسجيل الدخول أولاً');
     }
 
-    console.log("requiredRoles:", requiredRoles);
-    console.log("user:", request.user);
-    console.log("user.role:", request.user?.role);
-    console.log("typeof role:", typeof request.user?.role);
+    console.log('requiredRoles:', requiredRoles);
+    console.log('user:', request.user);
+    console.log('user.role:', request.user?.role);
+    console.log('typeof role:', typeof request.user?.role);
 
     const hasRole = requiredRoles.includes(user.role);
 
@@ -47,4 +49,3 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 }
-

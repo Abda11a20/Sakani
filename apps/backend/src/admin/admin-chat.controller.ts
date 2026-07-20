@@ -40,7 +40,11 @@ export class AdminChatController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
   ) {
-    return this.conversationService.getSupportConversations(admin.id, page, limit);
+    return this.conversationService.getSupportConversations(
+      admin.id,
+      page,
+      limit,
+    );
   }
 
   // ── Get messages for a support conversation ───────────────────────────────
@@ -51,7 +55,12 @@ export class AdminChatController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
   ) {
-    return this.messageService.getMessages(conversationId, admin.id, page, limit);
+    return this.messageService.getMessages(
+      conversationId,
+      admin.id,
+      page,
+      limit,
+    );
   }
 
   // ── Block conversation ───────────────────────────────────────────────────
@@ -61,7 +70,11 @@ export class AdminChatController {
     @Param('id') conversationId: string,
     @Body('reason') reason: string,
   ) {
-    return this.conversationService.blockConversation(conversationId, admin.id, reason);
+    return this.conversationService.blockConversation(
+      conversationId,
+      admin.id,
+      reason,
+    );
   }
 
   // ── Unblock conversation ─────────────────────────────────────────────────

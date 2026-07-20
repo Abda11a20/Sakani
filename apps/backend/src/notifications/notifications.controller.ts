@@ -49,7 +49,10 @@ export class NotificationController {
   }
 
   @Delete(':id')
-  async deleteNotification(@CurrentUser() user: SafeUser, @Param('id') id: string) {
+  async deleteNotification(
+    @CurrentUser() user: SafeUser,
+    @Param('id') id: string,
+  ) {
     return this.notificationService.deleteNotification(user.id, id);
   }
 

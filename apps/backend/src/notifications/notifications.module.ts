@@ -11,7 +11,11 @@ import { NotificationDispatcher } from './notification-dispatcher.service';
 
 @Global()
 @Module({
-  controllers: [NotificationController, TelegramWebhookController, PushController],
+  controllers: [
+    NotificationController,
+    TelegramWebhookController,
+    PushController,
+  ],
   providers: [
     EmailService,
     WhatsappService,

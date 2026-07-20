@@ -53,7 +53,7 @@ export class BedsService {
 
     return beds.map((bed) => {
       const currentTenant = bed.currentTenantId
-        ? tenantsById.get(bed.currentTenantId) ?? null
+        ? (tenantsById.get(bed.currentTenantId) ?? null)
         : null;
 
       return {
@@ -127,16 +127,18 @@ export class BedsService {
       });
 
       // 3. تحديث availableBeds في الإعلان
-      const newAvailableBeds = Math.max(0, (bed.listing.availableBeds ?? 0) - 1);
-      
+      const newAvailableBeds = Math.max(
+        0,
+        (bed.listing.availableBeds ?? 0) - 1,
+      );
+
       const listingUpdateData: any = {
         availableBeds: newAvailableBeds,
       };
 
       // 4. إذا أصبح availableBeds = 0، تحويل الإعلان لـ rented
-      listingUpdateData.status = newAvailableBeds === 0
-        ? ListingStatus.rented
-        : ListingStatus.active;
+      listingUpdateData.status =
+        newAvailableBeds === 0 ? ListingStatus.rented : ListingStatus.active;
 
       const updatedListing = await tx.listing.update({
         where: { id: bed.listingId },
@@ -219,7 +221,7 @@ export class BedsService {
 
       // 2. تحديث availableBeds في الإعلان
       const newAvailableBeds = (bed.listing.availableBeds ?? 0) + 1;
-      
+
       const listingUpdateData: any = {
         availableBeds: newAvailableBeds,
       };
@@ -246,10 +248,7 @@ export class BedsService {
     return this.prisma.$transaction(vacate);
   }
 
-  async vacateBedBySystem(
-    bedId: string,
-    client: Prisma.TransactionClient,
-  ) {
+  async vacateBedBySystem(bedId: string, client: Prisma.TransactionClient) {
     const bed = await client.listingBed.findUnique({
       where: { id: bedId },
       include: { listing: true },
@@ -324,8 +323,12 @@ export class BedsService {
 
     const [totalBeds, availableBeds, rentedBeds] = await Promise.all([
       this.prisma.listingBed.count({ where: { listingId } }),
-      this.prisma.listingBed.count({ where: { listingId, status: BedStatus.available } }),
-      this.prisma.listingBed.count({ where: { listingId, status: BedStatus.rented } }),
+      this.prisma.listingBed.count({
+        where: { listingId, status: BedStatus.available },
+      }),
+      this.prisma.listingBed.count({
+        where: { listingId, status: BedStatus.rented },
+      }),
     ]);
 
     return {

@@ -10,7 +10,9 @@ export const envSchema = z
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     FRONTEND_URL: z.string().url().default('http://localhost:3000'),
     // مفتاح تشفير الرقم القومي (AES-256) - مطلوب
-    ENCRYPTION_KEY: z.string().min(16, 'ENCRYPTION_KEY يجب أن يكون على الأقل 16 حرفاً'),
+    ENCRYPTION_KEY: z
+      .string()
+      .min(16, 'ENCRYPTION_KEY يجب أن يكون على الأقل 16 حرفاً'),
 
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM: z.string().optional(),
@@ -42,21 +44,24 @@ export const envSchema = z
       if (!data.CLOUDINARY_CLOUD_NAME) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'CLOUDINARY_CLOUD_NAME is required when STORAGE_PROVIDER is cloudinary',
+          message:
+            'CLOUDINARY_CLOUD_NAME is required when STORAGE_PROVIDER is cloudinary',
           path: ['CLOUDINARY_CLOUD_NAME'],
         });
       }
       if (!data.CLOUDINARY_API_KEY) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'CLOUDINARY_API_KEY is required when STORAGE_PROVIDER is cloudinary',
+          message:
+            'CLOUDINARY_API_KEY is required when STORAGE_PROVIDER is cloudinary',
           path: ['CLOUDINARY_API_KEY'],
         });
       }
       if (!data.CLOUDINARY_API_SECRET) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'CLOUDINARY_API_SECRET is required when STORAGE_PROVIDER is cloudinary',
+          message:
+            'CLOUDINARY_API_SECRET is required when STORAGE_PROVIDER is cloudinary',
           path: ['CLOUDINARY_API_SECRET'],
         });
       }

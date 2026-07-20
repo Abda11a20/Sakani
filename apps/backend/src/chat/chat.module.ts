@@ -15,21 +15,8 @@ import { MessageService } from './message.service';
   imports: [
     AuthModule, // يوفر JwtAuthGuard و CurrentUser
   ],
-  controllers: [
-    ChatController,
-    PusherAuthController,
-  ],
-  providers: [
-    PusherService,
-    ConversationService,
-    MessageService,
-    ChatService,
-  ],
-  exports: [
-    PusherService,
-    ConversationService,
-    MessageService,
-    ChatService,
-  ],
+  controllers: [ChatController, PusherAuthController],
+  providers: [PusherService, ConversationService, MessageService, ChatService],
+  exports: [PusherService, ConversationService, MessageService, ChatService],
 })
-export class ChatModule { }
+export class ChatModule {}

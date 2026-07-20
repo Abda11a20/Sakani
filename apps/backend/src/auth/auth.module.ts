@@ -20,11 +20,16 @@ function parseExpiry(value: string): number {
   const amount = parseInt(match[1], 10);
   const unit = match[2];
   switch (unit) {
-    case 's': return amount;
-    case 'm': return amount * 60;
-    case 'h': return amount * 3600;
-    case 'd': return amount * 86400;
-    default:  return 15 * 60;
+    case 's':
+      return amount;
+    case 'm':
+      return amount * 60;
+    case 'h':
+      return amount * 3600;
+    case 'd':
+      return amount * 86400;
+    default:
+      return 15 * 60;
   }
 }
 
@@ -34,8 +39,10 @@ function parseExpiry(value: string): number {
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService): JwtModuleOptions => {
-        const secret = configService.get<string>('JWT_SECRET') ?? 'fallback-secret';
-        const expiresInStr = configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
+        const secret =
+          configService.get<string>('JWT_SECRET') ?? 'fallback-secret';
+        const expiresInStr =
+          configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
         return {
           secret,
           signOptions: {
@@ -57,6 +64,12 @@ function parseExpiry(value: string): number {
     ConfigService,
     TelegramLinkCleanupService,
   ],
-  exports: [AuthService, JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard, JwtModule],
+  exports: [
+    AuthService,
+    JwtAuthGuard,
+    OptionalJwtAuthGuard,
+    RolesGuard,
+    JwtModule,
+  ],
 })
 export class AuthModule {}

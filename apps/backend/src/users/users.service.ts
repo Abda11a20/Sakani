@@ -1,6 +1,11 @@
 // apps/backend/src/users/users.service.ts
 
-import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -9,14 +14,17 @@ import { UploadsService } from '../uploads/uploads.service';
 import * as bcrypt from 'bcrypt';
 
 type SafeUser = Omit<User, 'passwordHash' | 'nationalIdEnc'>;
-type PublicProfile = Pick<User, 'id' | 'name' | 'avatarUrl' | 'emailVerifiedAt' | 'role' | 'createdAt'>;
+type PublicProfile = Pick<
+  User,
+  'id' | 'name' | 'avatarUrl' | 'emailVerifiedAt' | 'role' | 'createdAt'
+>;
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly uploadsService: UploadsService,
-  ) { }
+  ) {}
 
   // ── جلب البروفايل الخاص بالمستخدم ─────────────────────────────────────────
   async getProfile(userId: string): Promise<SafeUser> {
@@ -33,7 +41,10 @@ export class UsersService {
   }
 
   // ── تحديث البروفايل ──────────────────────────────────────────────────────
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<SafeUser> {
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<SafeUser> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: dto,
@@ -65,7 +76,10 @@ export class UsersService {
   }
 
   // ── عرض كل المستخدمين للـ Admin ─────────────────────────────────────────
-  async getAllUsers(page: number = 1, limit: number = 10): Promise<{ users: SafeUser[], total: number }> {
+  async getAllUsers(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ users: SafeUser[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [users, total] = await Promise.all([
@@ -77,7 +91,7 @@ export class UsersService {
       this.prisma.user.count(),
     ]);
 
-    const safeUsers = users.map(user => {
+    const safeUsers = users.map((user) => {
       const { passwordHash: _ph, nationalIdEnc: _nid, ...safeUser } = user;
       return safeUser;
     });
@@ -86,7 +100,9 @@ export class UsersService {
   }
 
   // ── تفعيل / إيقاف مستخدم (للـ Admin) ─────────────────────────────────────
-  async toggleUserStatus(userId: string): Promise<{ message: string; isActive: boolean }> {
+  async toggleUserStatus(
+    userId: string,
+  ): Promise<{ message: string; isActive: boolean }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -101,7 +117,9 @@ export class UsersService {
     });
 
     return {
-      message: updatedUser.isActive ? 'Account activated successfully' : 'Account deactivated successfully',
+      message: updatedUser.isActive
+        ? 'Account activated successfully'
+        : 'Account deactivated successfully',
       isActive: updatedUser.isActive,
     };
   }
@@ -118,11 +136,16 @@ export class UsersService {
 
     // Banned users are not allowed to delete their own accounts
     if (!user.isActive) {
-      throw new ForbiddenException('غير مسموح للمستخدمين المحظورين بحذف الحساب');
+      throw new ForbiddenException(
+        'غير مسموح للمستخدمين المحظورين بحذف الحساب',
+      );
     }
 
     // Cleanup assets in Cloudinary/S3 before deletion
-    await this.uploadsService.deleteUserAssets(user.avatarPublicId, user.idCardPublicId);
+    await this.uploadsService.deleteUserAssets(
+      user.avatarPublicId,
+      user.idCardPublicId,
+    );
 
     await this.prisma.user.delete({ where: { id: userId } });
 
@@ -169,7 +192,10 @@ export class UsersService {
     }
 
     // Cleanup assets in Cloudinary/S3 before deletion
-    await this.uploadsService.deleteUserAssets(user.avatarPublicId, user.idCardPublicId);
+    await this.uploadsService.deleteUserAssets(
+      user.avatarPublicId,
+      user.idCardPublicId,
+    );
 
     await this.prisma.user.delete({ where: { id: userId } });
 
@@ -182,7 +208,7 @@ export class UsersService {
     if (!cleaned) {
       throw new NotFoundException('رقم الهاتف المدخل غير صالح');
     }
-    
+
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -190,7 +216,11 @@ export class UsersService {
           { phone: cleaned.startsWith('2') ? cleaned.substring(1) : cleaned },
           { phone: cleaned.startsWith('20') ? cleaned.substring(2) : cleaned },
           { phone: cleaned.startsWith('0') ? cleaned : '0' + cleaned },
-          { phone: cleaned.startsWith('20') ? '0' + cleaned.substring(2) : cleaned },
+          {
+            phone: cleaned.startsWith('20')
+              ? '0' + cleaned.substring(2)
+              : cleaned,
+          },
         ],
         role: UserRole.tenant,
       },
@@ -203,14 +233,19 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('المستأجر غير مسجل بالمنصة برقم الهاتف المدخل');
+      throw new NotFoundException(
+        'المستأجر غير مسجل بالمنصة برقم الهاتف المدخل',
+      );
     }
 
     return user;
   }
 
   // ── تحديث قناة استقبال الـ OTP ───────────────────────────────────────────
-  async setOtpChannel(userId: string, channel: OtpChannel): Promise<{ message: string }> {
+  async setOtpChannel(
+    userId: string,
+    channel: OtpChannel,
+  ): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -220,7 +255,9 @@ export class UsersService {
     }
 
     if (channel === OtpChannel.TELEGRAM && !user.telegramChatId) {
-      throw new ConflictException('يرجى ربط حسابك بتليجرام أولاً قبل تعيينه كقناة استقبال.');
+      throw new ConflictException(
+        'يرجى ربط حسابك بتليجرام أولاً قبل تعيينه كقناة استقبال.',
+      );
     }
 
     await this.prisma.user.update({
@@ -228,9 +265,10 @@ export class UsersService {
       data: { otpChannel: channel },
     });
 
-    const successMsg = channel === OtpChannel.TELEGRAM 
-      ? 'تم تغيير قناة استقبال الرمز إلى تليجرام بنجاح.' 
-      : 'تم تغيير قناة استقبال الرمز إلى البريد الإلكتروني بنجاح.';
+    const successMsg =
+      channel === OtpChannel.TELEGRAM
+        ? 'تم تغيير قناة استقبال الرمز إلى تليجرام بنجاح.'
+        : 'تم تغيير قناة استقبال الرمز إلى البريد الإلكتروني بنجاح.';
 
     return { message: successMsg };
   }

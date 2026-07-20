@@ -40,10 +40,12 @@ import { CommunityModule } from './community/community.module';
       validate: validateEnv,
     }),
     // Throttler (Rate Limiting) Global
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100, // 100 requests per minute globally
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100, // 100 requests per minute globally
+      },
+    ]),
     // Prisma — Global Module يتاح في كل مكان
     PrismaModule,
     // Auth Module

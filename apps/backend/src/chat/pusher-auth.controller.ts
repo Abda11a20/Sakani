@@ -56,13 +56,21 @@ export class PusherAuthController {
     }
 
     // Access granted if user is participant OR is admin/super_admin
-    const isParticipant = conversation.participants.some(p => p.userId === user.id);
-    const isAdmin = user.role === UserRole.admin || user.role === UserRole.super_admin;
+    const isParticipant = conversation.participants.some(
+      (p) => p.userId === user.id,
+    );
+    const isAdmin =
+      user.role === UserRole.admin || user.role === UserRole.super_admin;
 
     if (!isParticipant && !isAdmin) {
-      throw new ForbiddenException('Access denied to this conversation channel');
+      throw new ForbiddenException(
+        'Access denied to this conversation channel',
+      );
     }
 
-    return this.pusherService.authorizeChannel(body.socket_id, body.channel_name);
+    return this.pusherService.authorizeChannel(
+      body.socket_id,
+      body.channel_name,
+    );
   }
 }

@@ -1,6 +1,14 @@
 // apps/backend/src/community/dto/create-post.dto.ts
 
-import { IsString, IsNotEmpty, IsEnum, IsInt, Min, Max, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 import { GenderPreference } from '@prisma/client';
 
 export class CreatePostDto {

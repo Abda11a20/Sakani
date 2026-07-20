@@ -44,7 +44,10 @@ export class ChatController {
     @CurrentUser() user: SafeUser,
     @Body('userId') recipientId: string,
   ) {
-    return this.conversationService.findOrCreatePrivateConversation(user.id, recipientId);
+    return this.conversationService.findOrCreatePrivateConversation(
+      user.id,
+      recipientId,
+    );
   }
 
   // ── Get conversation details ──────────────────────────────────────────────
@@ -53,7 +56,10 @@ export class ChatController {
     @CurrentUser() user: SafeUser,
     @Param('id') conversationId: string,
   ) {
-    return this.conversationService.getConversationDetails(conversationId, user.id);
+    return this.conversationService.getConversationDetails(
+      conversationId,
+      user.id,
+    );
   }
 
   // ── Get paginated messages for a conversation ─────────────────────────────
@@ -64,7 +70,12 @@ export class ChatController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
   ) {
-    return this.messageService.getMessages(conversationId, user.id, page, limit);
+    return this.messageService.getMessages(
+      conversationId,
+      user.id,
+      page,
+      limit,
+    );
   }
 
   // ── Send a message to a conversation ──────────────────────────────────────
@@ -73,7 +84,11 @@ export class ChatController {
     @CurrentUser() user: SafeUser,
     @Body() dto: SendMessageDto,
   ) {
-    return this.messageService.sendMessage(user.id, dto.conversationId, dto.content);
+    return this.messageService.sendMessage(
+      user.id,
+      dto.conversationId,
+      dto.content,
+    );
   }
 
   // ── Mark conversation as read ─────────────────────────────────────────────

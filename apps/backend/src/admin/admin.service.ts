@@ -10,7 +10,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReviewListingDto } from './dto/review-listing.dto';
 import { BanUserDto } from './dto/ban-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { ListingStatus, NotificationType, UserRole, IdentityStatus } from '@prisma/client';
+import {
+  ListingStatus,
+  NotificationType,
+  UserRole,
+  IdentityStatus,
+} from '@prisma/client';
 import { decryptAES } from '../auth/auth.service';
 import { userPublicSelect } from '../common/selects/user.select';
 import { NotificationService } from '../notifications/notifications.service';
@@ -27,11 +32,13 @@ export class AdminService {
   ) {}
 
   // ── إدارة الإعلانات ────────────────────────────────────────────────────────
-  async getAllListings(page: number = 1, limit: number = 10, status?: ListingStatus) {
+  async getAllListings(
+    page: number = 1,
+    limit: number = 10,
+    status?: ListingStatus,
+  ) {
     const skip = (page - 1) * limit;
-    const where = status
-      ? { status, isDeleted: false }
-      : { isDeleted: false };
+    const where = status ? { status, isDeleted: false } : { isDeleted: false };
 
     const [listings, total] = await Promise.all([
       this.prisma.listing.findMany({
@@ -52,7 +59,10 @@ export class AdminService {
       this.prisma.listing.count({ where }),
     ]);
 
-    return { listings, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return {
+      listings,
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   // ── جلب الإعلانات المحذوفة (الأرشيف) ─────────────────────────────────────
@@ -110,7 +120,10 @@ export class AdminService {
       this.prisma.listing.count({ where }),
     ]);
 
-    return { listings, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return {
+      listings,
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   // ── Soft Delete من الأدمن ───────────────────────────────────────────────────
@@ -126,7 +139,8 @@ export class AdminService {
     });
 
     if (!listing) throw new NotFoundException('الإعلان غير موجود');
-    if (listing.isDeleted) throw new BadRequestException('الإعلان محذوف بالفعل');
+    if (listing.isDeleted)
+      throw new BadRequestException('الإعلان محذوف بالفعل');
 
     await this.prisma.$transaction(async (tx) => {
       await tx.listing.update({
@@ -173,7 +187,8 @@ export class AdminService {
     if (!listing.isDeleted) throw new BadRequestException('الإعلان غير محذوف');
 
     // Restore to previous status, fallback to pending_review
-    const restoredStatus = listing.statusBeforeDelete ?? ListingStatus.pending_review;
+    const restoredStatus =
+      listing.statusBeforeDelete ?? ListingStatus.pending_review;
 
     await this.prisma.$transaction(async (tx) => {
       await tx.listing.update({
@@ -249,10 +264,17 @@ export class AdminService {
       },
     });
 
-    return { message: `تم حذف ${images.length} صورة بنجاح`, deletedCount: images.length };
+    return {
+      message: `تم حذف ${images.length} صورة بنجاح`,
+      deletedCount: images.length,
+    };
   }
 
-  async reviewListing(listingId: string, adminId: string, dto: ReviewListingDto) {
+  async reviewListing(
+    listingId: string,
+    adminId: string,
+    dto: ReviewListingDto,
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
     });
@@ -279,7 +301,10 @@ export class AdminService {
         data,
       });
 
-      if (dto.status === ListingStatus.active || dto.status === ListingStatus.rejected) {
+      if (
+        dto.status === ListingStatus.active ||
+        dto.status === ListingStatus.rejected
+      ) {
         const isApproved = dto.status === ListingStatus.active;
 
         await this.notificationService.createUnique(
@@ -348,7 +373,9 @@ export class AdminService {
     }
 
     // Delete images from storage
-    const images = await this.prisma.listingImage.findMany({ where: { listingId } });
+    const images = await this.prisma.listingImage.findMany({
+      where: { listingId },
+    });
 
     await Promise.allSettled(
       images.map(async (img) => {
@@ -384,7 +411,12 @@ export class AdminService {
     return { message: `تم الحذف النهائي للإعلان: "${titleSnapshot}"` };
   }
 
-  async getAllRequests(page: number = 1, limit: number = 10, status?: string, search?: string) {
+  async getAllRequests(
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    search?: string,
+  ) {
     const skip = (page - 1) * limit;
 
     const andConditions: any[] = [];
@@ -393,8 +425,8 @@ export class AdminService {
       andConditions.push({
         OR: [
           { tenant: { name: { contains: search, mode: 'insensitive' } } },
-          { listing: { title: { contains: search, mode: 'insensitive' } } }
-        ]
+          { listing: { title: { contains: search, mode: 'insensitive' } } },
+        ],
       });
     }
     const where = andConditions.length > 0 ? { AND: andConditions } : {};
@@ -413,29 +445,41 @@ export class AdminService {
       this.prisma.viewingRequest.count({ where }),
     ]);
 
-    return { requests, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return {
+      requests,
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   // ── إدارة المستخدمين ──────────────────────────────────────────────────────
-  async getAllUsers(page: number = 1, limit: number = 10, role?: UserRole, search?: string, isActive?: string, isVerified?: string) {
+  async getAllUsers(
+    page: number = 1,
+    limit: number = 10,
+    role?: UserRole,
+    search?: string,
+    isActive?: string,
+    isVerified?: string,
+  ) {
     const skip = (page - 1) * limit;
 
     const andConditions: any[] = [];
     if (role) andConditions.push({ role });
-    
+
     if (isActive === 'true') andConditions.push({ isActive: true });
     else if (isActive === 'false') andConditions.push({ isActive: false });
 
-    if (isVerified === 'true') andConditions.push({ emailVerifiedAt: { not: null } });
-    else if (isVerified === 'false') andConditions.push({ emailVerifiedAt: null });
-    
+    if (isVerified === 'true')
+      andConditions.push({ emailVerifiedAt: { not: null } });
+    else if (isVerified === 'false')
+      andConditions.push({ emailVerifiedAt: null });
+
     if (search) {
       andConditions.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search, mode: 'insensitive' } }
-        ]
+          { phone: { contains: search, mode: 'insensitive' } },
+        ],
       });
     }
 
@@ -467,7 +511,10 @@ export class AdminService {
       return { ...safeUser, nationalId };
     });
 
-    return { users: safeUsers, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return {
+      users: safeUsers,
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   async verifyUser(userId: string, adminId: string) {
@@ -512,8 +559,14 @@ export class AdminService {
     });
   }
 
-  async updateUserRole(userId: string, superAdminId: string, dto: UpdateUserRoleDto) {
-    const targetUser = await this.prisma.user.findUnique({ where: { id: userId } });
+  async updateUserRole(
+    userId: string,
+    superAdminId: string,
+    dto: UpdateUserRoleDto,
+  ) {
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
     if (!targetUser) throw new NotFoundException('المستخدم غير موجود');
 
     if (targetUser.role === UserRole.super_admin) {
@@ -529,7 +582,9 @@ export class AdminService {
   // ── نظام الحظر (Blacklist) ────────────────────────────────────────────────
   async banUser(adminId: string, dto: BanUserDto) {
     if (!dto.nationalIdHash && !dto.phone) {
-      throw new BadRequestException('يجب توفير إما nationalIdHash أو phone لحظر المستخدم');
+      throw new BadRequestException(
+        'يجب توفير إما nationalIdHash أو phone لحظر المستخدم',
+      );
     }
 
     let nationalIdHash = dto.nationalIdHash;
@@ -563,7 +618,9 @@ export class AdminService {
     const orConditions: any[] = [];
     if (phone) orConditions.push({ phone });
     if (nationalIdHash) {
-      orConditions.push({ nationalIdEnc: { startsWith: nationalIdHash + ':' } });
+      orConditions.push({
+        nationalIdEnc: { startsWith: nationalIdHash + ':' },
+      });
     }
 
     if (orConditions.length > 0) {
@@ -620,10 +677,13 @@ export class AdminService {
           ...entry,
           user,
         };
-      })
+      }),
     );
 
-    return { banned: bannedWithUser, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return {
+      banned: bannedWithUser,
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   async unbanUser(blacklistId: string, superAdminId: string) {
@@ -642,7 +702,9 @@ export class AdminService {
     const orConditions: any[] = [];
     if (blacklisted.phone) orConditions.push({ phone: blacklisted.phone });
     if (blacklisted.nationalIdHash) {
-      orConditions.push({ nationalIdEnc: { startsWith: blacklisted.nationalIdHash + ':' } });
+      orConditions.push({
+        nationalIdEnc: { startsWith: blacklisted.nationalIdHash + ':' },
+      });
     }
 
     if (orConditions.length > 0) {
@@ -669,8 +731,12 @@ export class AdminService {
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.listing.count({ where: { isDeleted: false } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.pending_review, isDeleted: false } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.active, isDeleted: false } }),
+      this.prisma.listing.count({
+        where: { status: ListingStatus.pending_review, isDeleted: false },
+      }),
+      this.prisma.listing.count({
+        where: { status: ListingStatus.active, isDeleted: false },
+      }),
       this.prisma.viewingRequest.count(),
       this.prisma.viewingRequest.count({ where: { status: 'pending' } }),
       this.prisma.blacklist.count(),

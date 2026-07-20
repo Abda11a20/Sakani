@@ -195,7 +195,10 @@ export class CommunityRepository {
     });
   }
 
-  async updateParticipantStatus(id: string, status: CommunityParticipantStatus) {
+  async updateParticipantStatus(
+    id: string,
+    status: CommunityParticipantStatus,
+  ) {
     return this.prisma.communityParticipant.update({
       where: { id },
       data: { status },

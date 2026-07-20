@@ -46,7 +46,11 @@ export class AdminController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    return this.adminService.getAllListings(page, limit, ListingStatus.pending_review);
+    return this.adminService.getAllListings(
+      page,
+      limit,
+      ListingStatus.pending_review,
+    );
   }
 
   @Get('listings')
@@ -71,7 +75,14 @@ export class AdminController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    return this.adminService.getDeletedListings(page, limit, deletedByRole, search, from, to);
+    return this.adminService.getDeletedListings(
+      page,
+      limit,
+      deletedByRole,
+      search,
+      from,
+      to,
+    );
   }
 
   @Patch('listings/:id/review')
@@ -96,10 +107,7 @@ export class AdminController {
 
   @Patch('listings/:id/restore')
   @Roles(UserRole.admin, UserRole.super_admin)
-  async restoreListing(
-    @Param('id') id: string,
-    @CurrentUser() user: SafeUser,
-  ) {
+  async restoreListing(@Param('id') id: string, @CurrentUser() user: SafeUser) {
     return this.adminService.restoreListing(id, user.id);
   }
 
@@ -133,24 +141,25 @@ export class AdminController {
     @Query('isVerified') isVerified?: string,
   ) {
     const userRole = role as UserRole | undefined;
-    return this.adminService.getAllUsers(page, limit, userRole, search, isActive, isVerified);
+    return this.adminService.getAllUsers(
+      page,
+      limit,
+      userRole,
+      search,
+      isActive,
+      isVerified,
+    );
   }
 
   @Patch('users/:id/verify')
   @Roles(UserRole.admin, UserRole.super_admin)
-  async verifyUser(
-    @Param('id') id: string,
-    @CurrentUser() user: SafeUser,
-  ) {
+  async verifyUser(@Param('id') id: string, @CurrentUser() user: SafeUser) {
     return this.adminService.verifyUser(id, user.id);
   }
 
   @Patch('users/:id/reject')
   @Roles(UserRole.admin, UserRole.super_admin)
-  async rejectUser(
-    @Param('id') id: string,
-    @CurrentUser() user: SafeUser,
-  ) {
+  async rejectUser(@Param('id') id: string, @CurrentUser() user: SafeUser) {
     return this.adminService.rejectUser(id, user.id);
   }
 
@@ -189,16 +198,16 @@ export class AdminController {
   @Roles(UserRole.super_admin)
   async registerAdmin(@Body() dto: CreateUserDto) {
     // Force the role to admin regardless of what is sent in the body
-    return this.usersService.createUserByAdmin({ ...dto, role: UserRole.admin });
+    return this.usersService.createUserByAdmin({
+      ...dto,
+      role: UserRole.admin,
+    });
   }
 
   // ── Blacklist ────────────────────────────────────────────────────────────
   @Post('ban')
   @Roles(UserRole.admin, UserRole.super_admin)
-  async banUser(
-    @CurrentUser() user: SafeUser,
-    @Body() dto: BanUserDto,
-  ) {
+  async banUser(@CurrentUser() user: SafeUser, @Body() dto: BanUserDto) {
     return this.adminService.banUser(user.id, dto);
   }
 
@@ -214,10 +223,7 @@ export class AdminController {
 
   @Delete('banned/:id')
   @Roles(UserRole.super_admin) // Only super_admin can lift bans
-  async unbanUser(
-    @Param('id') id: string,
-    @CurrentUser() user: SafeUser,
-  ) {
+  async unbanUser(@Param('id') id: string, @CurrentUser() user: SafeUser) {
     if (user.role !== UserRole.super_admin) {
       throw new ForbiddenException('Only super_admin can lift bans');
     }

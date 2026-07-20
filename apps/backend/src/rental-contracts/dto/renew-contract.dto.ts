@@ -1,6 +1,14 @@
 // apps/backend/src/rental-contracts/dto/renew-contract.dto.ts
 
-import { IsNotEmpty, IsDate, IsOptional, IsInt, IsBoolean, IsString, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsDate,
+  IsOptional,
+  IsInt,
+  IsBoolean,
+  IsString,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ContractCreatedBy } from '@prisma/client';
 
@@ -22,7 +30,9 @@ export class RenewContractDto {
   @IsOptional()
   notes?: string;
 
-  @IsEnum(ContractCreatedBy, { message: 'createdByType must be a valid ContractCreatedBy value' })
+  @IsEnum(ContractCreatedBy, {
+    message: 'createdByType must be a valid ContractCreatedBy value',
+  })
   @IsOptional()
   createdByType?: ContractCreatedBy;
 }

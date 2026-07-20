@@ -56,8 +56,13 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
   async generateTelegramLinkCode(
     @Body() dto: GenerateLinkCodeDto,
-  ): Promise<{ success: boolean; data: { linkCode: string; expiresAt: Date } }> {
-    const result = await this.authService.generateTelegramLinkCode(dto.identifier);
+  ): Promise<{
+    success: boolean;
+    data: { linkCode: string; expiresAt: Date };
+  }> {
+    const result = await this.authService.generateTelegramLinkCode(
+      dto.identifier,
+    );
     return { success: true, data: result };
   }
 
@@ -107,7 +112,8 @@ export class AuthController {
     message: string;
     data: { accessToken: string; refreshToken: string; user: SafeUser };
   }> {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
     const result = await this.authService.login(dto, ip, userAgent);
     return {
       success: true,

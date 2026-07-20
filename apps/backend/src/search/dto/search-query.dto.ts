@@ -1,6 +1,14 @@
 // apps/backend/src/search/dto/search-query.dto.ts
 
-import { IsOptional, IsString, IsEnum, IsNumber, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { UnitType, GenderTarget } from '@prisma/client';
 

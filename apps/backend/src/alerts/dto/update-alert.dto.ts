@@ -1,6 +1,13 @@
 // apps/backend/src/alerts/dto/update-alert.dto.ts
 
-import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsBoolean,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { UnitType, GenderTarget } from '@prisma/client';
 

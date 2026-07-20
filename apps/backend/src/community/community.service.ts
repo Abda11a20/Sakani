@@ -48,7 +48,9 @@ export class CommunityService {
     // 1. Anti-spam: Check active posts limit (Max 5 active posts)
     const activeCount = await this.repo.countActivePostsByUser(userId);
     if (activeCount >= 5) {
-      throw new BadRequestException('لقد تجاوزت الحد الأقصى للأنشطة النشطة المسموح بإنشائها حالياً (الحد الأقصى 5 أنشطة).');
+      throw new BadRequestException(
+        'لقد تجاوزت الحد الأقصى للأنشطة النشطة المسموح بإنشائها حالياً (الحد الأقصى 5 أنشطة).',
+      );
     }
 
     // 2. Bad words filtering validation
@@ -63,7 +65,9 @@ export class CommunityService {
 
     // Validate eventDate is in the future
     if (new Date(dto.eventDate) < new Date()) {
-      throw new BadRequestException('تاريخ الفعالية لا يمكن أن يكون في الماضي.');
+      throw new BadRequestException(
+        'تاريخ الفعالية لا يمكن أن يكون في الماضي.',
+      );
     }
 
     const post = await this.repo.createPost({
@@ -124,7 +128,9 @@ export class CommunityService {
       throw new ForbiddenException('ليس لديك صلاحية لإلغاء هذا النشاط.');
     }
 
-    return this.repo.updatePost(postId, { status: CommunityPostStatus.CANCELLED });
+    return this.repo.updatePost(postId, {
+      status: CommunityPostStatus.CANCELLED,
+    });
   }
 
   async deletePost(postId: string, userId: string) {
@@ -148,17 +154,23 @@ export class CommunityService {
     }
 
     if (post.userId === userId) {
-      throw new BadRequestException('لا يمكنك طلب الانضمام إلى نشاط قمت بإنشائه.');
+      throw new BadRequestException(
+        'لا يمكنك طلب الانضمام إلى نشاط قمت بإنشائه.',
+      );
     }
 
     if (post.status !== CommunityPostStatus.ACTIVE) {
-      throw new BadRequestException('لا يمكن الانضمام إلى نشاط غير نشط أو تم إلغاؤه.');
+      throw new BadRequestException(
+        'لا يمكن الانضمام إلى نشاط غير نشط أو تم إلغاؤه.',
+      );
     }
 
     const existing = await this.repo.findParticipant(postId, userId);
     if (existing) {
       if (existing.status === CommunityParticipantStatus.PENDING) {
-        throw new BadRequestException('لقد قمت بطلب الانضمام بالفعل، الطلب قيد الانتظار.');
+        throw new BadRequestException(
+          'لقد قمت بطلب الانضمام بالفعل، الطلب قيد الانتظار.',
+        );
       }
       if (existing.status === CommunityParticipantStatus.ACCEPTED) {
         throw new BadRequestException('لقد تم قبولك في هذا النشاط بالفعل.');
@@ -177,7 +189,10 @@ export class CommunityService {
 
     let participant;
     if (existing) {
-      participant = await this.repo.updateParticipantStatus(existing.id, CommunityParticipantStatus.PENDING);
+      participant = await this.repo.updateParticipantStatus(
+        existing.id,
+        CommunityParticipantStatus.PENDING,
+      );
     } else {
       participant = await this.repo.createParticipant(postId, userId);
     }
@@ -209,13 +224,17 @@ export class CommunityService {
       ).length;
 
       if (acceptedCount >= post!.maxParticipants) {
-        throw new BadRequestException('عذراً، لا يمكن قبول المزيد؛ تم اكتمال العدد الأقصى للنشاط.');
+        throw new BadRequestException(
+          'عذراً، لا يمكن قبول المزيد؛ تم اكتمال العدد الأقصى للنشاط.',
+        );
       }
     }
 
     const updated = await this.repo.updateParticipantStatus(
       participantId,
-      status === 'ACCEPTED' ? CommunityParticipantStatus.ACCEPTED : CommunityParticipantStatus.REJECTED,
+      status === 'ACCEPTED'
+        ? CommunityParticipantStatus.ACCEPTED
+        : CommunityParticipantStatus.REJECTED,
     );
 
     // Send push notification to requester
@@ -226,11 +245,17 @@ export class CommunityService {
 
   async leaveActivity(postId: string, userId: string) {
     const participant = await this.repo.findParticipant(postId, userId);
-    if (!participant || participant.status !== CommunityParticipantStatus.ACCEPTED) {
+    if (
+      !participant ||
+      participant.status !== CommunityParticipantStatus.ACCEPTED
+    ) {
       throw new BadRequestException('أنت لست مشتركاً مقبولاً في هذا النشاط.');
     }
 
-    return this.repo.updateParticipantStatus(participant.id, CommunityParticipantStatus.LEFT);
+    return this.repo.updateParticipantStatus(
+      participant.id,
+      CommunityParticipantStatus.LEFT,
+    );
   }
 
   async reportPost(
@@ -245,7 +270,9 @@ export class CommunityService {
     }
 
     if (reason === ReportReason.OTHER && !details?.trim()) {
-      throw new BadRequestException('يرجى كتابة تفاصيل البلاغ عند اختيار سبب "أخرى".');
+      throw new BadRequestException(
+        'يرجى كتابة تفاصيل البلاغ عند اختيار سبب "أخرى".',
+      );
     }
 
     // Sanitize and check bad words in report details
@@ -261,11 +288,7 @@ export class CommunityService {
     });
   }
 
-  async rateHost(
-    postId: string,
-    authorId: string,
-    rating: number,
-  ) {
+  async rateHost(postId: string, authorId: string, rating: number) {
     // Constraint 2: Enforce range validation
     if (rating < 1 || rating > 5) {
       throw new BadRequestException('التقييم يجب أن يكون بين 1 و 5 نجوم فقط.');
@@ -283,23 +306,36 @@ export class CommunityService {
     }
 
     // Constraint 1: Activity must be archived or finished
-    const isFinished = post.status === CommunityPostStatus.ARCHIVED || post.eventDate <= new Date();
+    const isFinished =
+      post.status === CommunityPostStatus.ARCHIVED ||
+      post.eventDate <= new Date();
     if (!isFinished) {
-      throw new BadRequestException('لا يمكنك تقديم تقييم للمضيف إلا بعد انتهاء تاريخ النشاط أو أرشفتة.');
+      throw new BadRequestException(
+        'لا يمكنك تقديم تقييم للمضيف إلا بعد انتهاء تاريخ النشاط أو أرشفتة.',
+      );
     }
 
     // Constraint 1: Author must be an accepted participant
     const participant = post.participants.find(
-      (p) => p.userId === authorId && p.status === CommunityParticipantStatus.ACCEPTED,
+      (p) =>
+        p.userId === authorId &&
+        p.status === CommunityParticipantStatus.ACCEPTED,
     );
     if (!participant) {
-      throw new BadRequestException('التقييم متاح فقط للأعضاء المقبولين الذين شاركوا بالفعل بالفعالية.');
+      throw new BadRequestException(
+        'التقييم متاح فقط للأعضاء المقبولين الذين شاركوا بالفعل بالفعالية.',
+      );
     }
 
     // Constraint 1: One review allowed per user/post (enforced in DB but check here)
-    const alreadyReviewed = await this.repo.hasUserReviewedPost(postId, authorId);
+    const alreadyReviewed = await this.repo.hasUserReviewedPost(
+      postId,
+      authorId,
+    );
     if (alreadyReviewed) {
-      throw new BadRequestException('لقد قمت بتقييم المضيف عن هذا النشاط مسبقاً.');
+      throw new BadRequestException(
+        'لقد قمت بتقييم المضيف عن هذا النشاط مسبقاً.',
+      );
     }
 
     const review = await this.repo.createReview({
@@ -359,7 +395,9 @@ export class CommunityService {
         genderPreference: post.genderPreference,
       });
 
-      const uniqueUserIds = Array.from(new Set(matches.map((m) => m.userId))).filter(
+      const uniqueUserIds = Array.from(
+        new Set(matches.map((m) => m.userId)),
+      ).filter(
         (uid) => uid !== post.userId, // Don't notify the author
       );
 
@@ -408,14 +446,19 @@ export class CommunityService {
     }
   }
 
-  private async notifyUserOfRequestResponse(participant: any, status: 'ACCEPTED' | 'REJECTED') {
+  private async notifyUserOfRequestResponse(
+    participant: any,
+    status: 'ACCEPTED' | 'REJECTED',
+  ) {
     try {
       const isAccepted = status === 'ACCEPTED';
       const notification = await this.prisma.notification.create({
         data: {
           userId: participant.userId,
           type: NotificationType.ALERT,
-          title: isAccepted ? 'تم قبول انضمامك للنشاط 🎉' : 'عذراً، تم رفض انضمامك 😔',
+          title: isAccepted
+            ? 'تم قبول انضمامك للنشاط 🎉'
+            : 'عذراً، تم رفض انضمامك 😔',
           body: isAccepted
             ? `وافق المضيف على طلب انضمامك لنشاط "${participant.post.title}". يمكنك الآن بدء محادثة معه!`
             : `تم رفض طلب انضمامك لنشاط "${participant.post.title}".`,
@@ -470,15 +513,19 @@ export class CommunityService {
       this.prisma.communityPost.count({ where: { isDeleted: false } }),
       this.prisma.communityParticipant.count({ where: { status: 'ACCEPTED' } }),
       this.prisma.communityReport.count({ where: { status: 'PENDING' } }),
-      this.prisma.communityPost.count({ where: { status: 'BLOCKED', isDeleted: false } }),
-      this.prisma.communityPost.count({ where: { status: 'ARCHIVED', isDeleted: false } }),
+      this.prisma.communityPost.count({
+        where: { status: 'BLOCKED', isDeleted: false },
+      }),
+      this.prisma.communityPost.count({
+        where: { status: 'ARCHIVED', isDeleted: false },
+      }),
       this.prisma.user.aggregate({
         _avg: {
           communityRatingAvg: true,
         },
         where: {
-          communityReviewsCount: { gt: 0 }
-        }
+          communityReviewsCount: { gt: 0 },
+        },
       }),
     ]);
 

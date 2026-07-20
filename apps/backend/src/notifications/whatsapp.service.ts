@@ -14,7 +14,9 @@ export class WhatsappService {
     this.accessToken = this.config.get<string>('WHATSAPP_ACCESS_TOKEN');
 
     if (!this.phoneNumberId || !this.accessToken) {
-      this.logger.warn('WhatsApp API credentials are not set in .env. WhatsApp will run in simulation mode.');
+      this.logger.warn(
+        'WhatsApp API credentials are not set in .env. WhatsApp will run in simulation mode.',
+      );
       this.isEnabled = false;
     }
   }
@@ -76,11 +78,15 @@ export class WhatsappService {
         },
       );
 
-      this.logger.log(`WhatsApp OTP sent successfully to ${formattedPhone}. Message ID: ${response.data?.messages?.[0]?.id}`);
+      this.logger.log(
+        `WhatsApp OTP sent successfully to ${formattedPhone}. Message ID: ${response.data?.messages?.[0]?.id}`,
+      );
     } catch (error: any) {
       this.logger.error(`Failed to send WhatsApp OTP to ${formattedPhone}`);
       if (error.response?.data) {
-        this.logger.error(`WhatsApp API Response Error: ${JSON.stringify(error.response.data)}`);
+        this.logger.error(
+          `WhatsApp API Response Error: ${JSON.stringify(error.response.data)}`,
+        );
       } else {
         this.logger.error(error.message, error.stack);
       }

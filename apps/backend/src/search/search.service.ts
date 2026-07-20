@@ -48,8 +48,7 @@ export class SearchService {
     }
 
     if (unitType) {
-      where.unitType =
-        unitType === UnitType.room ? { in: [] } : unitType;
+      where.unitType = unitType === UnitType.room ? { in: [] } : unitType;
     }
 
     if (governorate) {
@@ -62,14 +61,19 @@ export class SearchService {
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {};
-      if (minPrice !== undefined) (where.price as Prisma.IntFilter).gte = minPrice;
-      if (maxPrice !== undefined) (where.price as Prisma.IntFilter).lte = maxPrice;
+      if (minPrice !== undefined)
+        (where.price as Prisma.IntFilter).gte = minPrice;
+      if (maxPrice !== undefined)
+        (where.price as Prisma.IntFilter).lte = maxPrice;
     }
 
     if (genderTarget) where.genderTarget = genderTarget;
 
     if (amenities) {
-      const amenityList = amenities.split(',').map((a) => a.trim()).filter(Boolean);
+      const amenityList = amenities
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
       if (amenityList.length > 0) {
         where.amenities = { hasEvery: amenityList };
       }

@@ -1,6 +1,16 @@
 // apps/backend/src/notifications/push.controller.ts
 
-import { Controller, Post, Delete, Get, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Delete,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -38,10 +48,7 @@ export class PushController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  async subscribe(
-    @CurrentUser() user: SafeUser,
-    @Body() dto: SubscribeDto,
-  ) {
+  async subscribe(@CurrentUser() user: SafeUser, @Body() dto: SubscribeDto) {
     return this.pushService.subscribe(
       user.id,
       { endpoint: dto.endpoint, keys: dto.keys },
@@ -54,18 +61,14 @@ export class PushController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  async unsubscribe(
-    @Body() dto: UnsubscribeDto,
-  ) {
+  async unsubscribe(@Body() dto: UnsubscribeDto) {
     return this.pushService.unsubscribe(dto.endpoint);
   }
 
   @Get('subscriptions/me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async getMySubscriptions(
-    @CurrentUser() user: SafeUser,
-  ) {
+  async getMySubscriptions(@CurrentUser() user: SafeUser) {
     return this.pushService.getSubscriptions(user.id);
   }
 

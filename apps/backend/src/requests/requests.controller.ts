@@ -38,20 +38,14 @@ export class RequestsController {
   // ── 0. التأجير السريع المباشر (Landlord فقط) ──────────────────────────────────
   @Post('quick-rent')
   @Roles(UserRole.landlord)
-  async quickRent(
-    @CurrentUser() user: SafeUser,
-    @Body() dto: QuickRentDto,
-  ) {
+  async quickRent(@CurrentUser() user: SafeUser, @Body() dto: QuickRentDto) {
     return this.requestsService.quickRent(user.id, dto);
   }
 
   // ── 1. إنشاء طلب معاينة (Tenant فقط) ──────────────────────────────────────
   @Post()
   @Roles(UserRole.tenant)
-  async create(
-    @CurrentUser() user: SafeUser,
-    @Body() dto: CreateRequestDto,
-  ) {
+  async create(@CurrentUser() user: SafeUser, @Body() dto: CreateRequestDto) {
     return this.requestsService.create(user.id, dto);
   }
 
@@ -136,10 +130,7 @@ export class RequestsController {
 
   @Delete(':id')
   @Roles(UserRole.tenant)
-  async cancelRequest(
-    @Param('id') id: string,
-    @CurrentUser() user: SafeUser,
-  ) {
+  async cancelRequest(@Param('id') id: string, @CurrentUser() user: SafeUser) {
     return this.requestsService.cancelRequest(id, user.id);
   }
 }

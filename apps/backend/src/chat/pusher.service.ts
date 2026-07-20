@@ -17,7 +17,11 @@ export class PusherService {
     });
   }
 
-  async broadcastToConversation(conversationId: string, event: string, data: any) {
+  async broadcastToConversation(
+    conversationId: string,
+    event: string,
+    data: any,
+  ) {
     const channelName = `private-conversation-${conversationId}`;
     return this.pusher.trigger(channelName, event, data);
   }

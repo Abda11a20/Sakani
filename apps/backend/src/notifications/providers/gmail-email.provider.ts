@@ -21,8 +21,7 @@ export class GmailEmailProvider implements IEmailProvider {
     const clientId = this.config.get<string>('GOOGLE_CLIENT_ID') ?? '';
     const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET') ?? '';
     const refreshToken = this.config.get<string>('GOOGLE_REFRESH_TOKEN') ?? '';
-    this.senderEmail =
-      this.config.get<string>('GOOGLE_SENDER_EMAIL') ?? '';
+    this.senderEmail = this.config.get<string>('GOOGLE_SENDER_EMAIL') ?? '';
 
     // إعداد OAuth2 client
     this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret);

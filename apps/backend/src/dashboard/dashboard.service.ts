@@ -73,8 +73,12 @@ export class DashboardService {
       },
     });
 
-    const rentedBedsSumPrice = rentedBeds.reduce((sum, item) => sum + (item.listing?.price || 0), 0);
-    const monthlyRevenue = (rentedApartmentsSum._sum.price || 0) + rentedBedsSumPrice;
+    const rentedBedsSumPrice = rentedBeds.reduce(
+      (sum, item) => sum + (item.listing?.price || 0),
+      0,
+    );
+    const monthlyRevenue =
+      (rentedApartmentsSum._sum.price || 0) + rentedBedsSumPrice;
 
     // 5. Total Views across all landlord listings
     const viewsAggregate = await this.prisma.listing.aggregate({
@@ -138,7 +142,10 @@ export class DashboardService {
       },
     });
 
-    const monthlyRent = completedRequests.reduce((sum, item) => sum + (item.listing?.price || 0), 0);
+    const monthlyRent = completedRequests.reduce(
+      (sum, item) => sum + (item.listing?.price || 0),
+      0,
+    );
 
     return {
       activeRequests,

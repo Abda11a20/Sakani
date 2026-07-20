@@ -74,7 +74,10 @@ export class CommunityController {
 
   @Post('alerts')
   @UseGuards(JwtAuthGuard)
-  async createAlert(@CurrentUser() user: SafeUser, @Body() dto: CreateAlertDto) {
+  async createAlert(
+    @CurrentUser() user: SafeUser,
+    @Body() dto: CreateAlertDto,
+  ) {
     return this.service.createAlert(user.id, dto);
   }
 

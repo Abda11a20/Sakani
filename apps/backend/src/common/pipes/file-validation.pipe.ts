@@ -1,10 +1,6 @@
 // apps/backend/src/common/pipes/file-validation.pipe.ts
 
-import {
-  PipeTransform,
-  Injectable,
-  BadRequestException,
-} from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
@@ -53,7 +49,10 @@ export class FileValidationPipe implements PipeTransform {
 
     // 3. Also verify the declared MIME matches the detected one
     const allowedTypes = Object.keys(ALLOWED_MIME_SIGNATURES);
-    if (!allowedTypes.includes(file.mimetype) || file.mimetype !== detectedMime) {
+    if (
+      !allowedTypes.includes(file.mimetype) ||
+      file.mimetype !== detectedMime
+    ) {
       throw new BadRequestException(
         'نوع الملف غير مسموح به أو تم تزوير الامتداد',
       );

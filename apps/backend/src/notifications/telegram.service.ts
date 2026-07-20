@@ -20,7 +20,9 @@ export class TelegramService implements OnModuleInit {
 
   async onModuleInit() {
     const webhookUrl = this.configService.get<string>('TELEGRAM_WEBHOOK_URL');
-    const webhookSecret = this.configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'TELEGRAM_WEBHOOK_SECRET',
+    );
 
     if (this.botToken && webhookUrl) {
       // تأخير 5 ثوانٍ لانتظار استقرار الشبكة بعد بدء الـ container
@@ -68,7 +70,11 @@ export class TelegramService implements OnModuleInit {
   /**
    * إرسال رمز التحقق (OTP)
    */
-  async sendOtp(chatId: string, otp: string, type: VerificationType): Promise<void> {
+  async sendOtp(
+    chatId: string,
+    otp: string,
+    type: VerificationType,
+  ): Promise<void> {
     let messageText = '';
 
     if (type === VerificationType.EMAIL_VERIFICATION) {
@@ -111,9 +117,7 @@ export class TelegramService implements OnModuleInit {
       this.logger.log(`📱 تم إرسال رسالة Telegram بنجاح إلى chatId: ${chatId}`);
     } catch (error: any) {
       const errMsg = error.response?.data?.description ?? error.message;
-      this.logger.error(
-        `❌ فشل إرسال رسالة Telegram إلى ${chatId}: ${errMsg}`,
-      );
+      this.logger.error(`❌ فشل إرسال رسالة Telegram إلى ${chatId}: ${errMsg}`);
     }
   }
 }

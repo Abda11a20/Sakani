@@ -46,7 +46,12 @@ export class EmailService {
   /** إرسال كود تفعيل الحساب */
   async sendEmailVerification(email: string, otp: string): Promise<void> {
     const loginUrl = `${this.frontendUrl}/ar/login`;
-    const { html, text } = buildVerificationEmail(otp, loginUrl, OTP_EXPIRY_MINUTES, this.frontendUrl);
+    const { html, text } = buildVerificationEmail(
+      otp,
+      loginUrl,
+      OTP_EXPIRY_MINUTES,
+      this.frontendUrl,
+    );
 
     await this.dispatch(
       {
@@ -63,7 +68,12 @@ export class EmailService {
   async sendPasswordReset(email: string, otp: string): Promise<void> {
     // رابط يوجه لصفحة إعادة التعيين مع الإيميل كـ query param
     const resetUrl = `${this.frontendUrl}/ar/reset-password?email=${encodeURIComponent(email)}`;
-    const { html, text } = buildPasswordResetEmail(otp, resetUrl, OTP_EXPIRY_MINUTES, this.frontendUrl);
+    const { html, text } = buildPasswordResetEmail(
+      otp,
+      resetUrl,
+      OTP_EXPIRY_MINUTES,
+      this.frontendUrl,
+    );
 
     await this.dispatch(
       {
@@ -79,7 +89,10 @@ export class EmailService {
   /** إرسال تأكيد تغيير كلمة المرور */
   async sendPasswordChangedConfirmation(email: string): Promise<void> {
     const loginUrl = `${this.frontendUrl}/ar/login`;
-    const { html, text } = buildPasswordChangedEmail(loginUrl, this.frontendUrl);
+    const { html, text } = buildPasswordChangedEmail(
+      loginUrl,
+      this.frontendUrl,
+    );
 
     await this.dispatch({
       to: email,
@@ -106,13 +119,10 @@ export class EmailService {
     try {
       await this.provider.send(payload);
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'خطأ غير معروف';
+      const message = error instanceof Error ? error.message : 'خطأ غير معروف';
 
       // نسجّل الخطأ دائماً بغض النظر عن البيئة
-      this.logger.error(
-        `❌ فشل إرسال البريد إلى ${payload.to}: ${message}`,
-      );
+      this.logger.error(`❌ فشل إرسال البريد إلى ${payload.to}: ${message}`);
 
       // في بيئة التطوير: نطبع الـ OTP لتسهيل الاختبار
       if (!isProduction && devOtp) {

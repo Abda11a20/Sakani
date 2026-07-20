@@ -18,8 +18,14 @@ export class CustomLogger extends ConsoleLogger {
     }
 
     // Initialize append-mode streams
-    this.errorLogStream = fs.createWriteStream(path.join(this.logDir, 'error.log'), { flags: 'a' });
-    this.combinedLogStream = fs.createWriteStream(path.join(this.logDir, 'combined.log'), { flags: 'a' });
+    this.errorLogStream = fs.createWriteStream(
+      path.join(this.logDir, 'error.log'),
+      { flags: 'a' },
+    );
+    this.combinedLogStream = fs.createWriteStream(
+      path.join(this.logDir, 'combined.log'),
+      { flags: 'a' },
+    );
   }
 
   private writeToFile(stream: fs.WriteStream, message: string) {
@@ -31,7 +37,10 @@ export class CustomLogger extends ConsoleLogger {
 
   log(message: any, context?: string) {
     super.log(message, context);
-    this.writeToFile(this.combinedLogStream, `LOG [${context ?? 'App'}] ${message}`);
+    this.writeToFile(
+      this.combinedLogStream,
+      `LOG [${context ?? 'App'}] ${message}`,
+    );
   }
 
   error(message: any, stack?: string, context?: string) {
@@ -43,16 +52,25 @@ export class CustomLogger extends ConsoleLogger {
 
   warn(message: any, context?: string) {
     super.warn(message, context);
-    this.writeToFile(this.combinedLogStream, `WARN [${context ?? 'App'}] ${message}`);
+    this.writeToFile(
+      this.combinedLogStream,
+      `WARN [${context ?? 'App'}] ${message}`,
+    );
   }
 
   debug(message: any, context?: string) {
     super.debug(message, context);
-    this.writeToFile(this.combinedLogStream, `DEBUG [${context ?? 'App'}] ${message}`);
+    this.writeToFile(
+      this.combinedLogStream,
+      `DEBUG [${context ?? 'App'}] ${message}`,
+    );
   }
 
   verbose(message: any, context?: string) {
     super.verbose(message, context);
-    this.writeToFile(this.combinedLogStream, `VERBOSE [${context ?? 'App'}] ${message}`);
+    this.writeToFile(
+      this.combinedLogStream,
+      `VERBOSE [${context ?? 'App'}] ${message}`,
+    );
   }
 }

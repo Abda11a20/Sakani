@@ -22,7 +22,7 @@ export class NotificationDispatcher {
   async dispatch(notification: Notification) {
     try {
       // 1. Database channel is already updated when notification is passed here.
-      
+
       // 2. Identify if the notification type is important for Push Notification
       if (this.isImportantNotification(notification)) {
         // Fetch recipient role to build correct localized client route
@@ -38,8 +38,10 @@ export class NotificationDispatcher {
           recipient?.role,
         );
 
-        this.logger.log(`Dispatching Web Push to user: ${notification.userId} for notification: ${notification.id}`);
-        
+        this.logger.log(
+          `Dispatching Web Push to user: ${notification.userId} for notification: ${notification.id}`,
+        );
+
         await this.pushService.sendPush(
           notification.userId,
           notification.title,
@@ -48,7 +50,10 @@ export class NotificationDispatcher {
         );
       }
     } catch (error) {
-      this.logger.error(`Failed to dispatch notification ${notification.id}:`, error.message);
+      this.logger.error(
+        `Failed to dispatch notification ${notification.id}:`,
+        error.message,
+      );
     }
   }
 
@@ -85,7 +90,11 @@ export class NotificationDispatcher {
     const isLandlord = role === 'landlord';
 
     // 1. Support & Chat messages
-    if (type === NotificationType.CHAT || entityType === 'chat' || entityType === 'CHAT') {
+    if (
+      type === NotificationType.CHAT ||
+      entityType === 'chat' ||
+      entityType === 'CHAT'
+    ) {
       return '/dashboard/support';
     }
 

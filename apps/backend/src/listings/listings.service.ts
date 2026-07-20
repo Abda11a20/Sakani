@@ -15,15 +15,13 @@ import { userPublicSelect } from '../common/selects/user.select';
 
 @Injectable()
 export class ListingsService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ── 1. إنشاء إعلان ──────────────────────────────────────────────────────────
   async create(landlordId: string, dto: CreateListingDto) {
     if (dto.unitType === UnitType.room) {
-throw new BadRequestException('نوع الوحدة غير مدعوم'); 
-   }
+      throw new BadRequestException('نوع الوحدة غير مدعوم');
+    }
 
     if (
       dto.unitType === UnitType.bed &&
@@ -112,8 +110,7 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
     };
 
     if (unitType) {
-      where.unitType =
-        unitType === UnitType.room ? { in: [] } : unitType;
+      where.unitType = unitType === UnitType.room ? { in: [] } : unitType;
     }
     if (governorate) where.governorate = governorate;
     if (district) where.district = district;
@@ -307,7 +304,11 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
   }
 
   // ── 7. إخلاء الوحدة ──────────────────────────────────────────────────────
-  async vacateListing(id: string, tx: Prisma.TransactionClient, forcePause: boolean = false) {
+  async vacateListing(
+    id: string,
+    tx: Prisma.TransactionClient,
+    forcePause: boolean = false,
+  ) {
     return tx.listing.update({
       where: { id },
       data: {
@@ -381,7 +382,12 @@ throw new BadRequestException('نوع الوحدة غير مدعوم');
     try {
       const listing = await this.prisma.listing.findUnique({
         where: { id },
-        select: { id: true, landlordId: true, viewCount: true, isDeleted: true },
+        select: {
+          id: true,
+          landlordId: true,
+          viewCount: true,
+          isDeleted: true,
+        },
       });
 
       if (!listing || listing.isDeleted) {

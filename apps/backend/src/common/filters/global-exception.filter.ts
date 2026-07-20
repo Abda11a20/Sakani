@@ -33,11 +33,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         : errorResponse;
 
     const reqId = request['requestId'] || 'N/A';
-    const ip = (request.headers['x-forwarded-for'] as string)?.split(',')[0] || request.ip;
+    const ip =
+      (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+      request.ip;
 
     // For 500 errors: log the exception class name + stack for easier production debugging
-    const exceptionName = exception instanceof Error ? exception.constructor.name : 'UnknownError';
-    const stackTrace = exception instanceof Error ? exception.stack : 'No stack trace';
+    const exceptionName =
+      exception instanceof Error ? exception.constructor.name : 'UnknownError';
+    const stackTrace =
+      exception instanceof Error ? exception.stack : 'No stack trace';
 
     this.logger.error(
       `[${reqId}, ${reqId}] ${request.method} ${request.url} - ${status} - Error: ${JSON.stringify(errorMessage)}`,

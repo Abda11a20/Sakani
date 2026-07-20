@@ -1,5 +1,11 @@
 // c:\Users\pc\Desktop\Sakany\sakani\apps\backend\src\uploads\uploads.service.ts
-import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from './s3.service';
@@ -18,8 +24,10 @@ export class UploadsService {
     private s3Service: S3Service,
     private configService: ConfigService,
   ) {
-    this.publicBucket = this.configService.get<string>('AWS_S3_BUCKET') || 'sakani-uploads';
-    this.privateBucket = this.configService.get<string>('AWS_S3_ID_BUCKET') || 'sakani-ids';
+    this.publicBucket =
+      this.configService.get<string>('AWS_S3_BUCKET') || 'sakani-uploads';
+    this.privateBucket =
+      this.configService.get<string>('AWS_S3_ID_BUCKET') || 'sakani-ids';
 
     const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
     if (provider === 'cloudinary') {
@@ -51,7 +59,9 @@ export class UploadsService {
         },
         (error, result) => {
           if (error || !result) {
-            return reject(error || new Error('Cloudinary upload returned no result'));
+            return reject(
+              error || new Error('Cloudinary upload returned no result'),
+            );
           }
           resolve({
             url: result.secure_url,
@@ -63,7 +73,10 @@ export class UploadsService {
     });
   }
 
-  async destroyCloudinaryAsset(publicId: string, type: 'upload' | 'authenticated' = 'upload') {
+  async destroyCloudinaryAsset(
+    publicId: string,
+    type: 'upload' | 'authenticated' = 'upload',
+  ) {
     try {
       await cloudinary.uploader.destroy(publicId, { type });
     } catch (e) {
@@ -71,7 +84,12 @@ export class UploadsService {
     }
   }
 
-  async uploadListingImage(listingId: string, landlordId: string, file: Express.Multer.File, order: number) {
+  async uploadListingImage(
+    listingId: string,
+    landlordId: string,
+    file: Express.Multer.File,
+    order: number,
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
     });
@@ -91,7 +109,11 @@ export class UploadsService {
 
     try {
       if (provider === 'cloudinary') {
-        const res = await this.uploadToCloudinary(file, 'sakany/listings', 'upload');
+        const res = await this.uploadToCloudinary(
+          file,
+          'sakany/listings',
+          'upload',
+        );
         key = res.publicId;
         url = res.url;
       } else {
@@ -100,9 +122,12 @@ export class UploadsService {
         url = await this.s3Service.uploadFile(file, this.publicBucket, key);
       }
     } catch (error: any) {
-      this.logger.error(`Failed to upload listing image to ${provider}: ${error?.message || error}`, error?.stack);
+      this.logger.error(
+        `Failed to upload listing image to ${provider}: ${error?.message || error}`,
+        error?.stack,
+      );
       throw new InternalServerErrorException(
-        `فشل تحميل الصورة إلى السيرفر. يرجى التحقق من إعدادات التخزين السحابي (${provider})`
+        `فشل تحميل الصورة إلى السيرفر. يرجى التحقق من إعدادات التخزين السحابي (${provider})`,
       );
     }
 
@@ -118,7 +143,11 @@ export class UploadsService {
     return image;
   }
 
-  async uploadListingImages(listingId: string, landlordId: string, files: Express.Multer.File[]) {
+  async uploadListingImages(
+    listingId: string,
+    landlordId: string,
+    files: Express.Multer.File[],
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
     });
@@ -136,7 +165,12 @@ export class UploadsService {
     });
 
     const uploadPromises = files.map((file, index) => {
-      return this.uploadListingImage(listingId, landlordId, file, currentImagesCount + index);
+      return this.uploadListingImage(
+        listingId,
+        landlordId,
+        file,
+        currentImagesCount + index,
+      );
     });
 
     return await Promise.all(uploadPromises);
@@ -171,7 +205,11 @@ export class UploadsService {
     return { success: true, message: 'تم حذف الصورة بنجاح' };
   }
 
-  async reorderImages(listingId: string, landlordId: string, imageIds: string[]) {
+  async reorderImages(
+    listingId: string,
+    landlordId: string,
+    imageIds: string[],
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
     });
@@ -209,12 +247,19 @@ export class UploadsService {
       if (provider === 'cloudinary') {
         await this.destroyCloudinaryAsset(user.idCardPublicId, 'authenticated');
       } else {
-        await this.s3Service.deleteFile(user.idCardPublicId, this.privateBucket);
+        await this.s3Service.deleteFile(
+          user.idCardPublicId,
+          this.privateBucket,
+        );
       }
     }
 
     if (provider === 'cloudinary') {
-      const res = await this.uploadToCloudinary(file, 'sakany/national-ids', 'authenticated');
+      const res = await this.uploadToCloudinary(
+        file,
+        'sakany/national-ids',
+        'authenticated',
+      );
       key = res.publicId;
     } else {
       const fileName = this.generateFileName(file.originalname);
@@ -257,7 +302,11 @@ export class UploadsService {
         expires_at: Math.floor(Date.now() / 1000) + 600,
       });
     } else {
-      url = await this.s3Service.getPresignedUrl(user.idCardPublicId, this.privateBucket, 600);
+      url = await this.s3Service.getPresignedUrl(
+        user.idCardPublicId,
+        this.privateBucket,
+        600,
+      );
     }
 
     return { url };
@@ -286,7 +335,11 @@ export class UploadsService {
     }
 
     if (provider === 'cloudinary') {
-      const res = await this.uploadToCloudinary(file, 'sakany/avatars', 'upload');
+      const res = await this.uploadToCloudinary(
+        file,
+        'sakany/avatars',
+        'upload',
+      );
       key = res.publicId;
       url = res.url;
     } else {
@@ -314,7 +367,11 @@ export class UploadsService {
 
     try {
       if (provider === 'cloudinary') {
-        const res = await this.uploadToCloudinary(file, 'sakany/chat', 'upload');
+        const res = await this.uploadToCloudinary(
+          file,
+          'sakany/chat',
+          'upload',
+        );
         key = res.publicId;
         url = res.url;
       } else {
@@ -330,12 +387,18 @@ export class UploadsService {
         mimeType: file.mimetype,
       };
     } catch (error) {
-      this.logger.error(`Failed to upload chat attachment: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to upload chat attachment: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('حدث خطأ أثناء رفع الملف.');
     }
   }
 
-  async deleteUserAssets(avatarPublicId?: string | null, idCardPublicId?: string | null) {
+  async deleteUserAssets(
+    avatarPublicId?: string | null,
+    idCardPublicId?: string | null,
+  ) {
     const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
 
     if (avatarPublicId) {

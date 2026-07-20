@@ -1,6 +1,14 @@
 // apps/backend/src/rental-contracts/dto/create-contract.dto.ts
 
-import { IsNotEmpty, IsString, IsEnum, IsDate, IsOptional, IsInt, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  IsDate,
+  IsOptional,
+  IsInt,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentCycle, ContractCreatedBy } from '@prisma/client';
 
@@ -25,7 +33,9 @@ export class CreateContractDto {
   @IsOptional()
   viewingRequestId?: string;
 
-  @IsEnum(ContractCreatedBy, { message: 'createdByType must be a valid ContractCreatedBy value' })
+  @IsEnum(ContractCreatedBy, {
+    message: 'createdByType must be a valid ContractCreatedBy value',
+  })
   @IsOptional()
   createdByType?: ContractCreatedBy;
 
@@ -37,7 +47,9 @@ export class CreateContractDto {
   @IsOptional()
   securityDeposit?: number;
 
-  @IsEnum(PaymentCycle, { message: 'paymentCycle must be a valid PaymentCycle' })
+  @IsEnum(PaymentCycle, {
+    message: 'paymentCycle must be a valid PaymentCycle',
+  })
   @IsOptional()
   paymentCycle?: PaymentCycle;
 

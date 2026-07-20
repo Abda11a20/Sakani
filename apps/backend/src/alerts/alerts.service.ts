@@ -32,7 +32,9 @@ export class AlertsService {
       dto.specialty;
 
     if (!hasFilter) {
-      throw new BadRequestException('يجب تحديد فلتر واحد على الأقل لإنشاء التنبيه');
+      throw new BadRequestException(
+        'يجب تحديد فلتر واحد على الأقل لإنشاء التنبيه',
+      );
     }
 
     return this.prisma.alert.create({
@@ -56,7 +58,9 @@ export class AlertsService {
   }
 
   async updateAlert(alertId: string, tenantId: string, dto: UpdateAlertDto) {
-    const alert = await this.prisma.alert.findUnique({ where: { id: alertId } });
+    const alert = await this.prisma.alert.findUnique({
+      where: { id: alertId },
+    });
 
     if (!alert) {
       throw new NotFoundException('التنبيه غير موجود');
@@ -81,7 +85,9 @@ export class AlertsService {
   }
 
   async deleteAlert(alertId: string, tenantId: string) {
-    const alert = await this.prisma.alert.findUnique({ where: { id: alertId } });
+    const alert = await this.prisma.alert.findUnique({
+      where: { id: alertId },
+    });
 
     if (!alert) {
       throw new NotFoundException('التنبيه غير موجود');
@@ -96,7 +102,9 @@ export class AlertsService {
   }
 
   async toggleAlert(alertId: string, tenantId: string) {
-    const alert = await this.prisma.alert.findUnique({ where: { id: alertId } });
+    const alert = await this.prisma.alert.findUnique({
+      where: { id: alertId },
+    });
 
     if (!alert) {
       throw new NotFoundException('التنبيه غير موجود');
@@ -140,45 +148,27 @@ export class AlertsService {
       AND: [
         // governorate: if set in alert, must match listing
         {
-          OR: [
-            { governorate: null },
-            { governorate: listing.governorate },
-          ],
+          OR: [{ governorate: null }, { governorate: listing.governorate }],
         },
         // district: if set in alert, must match listing
         {
-          OR: [
-            { district: null },
-            { district: listing.district },
-          ],
+          OR: [{ district: null }, { district: listing.district }],
         },
         // maxPrice: if set in alert, listing price must be ≤ maxPrice
         {
-          OR: [
-            { maxPrice: null },
-            { maxPrice: { gte: listing.price } },
-          ],
+          OR: [{ maxPrice: null }, { maxPrice: { gte: listing.price } }],
         },
         // unitType: if set in alert, must match listing
         {
-          OR: [
-            { unitType: null },
-            { unitType: listing.unitType },
-          ],
+          OR: [{ unitType: null }, { unitType: listing.unitType }],
         },
         // genderTarget: if set in alert, must match listing
         {
-          OR: [
-            { genderTarget: null },
-            { genderTarget: listing.genderTarget },
-          ],
+          OR: [{ genderTarget: null }, { genderTarget: listing.genderTarget }],
         },
         // specialty: listings do not currently expose a specialty field
         {
-          OR: [
-            { specialty: null },
-            { specialty: '' },
-          ],
+          OR: [{ specialty: null }, { specialty: '' }],
         },
       ],
     };

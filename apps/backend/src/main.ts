@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(CustomLogger));
 
   // ── 1. إعدادات السيرفر الأساسية (Server Configs) ─────────────
-  
+
   // تفعيل النسخ (API Versioning)
   app.setGlobalPrefix('api/v1');
 
@@ -34,7 +34,7 @@ async function bootstrap(): Promise<void> {
     helmet({
       contentSecurityPolicy: isProduction ? undefined : false,
       crossOriginEmbedderPolicy: isProduction ? undefined : false,
-    })
+    }),
   );
 
   // ضغط الاستجابة (Compression)
@@ -42,11 +42,11 @@ async function bootstrap(): Promise<void> {
 
   // CORS ديناميكي (السماح لـ Localhost في التطوير، والدومينات المحددة في الإنتاج)
   const allowedOrigins = isProduction
-    ? [
+    ? ([
         process.env.FRONTEND_URL,
         'https://sakani-app-topaz.vercel.app',
         'https://sakany.com',
-      ].filter(Boolean) as string[]
+      ].filter(Boolean) as string[])
     : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
   app.enableCors({
@@ -59,9 +59,9 @@ async function bootstrap(): Promise<void> {
   // ── 3. Global Validation Pipe ─────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,           // يحذف الحقول غير المعلنة في DTO
+      whitelist: true, // يحذف الحقول غير المعلنة في DTO
       forbidNonWhitelisted: true, // يرفع error لو في حقل زيادة
-      transform: true,           // يحوّل types تلقائياً
+      transform: true, // يحوّل types تلقائياً
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -90,8 +90,12 @@ async function bootstrap(): Promise<void> {
   // ── 6. تشغيل السيرفر ─────────────────────────────────────
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
-  console.log(`🚀 Sakani Backend is running on: http://localhost:${port}/api/v1`);
-  console.log(`📖 Swagger docs available at: http://localhost:${port}/api/docs`);
+  console.log(
+    `🚀 Sakani Backend is running on: http://localhost:${port}/api/v1`,
+  );
+  console.log(
+    `📖 Swagger docs available at: http://localhost:${port}/api/docs`,
+  );
 }
 
 bootstrap();

@@ -32,9 +32,9 @@ export function formatDate(
 /**
  * استخراج رابط الصورة بشكل آمن يدعم كلاً من السلسلة النصية وكائنات صور العقار (ListingImage)
  */
-export function getImageUrl(img: any): string {
-  if (!img) return "";
-  if (typeof img === "object" && img.url) return img.url;
+export function getImageUrl(img: string | { url: string } | null | undefined): string {
+  if (!img) return '';
+  if (typeof img === 'object' && img.url) return img.url;
   return String(img);
 }
 

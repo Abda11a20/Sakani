@@ -18,10 +18,14 @@ export class PushNotificationService implements OnModuleInit {
   onModuleInit() {
     const publicKey = this.configService.get<string>('VAPID_PUBLIC_KEY');
     const privateKey = this.configService.get<string>('VAPID_PRIVATE_KEY');
-    const subject = this.configService.get<string>('VAPID_SUBJECT') || 'mailto:admin@sakani.com';
+    const subject =
+      this.configService.get<string>('VAPID_SUBJECT') ||
+      'mailto:admin@sakani.com';
 
     if (!publicKey || !privateKey) {
-      this.logger.warn('VAPID keys are missing from configuration. Web Push Notifications are disabled.');
+      this.logger.warn(
+        'VAPID keys are missing from configuration. Web Push Notifications are disabled.',
+      );
       return;
     }
 
@@ -30,7 +34,10 @@ export class PushNotificationService implements OnModuleInit {
       this.isConfigured = true;
       this.logger.log('✅ Web Push VAPID details configured successfully.');
     } catch (error) {
-      this.logger.error('Failed to configure Web Push VAPID details:', error.message);
+      this.logger.error(
+        'Failed to configure Web Push VAPID details:',
+        error.message,
+      );
     }
   }
 
@@ -106,9 +113,16 @@ export class PushNotificationService implements OnModuleInit {
     return { success: true };
   }
 
-  async sendPush(userId: string, title: string, body: string, url?: string | null) {
+  async sendPush(
+    userId: string,
+    title: string,
+    body: string,
+    url?: string | null,
+  ) {
     if (!this.isConfigured) {
-      this.logger.warn(`Skipping push sending to user ${userId} because VAPID is not configured.`);
+      this.logger.warn(
+        `Skipping push sending to user ${userId} because VAPID is not configured.`,
+      );
       return;
     }
 
@@ -144,14 +158,24 @@ export class PushNotificationService implements OnModuleInit {
           data: { lastUsedAt: new Date() },
         });
       } catch (error) {
-        this.logger.warn(`Failed to send push notification to subscription ${sub.id}: ${error.message}`);
-        
+        this.logger.warn(
+          `Failed to send push notification to subscription ${sub.id}: ${error.message}`,
+        );
+
         // Remove expired/invalid subscriptions (410 Gone / 404 Not Found)
         if (error.statusCode === 410 || error.statusCode === 404) {
-          this.logger.log(`Removing expired or invalid push subscription ${sub.id} (status: ${error.statusCode})`);
-          await this.prisma.pushSubscription.delete({
-            where: { id: sub.id },
-          }).catch((err) => this.logger.error(`Failed to delete subscription: ${err.message}`));
+          this.logger.log(
+            `Removing expired or invalid push subscription ${sub.id} (status: ${error.statusCode})`,
+          );
+          await this.prisma.pushSubscription
+            .delete({
+              where: { id: sub.id },
+            })
+            .catch((err) =>
+              this.logger.error(
+                `Failed to delete subscription: ${err.message}`,
+              ),
+            );
         }
       }
     });
@@ -159,8 +183,15 @@ export class PushNotificationService implements OnModuleInit {
     await Promise.all(sendPromises);
   }
 
-  async sendBulkPush(userIds: string[], title: string, body: string, url?: string | null) {
-    const promises = userIds.map((userId) => this.sendPush(userId, title, body, url));
+  async sendBulkPush(
+    userIds: string[],
+    title: string,
+    body: string,
+    url?: string | null,
+  ) {
+    const promises = userIds.map((userId) =>
+      this.sendPush(userId, title, body, url),
+    );
     await Promise.all(promises);
   }
 }

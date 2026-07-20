@@ -1,6 +1,15 @@
 // apps/backend/src/rental-contracts/rental-contracts.controller.ts
 
-import { Controller, Post, Body, Patch, Param, Get, UseGuards, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Get,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RentalContractsService } from './rental-contracts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -64,7 +73,9 @@ export class RentalContractsController {
 
   @Get('listing/:listingId/analytics')
   @Roles(UserRole.landlord)
-  @ApiOperation({ summary: 'Get lease history and expected revenue analytics for a listing' })
+  @ApiOperation({
+    summary: 'Get lease history and expected revenue analytics for a listing',
+  })
   async getListingAnalytics(
     @CurrentUser() user: SafeUser,
     @Param('listingId') listingId: string,
@@ -80,6 +91,9 @@ export class RentalContractsController {
       throw new ForbiddenException('ليس لديك صلاحية لعرض إحصائيات هذا الإعلان');
     }
 
-    return this.contractsService.getListingContractAnalytics(listingId, user.id);
+    return this.contractsService.getListingContractAnalytics(
+      listingId,
+      user.id,
+    );
   }
 }

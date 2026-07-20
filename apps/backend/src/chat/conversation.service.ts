@@ -1,6 +1,10 @@
 // apps/backend/src/chat/conversation.service.ts
 
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PusherService } from './pusher.service';
 import { ParticipantRole, ConversationStatus } from '@prisma/client';
@@ -18,8 +22,8 @@ export class ConversationService {
       where: {
         userId,
         conversation: {
-          type: 'SUPPORT'
-        }
+          type: 'SUPPORT',
+        },
       },
       include: {
         conversation: {
@@ -27,13 +31,19 @@ export class ConversationService {
             participants: {
               include: {
                 user: {
-                  select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-                }
-              }
-            }
-          }
-        }
-      }
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatarUrl: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!participant) {
@@ -43,28 +53,36 @@ export class ConversationService {
           type: 'SUPPORT',
           status: 'ACTIVE',
           participants: {
-            create: [
-              { userId, role: ParticipantRole.USER }
-            ]
-          }
+            create: [{ userId, role: ParticipantRole.USER }],
+          },
         },
         include: {
           participants: {
             include: {
               user: {
-                select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-              }
-            }
-          }
-        }
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatarUrl: true,
+                  role: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       // Broadcast conversation creation event (optional, for admins)
-      await this.pusherService.broadcastToConversation(conversation.id, 'conversation.created', {
-        id: conversation.id,
-        type: conversation.type,
-        status: conversation.status,
-      });
+      await this.pusherService.broadcastToConversation(
+        conversation.id,
+        'conversation.created',
+        {
+          id: conversation.id,
+          type: conversation.type,
+          status: conversation.status,
+        },
+      );
 
       return conversation;
     }
@@ -72,7 +90,11 @@ export class ConversationService {
     return participant.conversation;
   }
 
-  async getSupportConversations(adminId: string, page: number = 1, limit: number = 30) {
+  async getSupportConversations(
+    adminId: string,
+    page: number = 1,
+    limit: number = 30,
+  ) {
     const skip = (page - 1) * limit;
 
     const [conversations, total] = await Promise.all([
@@ -85,25 +107,33 @@ export class ConversationService {
           participants: {
             include: {
               user: {
-                select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-              }
-            }
-          }
-        }
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatarUrl: true,
+                  role: true,
+                },
+              },
+            },
+          },
+        },
       }),
       this.prisma.conversation.count({
-        where: { type: 'SUPPORT' }
-      })
+        where: { type: 'SUPPORT' },
+      }),
     ]);
 
     const mapped = await Promise.all(
       conversations.map(async (conv) => {
         // Find client participant (the client user)
-        const clientPart = conv.participants.find(p => p.role === ParticipantRole.USER);
+        const clientPart = conv.participants.find(
+          (p) => p.role === ParticipantRole.USER,
+        );
         const clientUser = clientPart ? clientPart.user : null;
 
         // Find admin participant to get lastReadAt
-        const adminPart = conv.participants.find(p => p.userId === adminId);
+        const adminPart = conv.participants.find((p) => p.userId === adminId);
         const lastReadAt = adminPart ? adminPart.lastReadAt : new Date(0);
 
         // Fetch unread count for admin
@@ -111,8 +141,8 @@ export class ConversationService {
           where: {
             conversationId: conv.id,
             senderId: { not: adminId },
-            createdAt: { gt: lastReadAt }
-          }
+            createdAt: { gt: lastReadAt },
+          },
         });
 
         // Fetch last message details if lastMessageId exists
@@ -122,9 +152,9 @@ export class ConversationService {
             where: { id: conv.lastMessageId },
             include: {
               sender: {
-                select: { id: true, name: true, avatarUrl: true, role: true }
-              }
-            }
+                select: { id: true, name: true, avatarUrl: true, role: true },
+              },
+            },
           });
         }
 
@@ -141,20 +171,24 @@ export class ConversationService {
           updatedAt: conv.updatedAt,
           clientUser,
           lastMessage,
-          unreadCount
+          unreadCount,
         };
-      })
+      }),
     );
 
     return {
       conversations: mapped,
-      meta: { total, page, lastPage: Math.ceil(total / limit) }
+      meta: { total, page, lastPage: Math.ceil(total / limit) },
     };
   }
 
-  async blockConversation(conversationId: string, adminId: string, reason: string) {
+  async blockConversation(
+    conversationId: string,
+    adminId: string,
+    reason: string,
+  ) {
     const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
 
     if (!conversation) {
@@ -166,25 +200,29 @@ export class ConversationService {
       data: {
         blockedAt: new Date(),
         blockedBy: adminId,
-        blockReason: reason
-      }
+        blockReason: reason,
+      },
     });
 
     // Notify all listeners
-    await this.pusherService.broadcastToConversation(conversationId, 'conversation.updated', {
-      id: updated.id,
-      status: updated.status,
-      blockedAt: updated.blockedAt,
-      blockedBy: updated.blockedBy,
-      blockReason: updated.blockReason,
-    });
+    await this.pusherService.broadcastToConversation(
+      conversationId,
+      'conversation.updated',
+      {
+        id: updated.id,
+        status: updated.status,
+        blockedAt: updated.blockedAt,
+        blockedBy: updated.blockedBy,
+        blockReason: updated.blockReason,
+      },
+    );
 
     return { success: true, conversation: updated };
   }
 
   async unblockConversation(conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
 
     if (!conversation) {
@@ -196,18 +234,22 @@ export class ConversationService {
       data: {
         blockedAt: null,
         blockedBy: null,
-        blockReason: null
-      }
+        blockReason: null,
+      },
     });
 
     // Notify all listeners
-    await this.pusherService.broadcastToConversation(conversationId, 'conversation.updated', {
-      id: updated.id,
-      status: updated.status,
-      blockedAt: null,
-      blockedBy: null,
-      blockReason: null,
-    });
+    await this.pusherService.broadcastToConversation(
+      conversationId,
+      'conversation.updated',
+      {
+        id: updated.id,
+        status: updated.status,
+        blockedAt: null,
+        blockedBy: null,
+        blockReason: null,
+      },
+    );
 
     return { success: true, conversation: updated };
   }
@@ -219,19 +261,25 @@ export class ConversationService {
         type: 'PRIVATE',
         participants: {
           every: {
-            userId: { in: [user1Id, user2Id] }
-          }
-        }
+            userId: { in: [user1Id, user2Id] },
+          },
+        },
       },
       include: {
         participants: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-            }
-          }
-        }
-      }
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     // Check if it really has both participants (exact count 2)
@@ -247,19 +295,25 @@ export class ConversationService {
         participants: {
           create: [
             { userId: user1Id, role: ParticipantRole.USER },
-            { userId: user2Id, role: ParticipantRole.USER }
-          ]
-        }
+            { userId: user2Id, role: ParticipantRole.USER },
+          ],
+        },
       },
       include: {
         participants: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-            }
-          }
-        }
-      }
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     return conversation;
@@ -272,11 +326,17 @@ export class ConversationService {
         participants: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, avatarUrl: true, role: true }
-            }
-          }
-        }
-      }
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!conversation) {
@@ -285,11 +345,11 @@ export class ConversationService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { role: true },
     });
     const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
-    const isPart = conversation.participants.some(p => p.userId === userId);
+    const isPart = conversation.participants.some((p) => p.userId === userId);
     if (!isPart && !isAdmin) {
       throw new ForbiddenException('Not authorized to view this conversation');
     }
@@ -297,11 +357,15 @@ export class ConversationService {
     return conversation;
   }
 
-  async ensureParticipant(conversationId: string, userId: string, role: ParticipantRole = ParticipantRole.USER) {
+  async ensureParticipant(
+    conversationId: string,
+    userId: string,
+    role: ParticipantRole = ParticipantRole.USER,
+  ) {
     const participant = await this.prisma.conversationParticipant.findUnique({
       where: {
-        conversationId_userId: { conversationId, userId }
-      }
+        conversationId_userId: { conversationId, userId },
+      },
     });
 
     if (!participant) {
@@ -309,8 +373,8 @@ export class ConversationService {
         data: {
           conversationId,
           userId,
-          role
-        }
+          role,
+        },
       });
     }
 
