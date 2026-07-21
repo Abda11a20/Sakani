@@ -31,6 +31,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
   ),
+  alternates: {
+    canonical: "./",
+  },
   title: {
     default: "سكني — ابحث بثقة، اسكن بأمان",
     template: "%s | سكني",
@@ -101,6 +104,10 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Google Fonts Preconnect */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
         {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
