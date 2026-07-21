@@ -112,7 +112,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom bar */}
         <div className="mt-8 border-t border-white/10 pt-4 text-center">
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-white/80">
             {t("rightsReserved", { year: currentYear })}
           </p>
         </div>
