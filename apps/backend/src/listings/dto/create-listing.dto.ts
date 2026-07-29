@@ -9,6 +9,7 @@ import {
   IsEnum,
   IsNumber,
   Min,
+  Max,
   IsBoolean,
   IsArray,
   ValidateIf,
@@ -50,6 +51,10 @@ export class CreateListingDto {
   @IsEnum(ElectricityType, { message: 'نوع عداد الكهرباء غير صحيح' })
   electricityType?: ElectricityType;
 
+  @IsOptional()
+  @IsBoolean()
+  isFurnished?: boolean;
+
   // إجباري فقط لو نوع الوحدة 'bed'
   @ValidateIf((o: CreateListingDto) => o.unitType === UnitType.bed)
   @IsNotEmpty({ message: 'عدد الأسرة مطلوب لأن الوحدة سرير' })
@@ -76,11 +81,15 @@ export class CreateListingDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(21.5, { message: 'خط العرض يجب أن يقع داخل الحدود الجغرافية لمصر' })
+  @Max(31.8, { message: 'خط العرض يجب أن يقع داخل الحدود الجغرافية لمصر' })
   @Type(() => Number)
   lat?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(24.0, { message: 'خط الطول يجب أن يقع داخل الحدود الجغرافية لمصر' })
+  @Max(37.0, { message: 'خط الطول يجب أن يقع داخل الحدود الجغرافية لمصر' })
   @Type(() => Number)
   lng?: number;
 
@@ -92,4 +101,8 @@ export class CreateListingDto {
   @IsOptional()
   @IsBoolean()
   roommateFeatureEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hasExactLocation?: boolean;
 }

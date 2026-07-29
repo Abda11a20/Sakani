@@ -31,7 +31,7 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
   const isRtl = locale === "ar";
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-[#0D1828]">
+    <div className="min-h-screen bg-slate-50/50">
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden flex items-center justify-center">
         {/* Background gradient */}
@@ -59,29 +59,29 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
       <section className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-6xl mx-auto">
           {/* Tenant Card */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#112240] shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="p-8 pb-4 border-b border-slate-100 dark:border-slate-800/80 bg-blue-500/5">
-              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+          <Card className="border border-slate-200 bg-white shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="p-8 pb-4 border-b border-slate-100 bg-blue-500/5">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center mb-4">
                 <Search size={28} />
               </div>
-              <h2 className="text-2xl font-bold font-cairo text-slate-900 dark:text-slate-100">
+              <h2 className="text-2xl font-bold font-cairo text-slate-900">
                 {t("forTenants")}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo mt-1">
+              <p className="text-sm text-slate-500 font-cairo mt-1">
                 {t("forTenantsSubtitle")}
               </p>
             </CardHeader>
             <CardBody className="p-8 space-y-8">
               {/* Tenant Step 1 */}
               <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold font-sans">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 font-bold font-sans">
                   1
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("tenantStep1Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("tenantStep1Desc")}
                   </p>
                 </div>
@@ -89,14 +89,14 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
 
               {/* Tenant Step 2 */}
               <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold font-sans">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 font-bold font-sans">
                   2
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("tenantStep2Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("tenantStep2Desc")}
                   </p>
                 </div>
@@ -104,14 +104,14 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
 
               {/* Tenant Step 3 */}
               <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold font-sans">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 font-bold font-sans">
                   3
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("tenantStep3Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("tenantStep3Desc")}
                   </p>
                 </div>
@@ -120,15 +120,15 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
           </Card>
 
           {/* Landlord Card */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#112240] shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="p-8 pb-4 border-b border-slate-100 dark:border-slate-800/80 bg-amber-500/5">
+          <Card className="border border-slate-200 bg-white shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="p-8 pb-4 border-b border-slate-100 bg-amber-500/5">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4">
                 <Building size={28} />
               </div>
-              <h2 className="text-2xl font-bold font-cairo text-slate-900 dark:text-slate-100">
+              <h2 className="text-2xl font-bold font-cairo text-slate-900">
                 {t("forLandlords")}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo mt-1">
+              <p className="text-sm text-slate-500 font-cairo mt-1">
                 {t("forLandlordsSubtitle")}
               </p>
             </CardHeader>
@@ -139,10 +139,10 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
                   1
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("landlordStep1Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("landlordStep1Desc")}
                   </p>
                 </div>
@@ -154,10 +154,10 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
                   2
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("landlordStep2Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("landlordStep2Desc")}
                   </p>
                 </div>
@@ -169,10 +169,10 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
                   3
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-950 dark:text-slate-100 font-cairo text-base">
+                  <h3 className="font-bold text-slate-950 font-cairo text-base">
                     {t("landlordStep3Title")}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed font-cairo">
+                  <p className="text-slate-500 text-sm mt-1.5 leading-relaxed font-cairo">
                     {t("landlordStep3Desc")}
                   </p>
                 </div>
@@ -183,12 +183,12 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-slate-100/70 dark:bg-[#112240]/40 py-16 border-t border-slate-200/50 dark:border-slate-800/80">
+      <section className="bg-slate-100/70 py-16 border-t border-slate-200/50">
         <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h2 className="text-3xl font-bold text-slate-950 dark:text-slate-100 font-cairo">
+          <h2 className="text-3xl font-bold text-slate-950 font-cairo">
             {t("ctaTitle")}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-3 font-cairo text-sm leading-relaxed max-w-xl mx-auto">
+          <p className="text-slate-500 mt-3 font-cairo text-sm leading-relaxed max-w-xl mx-auto">
             {t("ctaSubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
@@ -199,7 +199,7 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
               </Button>
             </Link>
             <Link href={`/${locale}/dashboard/landlord/listings/add`}>
-              <Button variant="outline" className="w-full sm:w-auto border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold font-cairo rounded-2xl py-6 px-8 flex items-center justify-center gap-2">
+              <Button variant="outline" className="w-full sm:w-auto border-amber-500/20 text-amber-600 hover:bg-amber-500/10 font-bold font-cairo rounded-2xl py-6 px-8 flex items-center justify-center gap-2">
                 <span>{t("ctaLandlordBtn")}</span>
                 <PlusCircle size={16} />
               </Button>

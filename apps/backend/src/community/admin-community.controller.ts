@@ -36,6 +36,16 @@ export class AdminCommunityController {
     return this.service.adminGetPosts(page, limit);
   }
 
+  @Get('archived')
+  async getArchivedPosts(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('type') type?: 'all' | 'deleted' | 'expired',
+  ) {
+    return this.service.adminGetArchivedPosts(page, limit, search, type);
+  }
+
   @Get('reports')
   async getReports(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -50,6 +60,11 @@ export class AdminCommunityController {
     @Body('status') status: CommunityPostStatus,
   ) {
     return this.service.adminUpdatePostStatus(id, status);
+  }
+
+  @Patch('posts/:id/restore')
+  async restorePost(@Param('id') id: string) {
+    return this.service.adminRestorePost(id);
   }
 
   @Patch('reports/:id/resolve')

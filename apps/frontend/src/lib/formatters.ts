@@ -1,87 +1,165 @@
-// Infrastructure layer
-// Not used yet.
-// Will be migrated gradually.
-
 // apps/frontend/src/lib/formatters.ts
+import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
+
+export interface FormatPriceOptions {
+  locale?: string;
+  currency?: string;
+  showCurrency?: boolean;
+}
 
 /**
- * تنسيق السعر بالجنيه المصري
+ * تنسيق السعر بالعملة المحلية مع مراعاة خيارات التنسيق واللغة
  * @example formatPrice(1500) → "1٬500 ج.م"
+ * @example formatPrice(1500, "en") → "1,500 EGP"
+ * @example formatPrice(1500, { currency: "EGP", locale: "en-US" }) → "1,500 EGP"
  */
-export const formatPrice = (
-  price: number,
-  locale: string = "ar-EG"
-): string => new Intl.NumberFormat(locale).format(price) + " ج.م";
+export function formatPrice(
+  price: number | null | undefined,
+  optionsOrLocale?: string | FormatPriceOptions
+): string {
+  if (price === null || price === undefined || isNaN(price)) return "0 ج.م";
+
+  let locale = "ar-EG";
+  let currency = "ج.م";
+  let showCurrency = true;
+
+  if (typeof optionsOrLocale === "string") {
+    if (optionsOrLocale.startsWith("en")) {
+      locale = "en-US";
+      currency = "EGP";
+    }
+  } else if (typeof optionsOrLocale === "object" && optionsOrLocale !== null) {
+    if (optionsOrLocale.locale) locale = optionsOrLocale.locale;
+    if (optionsOrLocale.currency) currency = optionsOrLocale.currency;
+    if (optionsOrLocale.showCurrency !== undefined) showCurrency = optionsOrLocale.showCurrency;
+  }
+
+  const formattedNum = new Intl.NumberFormat(locale).format(price);
+  return showCurrency ? `${formattedNum} ${currency}` : formattedNum;
+}
+
+export interface FormatDateOptions {
+  locale?: string;
+  format?: "short" | "long" | "datetime" | "monthYear";
+  customOptions?: Intl.DateTimeFormatOptions;
+}
 
 /**
- * تنسيق التاريخ بشكل كامل
- * @example formatDate("2024-01-15") → "١٥ يناير ٢٠٢٤"
+ * تنسيق التاريخ المرن لدعم كافة حالات العرض (طويل، قصير، مع الوقت، شهر وسنة)
+ * @example formatDate("2026-07-23") → "23 يوليو 2026"
+ * @example formatDate("2026-07-23", { format: "short" }) → "23/07/2026"
+ * @example formatDate("2026-07-23T10:30:00Z", { format: "datetime" }) → "23/07/2026، 10:30 م"
  */
-export const formatDate = (
-  date: string | Date,
-  locale: string = "ar-EG"
-): string =>
-  new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(date));
+export function formatDate(
+  dateInput: string | Date | null | undefined,
+  optionsOrLocale?: string | FormatDateOptions
+): string {
+  if (!dateInput) return "";
+
+  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return "";
+
+  let locale = "ar-EG";
+  let formatStyle: "short" | "long" | "datetime" | "monthYear" = "long";
+  let customOptions: Intl.DateTimeFormatOptions | undefined;
+
+  if (typeof optionsOrLocale === "string") {
+    if (optionsOrLocale.startsWith("en")) locale = "en-US";
+  } else if (typeof optionsOrLocale === "object" && optionsOrLocale !== null) {
+    if (optionsOrLocale.locale) {
+      locale = optionsOrLocale.locale.startsWith("en") ? "en-US" : "ar-EG";
+    }
+    if (optionsOrLocale.format) formatStyle = optionsOrLocale.format;
+    if (optionsOrLocale.customOptions) customOptions = optionsOrLocale.customOptions;
+  }
+
+  if (customOptions) {
+    return new Intl.DateTimeFormat(locale, customOptions).format(d);
+  }
+
+  switch (formatStyle) {
+    case "short":
+      return new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+    case "datetime":
+      return new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(d);
+    case "monthYear":
+      return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long" }).format(d);
+    case "long":
+    default:
+      return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(d);
+  }
+}
 
 /**
- * وقت نسبي من الآن
- * @example formatRelativeTime("2024-01-15T10:00:00Z") → "منذ 3 أيام"
+ * الوقت النسبي الموحد المعتمِد على date-fns مع دعم المناطق الزمنية واللغتين
+ * @example formatRelativeTime("2026-07-25T10:00:00Z", "ar") → "منذ 3 ساعات"
  */
-export const formatRelativeTime = (date: string | Date): string => {
-  const diff    = Date.now() - new Date(date).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  const hours   = Math.floor(diff / 3_600_000);
-  const days    = Math.floor(diff / 86_400_000);
+export function formatRelativeTime(
+  dateInput: string | Date | null | undefined,
+  localeStr = "ar"
+): string {
+  if (!dateInput) return "";
+  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return "";
 
-  if (minutes < 1)  return "الآن";
-  if (minutes < 60) return `منذ ${minutes} دقيقة`;
-  if (hours < 24)   return `منذ ${hours} ساعة`;
-  if (days === 1)   return "أمس";
-  if (days < 7)     return `منذ ${days} أيام`;
-  return formatDate(date);
-};
+  const isEn = localeStr.startsWith("en");
+  const dateLocale = isEn ? enUS : ar;
+
+  return formatDistanceToNow(d, {
+    addSuffix: true,
+    locale: dateLocale,
+  });
+}
 
 /**
  * تنسيق رقم الهاتف للعرض
  * @example formatPhoneDisplay("01012345678") → "0101 234 5678"
  */
-export const formatPhoneDisplay = (phone: string): string =>
-  phone.replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
+export function formatPhoneDisplay(phone: string): string {
+  if (!phone) return "";
+  return phone.replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
+}
 
 /**
- * إخفاء جزء من رقم الهاتف
+ * إخفاء جزء من رقم الهاتف للأمان
  * @example maskPhone("01012345678") → "010****678"
  */
-export const maskPhone = (phone: string): string =>
-  phone.slice(0, 3) + "****" + phone.slice(-3);
+export function maskPhone(phone: string): string {
+  if (!phone || phone.length < 6) return phone ?? "";
+  return phone.slice(0, 3) + "****" + phone.slice(-3);
+}
 
 /**
- * إخفاء الرقم القومي
+ * إخفاء الرقم القومي للأمان
  * @example maskNationalId("12345678901234") → "123**********4"
  */
-export const maskNationalId = (id: string): string =>
-  id.slice(0, 3) + "**********" + id.slice(-1);
+export function maskNationalId(id: string): string {
+  if (!id || id.length < 4) return id ?? "";
+  return id.slice(0, 3) + "**********" + id.slice(-1);
+}
 
 /**
  * عرض عدد الأسرة المتاحة من الإجمالي
  * @example formatBedCount(2, 4) → "2 / 4 متاح"
  */
-export const formatBedCount = (available: number, total: number): string =>
-  `${available} / ${total} متاح`;
+export function formatBedCount(available: number, total: number, locale = "ar"): string {
+  if (locale.startsWith("en")) {
+    return `${available} / ${total} available`;
+  }
+  return `${available} / ${total} متاح`;
+}
 
 /**
  * تنسيق شهر وسنة فقط (للتواريخ المختصرة)
- * @example formatMonthYear("2024-01-15") → "يناير ٢٠٢٤"
+ * @example formatMonthYear("2026-07-25") → "يوليو 2026"
  */
-export const formatMonthYear = (
-  date: string | Date,
-  locale: string = "ar-EG"
-): string =>
-  new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-  }).format(new Date(date));
+export function formatMonthYear(dateInput: string | Date, localeStr = "ar-EG"): string {
+  return formatDate(dateInput, { locale: localeStr, format: "monthYear" });
+}

@@ -28,7 +28,7 @@ export const LanguageSwitcher: React.FC = () => {
   return (
     <button
       onClick={toggleLocale}
-      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
       aria-label="Switch language"
     >
       <span style={{ direction: "ltr" }}>

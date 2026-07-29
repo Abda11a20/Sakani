@@ -45,9 +45,9 @@ export function toast(options: Omit<ToastItem, "id">) {
 // ── Toaster Component ──
 const variantStyles: Record<ToastVariant, string> = {
   default: "border-border bg-card text-foreground",
-  success: "border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300",
-  error: "border-red-500 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300",
-  warning: "border-yellow-500 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300",
+  success: "border-green-500 bg-green-50 text-green-800",
+  error: "border-red-500 bg-red-50 text-red-800",
+  warning: "border-yellow-500 bg-yellow-50 text-yellow-800",
 };
 
 export function Toaster() {

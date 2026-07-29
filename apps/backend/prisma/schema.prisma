@@ -46,7 +46,6 @@ enum GenderTarget {
 enum ElectricityType {
   prepaid_card
   old_meter
-  modern_meter
 }
 
 enum BedStatus {
@@ -88,6 +87,34 @@ enum NotificationType {
   ALERT
 }
 
+enum NotificationEventKey {
+  CONTRACT_EXPIRED
+  CONTRACT_RENEWED
+  CONTRACT_TERMINATED
+  UNIT_RENTAL_COMPLETED
+  BED_RENTAL_COMPLETED
+  LISTING_APPROVED
+  LISTING_REJECTED
+  LISTING_PAUSED
+  LISTING_REPUBLISHED
+  REQUEST_CREATED
+  REQUEST_ACCEPTED
+  REQUEST_REJECTED
+  REQUEST_CANCELED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SUBSCRIPTION_RENEWED
+  COMMUNITY_POST_REPLY
+  COMMUNITY_ALERT_MATCH
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 // ── MODELS ─────────────────────────────────────────────
 
 model User {
@@ -112,6 +139,14 @@ model User {
   reviewsCount       Int       @default(0)
   otpChannel         OtpChannel @default(EMAIL)
   telegramChatId     String?
+
+  // Account Lifecycle fields
+  isDeleted              Boolean                @default(false)
+  deletedAt              DateTime?
+  scheduledFinalDeleteAt DateTime?
+  deletionStatus         AccountDeletionStatus?
+  deletionReason         String?
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -143,6 +178,7 @@ model User {
   communityReportsMade  CommunityReport[]
   communityReviewsGiven   CommunityReview[]  @relation("CommunityReviewsGiven")
   communityReviewsReceived CommunityReview[]  @relation("CommunityReviewsReceived")
+  chatModerationLogs       ChatModerationLog[]
 
   @@map("users")
 }
@@ -156,7 +192,9 @@ model Listing {
   price                  Int
   securityDeposit        Int             @default(0)
   includesBills          Boolean         @default(false)
-  electricityType        ElectricityType @default(modern_meter)
+  electricityType        ElectricityType @default(prepaid_card)
+  isFurnished            Boolean         @default(true)
+  hasExactLocation       Boolean         @default(false)
   totalBeds              Int?
   availableBeds          Int?
   genderTarget           GenderTarget    @default(mixed)
@@ -233,6 +271,7 @@ model ListingImage {
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("listing_images")
 }
 
@@ -270,6 +309,8 @@ model ViewingRequest {
   listing Listing @relation(fields: [listingId], references: [id])
   contract RentalContract?
 
+  @@index([tenantId])
+  @@index([listingId])
   @@map("viewing_requests")
 }
 
@@ -286,6 +327,9 @@ model Review {
   landlord User    @relation("ReviewsReceived", fields: [landlordId], references: [id])
   listing  Listing @relation(fields: [listingId], references: [id])
 
+  @@index([listingId])
+  @@index([landlordId])
+  @@index([tenantId])
   @@map("reviews")
 }
 
@@ -412,15 +456,18 @@ model ViewedListing {
 }
 
 model Notification {
-  id         String           @id @default(cuid())
+  id         String                @id @default(cuid())
   userId     String
   type       NotificationType
-  title      String
-  body       String
+  eventKey   NotificationEventKey?
+  priority   NotificationPriority  @default(NORMAL)
+  payload    Json?
+  title      String?
+  body       String?
   entityType String?
   entityId   String?
-  isRead     Boolean          @default(false)
-  createdAt  DateTime         @default(now())
+  isRead     Boolean               @default(false)
+  createdAt  DateTime              @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -475,8 +522,42 @@ model Conversation {
 
   participants   ConversationParticipant[]
   messages       ChatMessage[]
+  moderationLogs ChatModerationLog[]
 
   @@map("conversations")
+}
+
+enum AccountDeletionStatus {
+  IN_GRACE_PERIOD
+  RESTORED
+  PURGED
+  CANCELLED
+}
+
+enum ChatBlockReason {
+  SPAM
+  ABUSE
+  THREATS
+  EXTERNAL_LINKS
+  INAPPROPRIATE_CONTENT
+  MANUAL
+}
+
+model ChatModerationLog {
+  id             String           @id @default(cuid())
+  conversationId String
+  action         String           // BLOCK | UNBLOCK
+  reason         ChatBlockReason?
+  note           String?
+  adminId        String
+  createdAt      DateTime         @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  admin        User         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([adminId])
+  @@map("chat_moderation_logs")
 }
 
 model ConversationParticipant {
@@ -494,16 +575,23 @@ model ConversationParticipant {
   @@map("conversation_participants")
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
 model ChatMessage {
-  id             String   @id @default(cuid())
+  id             String      @id @default(cuid())
   conversationId String
   senderId       String
   content        String
-  createdAt      DateTime @default(now())
+  type           MessageType @default(TEXT)
+  createdAt      DateTime    @default(now())
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
+  @@index([conversationId, createdAt])
   @@map("chat_messages")
 }
 

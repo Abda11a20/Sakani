@@ -1,7 +1,7 @@
 // apps/backend/src/dashboard/dashboard.controller.ts
 
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +17,12 @@ type SafeUser = Omit<User, 'passwordHash'>;
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get unified dashboard summary for current user role' })
+  async getSummary(@CurrentUser() user: SafeUser) {
+    return this.dashboardService.getSummary(user.id, user.role);
+  }
 
   @Get('landlord/stats')
   @Roles(UserRole.landlord)

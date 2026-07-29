@@ -52,6 +52,11 @@ export class SearchQueryDto {
   amenities?: string; // comma-separated: "wifi,ac,elevator"
 
   @IsOptional()
+  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : undefined))
+  @IsBoolean()
+  isFurnished?: boolean;
+
+  @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   verifiedOnly?: boolean;

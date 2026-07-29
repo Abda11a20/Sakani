@@ -1,15 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationType, Prisma } from '@prisma/client';
+import { NotificationType, NotificationEventKey, NotificationPriority, Prisma } from '@prisma/client';
 import { PrismaService, transactionStorage } from '../prisma/prisma.service';
 import { NotificationDispatcher } from './notification-dispatcher.service';
 
 type NotificationClient = PrismaService | Prisma.TransactionClient;
 
-interface CreateNotificationInput {
+export interface CreateNotificationInput {
   userId: string;
   type: NotificationType;
-  title: string;
-  body: string;
+  eventKey?: NotificationEventKey | null;
+  priority?: NotificationPriority;
+  payload?: Record<string, any> | null;
+  title?: string | null;
+  body?: string | null;
   entityType?: string | null;
   entityId?: string | null;
 }
@@ -27,12 +30,19 @@ export class NotificationService {
   ) {
     const entityType = input.entityType ?? null;
     const entityId = input.entityId ?? null;
+    const eventKey = input.eventKey ?? null;
+    const priority = input.priority ?? NotificationPriority.NORMAL;
+    const title = input.title || '';
+    const body = input.body || '';
+    const payload = input.payload
+      ? { version: 1, ...input.payload }
+      : null;
 
     const existingNotification = await client.notification.findFirst({
       where: {
         userId: input.userId,
         type: input.type,
-        title: input.title,
+        ...(eventKey ? { eventKey } : title ? { title } : {}),
         entityType,
         entityId,
       },
@@ -46,8 +56,11 @@ export class NotificationService {
       data: {
         userId: input.userId,
         type: input.type,
-        title: input.title,
-        body: input.body,
+        eventKey,
+        priority,
+        payload: payload ? (payload as Prisma.InputJsonValue) : Prisma.JsonNull,
+        title,
+        body,
         entityType,
         entityId,
       },
@@ -68,6 +81,10 @@ export class NotificationService {
     }
 
     return notification;
+  }
+
+  async sendRealtimeNotification(userId: string, notification: any) {
+    return this.dispatcher.dispatch(notification);
   }
 
   async findAll(userId: string, page = 1, limit = 20) {

@@ -265,7 +265,7 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerifiedAt: dto.email ? new Date() : user.emailVerifiedAt,
+        emailVerifiedAt: dto.email ? new Date() : (user.emailVerifiedAt || new Date()),
         phoneVerifiedAt: new Date(),
       },
     });
@@ -314,9 +314,9 @@ export class AuthService {
       throw new UnauthorizedException('هذا الحساب محظور. تواصل مع الدعم الفني');
     }
 
-    if (!user.emailVerifiedAt) {
+    if (!user.emailVerifiedAt && !user.phoneVerifiedAt) {
       throw new UnauthorizedException(
-        'الحساب لم يتم تفعيله بعد. يرجى فتح الإيميل وإدخال رمز التفعيل.',
+        'الحساب لم يتم تفعيله بعد. يرجى فتح الإيميل أو تليجرام وإدخال رمز التفعيل.',
       );
     }
 

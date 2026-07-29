@@ -8,10 +8,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { Home, Search, Plus, LogOut, User, LayoutDashboard, KeyRound, Download, Menu, X, Compass } from "lucide-react";
 import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 import { isUserVerified } from "@/types";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -52,7 +51,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#1B2E4A]/90 backdrop-blur-md shadow-sm">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo — app icon for unified branding */}
           <Link
@@ -74,10 +73,10 @@ export const Navbar: React.FC = () => {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
                   isActive(link.href)
-                    ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                    ? "bg-[#1B4F8A]/10 text-[#1B4F8A]"
+                    : "text-slate-600 hover:bg-slate-100"
                 )}
               >
                 <span style={{ direction: "ltr" }}>
@@ -94,7 +93,7 @@ export const Navbar: React.FC = () => {
             {isInstallable && (
               <button
                 onClick={install}
-                className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
                 aria-label="Install app"
               >
                 <Download size={16} />
@@ -107,7 +106,6 @@ export const Navbar: React.FC = () => {
             {/* Language & Theme — HIDDEN on mobile (shown in drawer instead) */}
             <div className="hidden xl:flex items-center gap-1">
               <LanguageSwitcher />
-              <ThemeToggle />
             </div>
 
             {/* Notification Bell — only for authenticated users */}
@@ -132,16 +130,16 @@ export const Navbar: React.FC = () => {
             ) : (
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <button className="ms-1 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+                  <button className="ms-1 flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
                     <Avatar src={user?.avatarUrl || null} name={user?.name || ""} size="sm" verified={isUserVerified(user)} />
-                    <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
+                    <span className="hidden lg:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
                       {user?.name || ""}
                     </span>
                   </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content
-                    className="z-50 min-w-[200px] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-800 dark:bg-gray-900 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+                    className="z-50 min-w-[200px] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
                     align="end"
                     sideOffset={8}
                   >
@@ -149,7 +147,7 @@ export const Navbar: React.FC = () => {
                       <DropdownMenu.Item asChild>
                         <Link
                           href={`/${locale}/dashboard/profile`}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 outline-none"
                         >
                           <User size={16} />
                           {locale === "ar" ? "الملف الشخصي" : "Profile"}
@@ -159,7 +157,7 @@ export const Navbar: React.FC = () => {
                     <DropdownMenu.Item asChild>
                       <Link
                         href={getDashboardPath(user.role as UserRoleKey, locale)}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
+                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 outline-none"
                       >
                         <LayoutDashboard size={16} />
                         {user.role === "admin" || user.role === "super_admin"
@@ -171,18 +169,18 @@ export const Navbar: React.FC = () => {
                       <DropdownMenu.Item asChild>
                         <Link
                           href={`/${locale}/dashboard/profile`}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 outline-none"
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 outline-none"
                         >
                           <KeyRound size={16} />
                           {locale === "ar" ? "تغيير كلمة المرور" : "Change Password"}
                         </Link>
                       </DropdownMenu.Item>
                     )}
-                    <DropdownMenu.Separator className="my-1 h-px bg-gray-200 dark:bg-gray-800" />
+                    <DropdownMenu.Separator className="my-1 h-px bg-gray-200" />
                     <DropdownMenu.Item asChild>
                       <button
                         onClick={handleLogout}
-                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 outline-none"
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 outline-none"
                       >
                         <LogOut size={16} />
                         {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
@@ -195,7 +193,7 @@ export const Navbar: React.FC = () => {
 
             {/* Mobile hamburger — ALWAYS LAST CHILD so it goes to the far edge */}
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors md:hidden focus:outline-none focus:ring-2 focus:ring-primary shrink-0 ms-1"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors md:hidden focus:outline-none focus:ring-2 focus:ring-primary shrink-0 ms-1"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
@@ -214,9 +212,9 @@ export const Navbar: React.FC = () => {
             onClick={() => setMobileOpen(false)}
           />
           {/* Drawer — slides from the right */}
-          <div className="absolute end-0 top-0 h-full w-72 bg-white dark:bg-gray-900 shadow-xl flex flex-col">
+          <div className="absolute end-0 top-0 h-full w-72 bg-white shadow-xl flex flex-col">
             {/* Drawer header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 p-4" style={{ direction: "ltr" }}>
+            <div className="flex items-center justify-between border-b border-gray-200 p-4" style={{ direction: "ltr" }}>
               <Link
                 href={`/${locale}`}
                 className="flex items-center gap-2.5"
@@ -227,11 +225,11 @@ export const Navbar: React.FC = () => {
                   alt="سكني"
                   className="h-8 w-8 object-contain rounded-xl shadow-sm"
                 />
-                <span className="text-sm font-black text-gray-800 dark:text-white">سكني</span>
+                <span className="text-sm font-black text-gray-800">سكني</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
               >
                 <X size={20} />
               </button>
@@ -239,12 +237,12 @@ export const Navbar: React.FC = () => {
 
             {/* User info in drawer */}
             {mounted && user && (
-              <div className="border-b border-gray-200 dark:border-gray-800 p-4">
+              <div className="border-b border-gray-200 p-4">
                 <div className="flex items-center gap-3">
                   <Avatar src={user.avatarUrl || null} name={user.name} size="md" verified={isUserVerified(user)} />
                   <div className="overflow-hidden">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{user.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.phone}</p>
+                    <p className="font-medium text-gray-900 truncate">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.phone}</p>
                   </div>
                 </div>
               </div>
@@ -260,8 +258,8 @@ export const Navbar: React.FC = () => {
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
                     isActive(link.href)
-                      ? "bg-primary/10 text-primary dark:bg-primary/20"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-700 hover:bg-gray-100"
                   )}
                 >
                   <span style={{ direction: "ltr" }}>
@@ -277,7 +275,7 @@ export const Navbar: React.FC = () => {
                     <Link
                       href={`/${locale}/dashboard/profile`}
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >
                       <span style={{ direction: "ltr" }}><User size={18} /></span>
                       {locale === "ar" ? "الملف الشخصي" : "Profile"}
@@ -286,7 +284,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     href={getDashboardPath(user.role as UserRoleKey, locale)}
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100"
                   >
                     <span style={{ direction: "ltr" }}><LayoutDashboard size={18} /></span>
                     {user.role === "admin" || user.role === "super_admin"
@@ -298,14 +296,13 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* Bottom controls */}
-            <div className="border-t border-gray-200 dark:border-gray-800 p-4 space-y-3">
+            <div className="border-t border-gray-200 p-4 space-y-3">
               <div className="flex items-center justify-between" style={{ direction: "ltr" }}>
                 <LanguageSwitcher />
-                <ThemeToggle />
                 {isInstallable && (
                   <button
                     onClick={install}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     <Download size={16} />
                     {locale === "ar" ? "ثبّت" : "Install"}
@@ -329,7 +326,7 @@ export const Navbar: React.FC = () => {
               ) : (
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <span style={{ direction: "ltr" }}><LogOut size={18} /></span>
                   {locale === "ar" ? "تسجيل الخروج" : "Sign out"}

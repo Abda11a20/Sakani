@@ -1,6 +1,6 @@
 // apps/frontend/src/hooks/useUploads.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { uploadsApi } from "@/lib/api/uploads.api";
+import { uploadsApi } from "@/features/uploads";
 
 export interface UploadImageResult {
   id: string;

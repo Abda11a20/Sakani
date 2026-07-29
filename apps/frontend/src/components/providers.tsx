@@ -3,10 +3,13 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
+import { PusherProvider } from "@/context/PusherContext";
 
 // Toaster من Radix Toast
 import { Toaster } from "@/components/ui/toaster";
+
+import { ThemeProvider } from "@/lib/theme";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -35,9 +38,13 @@ export default function Providers({ children }: ProvidersProps) {
   }, [hydrate]);
 
   return (
-    <QueryClientProvider client={queryClientRef.current}>
-      {children}
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClientRef.current}>
+        <PusherProvider>
+          {children}
+          <Toaster />
+        </PusherProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

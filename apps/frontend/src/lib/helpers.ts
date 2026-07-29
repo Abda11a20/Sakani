@@ -1,7 +1,3 @@
-// Infrastructure layer
-// Not used yet.
-// Will be migrated gradually.
-
 // apps/frontend/src/lib/helpers.ts
 import type { User, Listing, Alert } from "@/types";
 import {
@@ -11,6 +7,7 @@ import {
   type UserRoleKey,
 } from "./constants";
 import { formatPrice } from "./formatters";
+import { getAvatarUrl } from "./utils";
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
@@ -19,19 +16,20 @@ import { formatPrice } from "./formatters";
  * يُفيد في تجنب شرط null في كل مكان
  */
 export type AvatarData =
-  | { type: "image";    url: string }
+  | { type: "image"; url: string }
   | { type: "initials"; initials: string };
 
 /**
  * احسب بيانات الأفاتار بناءً على URL والاسم
- * - إذا كان URL موجوداً → يرجع { type: "image", url }
+ * - إذا كان URL موجوداً → يرجع { type: "image", url: getAvatarUrl(url) }
  * - إذا لم يكن → يرجع { type: "initials", initials } (أول حرفين من الاسم)
  */
 export const getAvatarData = (
   avatarUrl?: string | null,
   name?: string | null
 ): AvatarData => {
-  if (avatarUrl?.trim()) return { type: "image", url: avatarUrl };
+  const resolvedUrl = getAvatarUrl(avatarUrl);
+  if (resolvedUrl?.trim()) return { type: "image", url: resolvedUrl };
 
   const initials = (name ?? "؟")
     .trim()
@@ -47,6 +45,26 @@ export const getAvatarData = (
 // ── Listing Helpers ───────────────────────────────────────────────────────────
 
 /**
+ * تحديد مسمى الفرش (سرير / شقة فارغة / شقة مفروشة) بشكل موحّد ودون الاعتماد على مكونات UI
+ * @example getFurnishingLabel("apartment", false, "ar") → "شقة فارغة"
+ * @example getFurnishingLabel("bed", true, "ar") → "سرير"
+ */
+export const getFurnishingLabel = (
+  unitType?: string | null,
+  isFurnished?: boolean | null,
+  locale = "ar"
+): string => {
+  const isEn = locale.startsWith("en");
+  if (unitType === "bed") {
+    return isEn ? "Shared Bed" : "سرير";
+  }
+  if (isFurnished === false) {
+    return isEn ? "Unfurnished Apartment" : "شقة فارغة";
+  }
+  return isEn ? "Furnished Apartment" : "شقة مفروشة";
+};
+
+/**
  * استخرج صورة غلاف الإعلان الأولى أو fallback
  */
 export const getListingCoverImage = (
@@ -55,7 +73,6 @@ export const getListingCoverImage = (
 ): string => {
   const img = listing.images?.[0];
   if (!img) return fallback;
-  // يدعم string URL أو كائن { url: string } (للتوافق مع بعض الـ APIs)
   if (typeof img === "object" && (img as unknown as { url: string }).url) {
     return (img as unknown as { url: string }).url;
   }
@@ -130,7 +147,6 @@ export const generateAlertSummary = (alert: Alert): string => {
 
 /**
  * تحقق هل المستخدم موثّق البريد الإلكتروني
- * (مختلف عن isUserVerified في @/types التي تتحقق من الهوية الوطنية)
  */
 export const isEmailVerified = (
   user: Pick<User, "emailVerifiedAt">
@@ -140,7 +156,6 @@ export const isEmailVerified = (
 
 /**
  * تحقق هل يحق للمستأجر كتابة تقييم لإعلان معين
- * (يحتاج طلب معاينة مكتمل)
  */
 export const canWriteReview = (
   requests: Array<{ listingId: string; status: string }>,

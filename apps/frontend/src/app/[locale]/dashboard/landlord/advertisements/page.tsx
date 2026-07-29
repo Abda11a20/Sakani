@@ -21,49 +21,52 @@ import {
 } from "lucide-react";
 import type { Listing } from "@/types";
 
-type FilterStatus = "all" | "active" | "pending_review" | "rented";
+type FilterStatus = "all" | "active" | "pending_review" | "rented" | "paused";
+
+import { useRepublishListing } from "@/hooks/useListings";
+import { RefreshCw } from "lucide-react";
 
 // ── Status Badge Helper ───────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "active":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 font-cairo">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           نشط
         </span>
       );
     case "pending_review":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 font-cairo">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           قيد المراجعة
         </span>
       );
     case "rented":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 font-cairo">
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
           مؤجر
         </span>
       );
     case "paused":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 font-cairo">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
           متوقف
         </span>
       );
     case "rejected":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 font-cairo">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
           مرفوض
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 font-cairo">
           {status}
         </span>
       );
@@ -75,20 +78,22 @@ function AdCard({
   item,
   isRtl,
   locale,
+  onRepublish,
 }: {
   item: Listing;
   isRtl: boolean;
   locale: string;
+  onRepublish?: (id: string) => void;
 }) {
   const hasImage = item.images && item.images.length > 0;
 
   return (
     <Link
       href={`/${locale}/dashboard/landlord/advertisements/${item.id}`}
-      className="group text-right w-full flex flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A847]/60"
+      className="group text-right w-full flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A847]/60"
     >
       {/* Image */}
-      <div className="relative h-[160px] sm:h-[180px] overflow-hidden bg-slate-100 dark:bg-slate-850 shrink-0">
+      <div className="relative h-[160px] sm:h-[180px] overflow-hidden bg-slate-100 shrink-0">
         {hasImage ? (
           <img
             src={getImageUrl(item.images[0])}
@@ -96,7 +101,7 @@ function AdCard({
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center text-slate-300 dark:text-slate-700">
+          <div className="h-full w-full flex items-center justify-center text-slate-300">
             <Building2 size={40} />
           </div>
         )}
@@ -127,29 +132,43 @@ function AdCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-cairo font-semibold text-slate-900 dark:text-slate-100 text-sm leading-snug line-clamp-2 text-right">
+        <h3 className="font-cairo font-semibold text-slate-900 text-sm leading-snug line-clamp-2 text-right">
           {item.title}
         </h3>
 
         {/* Price */}
         <div className="flex items-baseline gap-1 font-cairo">
-          <span className="text-base font-extrabold text-[#D4A847] dark:text-[#E8C06A] font-sans">
+          <span className="text-[#D4A847] text-base font-extrabold font-sans">
             {new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(item.price)}
           </span>
           <span className="text-[10px] text-slate-400">جنيه/شهر</span>
         </div>
 
-        {/* Footer views counter */}
-        <div className="mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+        {/* Footer views counter & Actions */}
+        <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
           <div className="flex items-center gap-1">
             <Eye size={11} />
             <span className="font-sans">{item.viewCount ?? item.views ?? 0}</span>
             <span>مشاهدة</span>
           </div>
-          <span className="text-[#1B4F8A] dark:text-[#7BAEE8] font-bold text-[10px] flex items-center gap-1">
-            {isRtl ? "تفاصيل وإجراءات" : "Details & Actions"}
-            <ChevronLeft size={11} />
-          </span>
+          {item.status === "paused" && onRepublish ? (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRepublish(item.id);
+              }}
+              className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors font-cairo shadow-sm"
+            >
+              <RefreshCw size={12} />
+              {isRtl ? "إعادة نشر" : "Republish"}
+            </button>
+          ) : (
+            <span className="text-[#1B4F8A] font-bold text-[10px] flex items-center gap-1">
+              {isRtl ? "تفاصيل وإجراءات" : "Details & Actions"}
+              <ChevronLeft size={11} />
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -165,10 +184,33 @@ export default function LandlordAdvertisements() {
   const { data: rawListings = [], isLoading, refetch } = useMyListings();
   const listings = rawListings || [];
   const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
+  const { mutate: republishListing, isPending: isRepublishing } = useRepublishListing();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleRepublish = (id: string) => {
+    republishListing(id, {
+      onSuccess: () => {
+        toast({
+          title: isRtl ? "تمت إعادة النشر بنجاح" : "Republished successfully",
+          description: isRtl
+            ? "تمت إعادة الإعلان إلى المنصة وأصبح نشطاً ومتاحاً."
+            : "The ad is now active again on the platform.",
+          type: "success",
+        });
+        refetch();
+      },
+      onError: (err: any) => {
+        toast({
+          title: isRtl ? "فشل إعادة النشر" : "Republish failed",
+          description: err?.response?.data?.message || (isRtl ? "حدث خطأ أثناء محاولة إعادة النشر." : "An error occurred."),
+          type: "error",
+        });
+      },
+    });
+  };
 
   // Filter listings
   const filteredListings = useMemo(() => {
@@ -216,10 +258,10 @@ export default function LandlordAdvertisements() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-cairo">
+            <h1 className="text-xl font-bold text-slate-900 font-cairo">
               {isRtl ? "إدارة الإعلانات" : "Advertisement Management"}
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-cairo">
+            <p className="text-xs text-slate-500 mt-0.5 font-cairo">
               {isRtl
                 ? "اضغط على أي إعلان لعرض تفاصيله وإجراءاته."
                 : "Click any ad to view its details and actions."}
@@ -234,7 +276,7 @@ export default function LandlordAdvertisements() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center bg-white p-3.5 rounded-2xl border border-slate-200">
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="absolute top-1/2 start-3 -translate-y-1/2 text-slate-400" size={15} />
             <input
@@ -242,17 +284,18 @@ export default function LandlordAdvertisements() {
               placeholder={isRtl ? "بحث بالإعلان..." : "Search advertisements..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full ps-9 pe-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A847]/20 focus:border-[#D4A847] font-cairo"
+              className="w-full ps-9 pe-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A847]/20 focus:border-[#D4A847] font-cairo"
             />
           </div>
 
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto shrink-0">
+          <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto shrink-0">
             {(
               [
                 { key: "all", label: isRtl ? "الكل" : "All" },
                 { key: "active", label: isRtl ? "نشط" : "Active" },
                 { key: "pending_review", label: isRtl ? "مراجعة" : "Pending" },
                 { key: "rented", label: isRtl ? "مؤجر" : "Rented" },
+                { key: "paused", label: isRtl ? "متوقف" : "Paused" },
               ] as const
             ).map((filter) => (
               <button
@@ -260,8 +303,8 @@ export default function LandlordAdvertisements() {
                 onClick={() => setActiveFilter(filter.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all whitespace-nowrap ${
                   activeFilter === filter.key
-                    ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {filter.label}
@@ -272,7 +315,7 @@ export default function LandlordAdvertisements() {
 
         {/* Count */}
         {!isLoading && filteredListings.length > 0 && (
-          <p className="text-xs text-slate-400 dark:text-slate-600 font-cairo font-medium px-1">
+          <p className="text-xs text-slate-400 font-cairo font-medium px-1">
             {isRtl ? `${filteredListings.length} إعلان` : `${filteredListings.length} advertisements`}
           </p>
         )}
@@ -283,12 +326,12 @@ export default function LandlordAdvertisements() {
             <Spinner size="lg" />
           </div>
         ) : filteredListings.length === 0 ? (
-          <div className="text-center py-24 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo">
-            <Megaphone size={44} className="mx-auto mb-4 text-slate-300 dark:text-slate-700" />
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+          <div className="text-center py-24 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
+            <Megaphone size={44} className="mx-auto mb-4 text-slate-300" />
+            <h3 className="text-base font-bold text-slate-800">
               {isRtl ? "لا توجد إعلانات" : "No Advertisements Found"}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-1.5 max-w-xs mx-auto text-xs">
+            <p className="text-slate-500 mt-1.5 max-w-xs mx-auto text-xs">
               {isRtl ? "لم تقم بإضافة أي إعلانات بعد. ابدأ بإضافة أول إعلان لك الآن!" : "You have not published any advertisements yet."}
             </p>
           </div>
@@ -300,6 +343,7 @@ export default function LandlordAdvertisements() {
                 item={item}
                 isRtl={isRtl}
                 locale={locale}
+                onRepublish={handleRepublish}
               />
             ))}
           </div>
@@ -314,13 +358,13 @@ export default function LandlordAdvertisements() {
           title={isRtl ? "تأكيد حذف الإعلان" : "Confirm Deletion"}
         >
           <div className="p-6 text-center space-y-4 font-cairo">
-            <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle size={28} />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-base font-bold text-slate-900">
               {isRtl ? "هل أنت متأكد من حذف هذا الإعلان؟" : "Are you sure you want to delete?"}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-xs max-w-sm mx-auto">
+            <p className="text-slate-500 text-xs max-w-sm mx-auto">
               {isRtl
                 ? "هذا الإجراء نهائي وسيتم إزالة الإعلان التسويقي من المنصة بالكامل."
                 : "This action is permanent and will completely remove the ad from the platform."}
@@ -328,7 +372,7 @@ export default function LandlordAdvertisements() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 rounded-xl py-2.5 border border-slate-200 dark:border-slate-800 font-semibold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="flex-1 rounded-xl py-2.5 border border-slate-200 font-semibold text-sm text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 {isRtl ? "إلغاء" : "Cancel"}
               </button>

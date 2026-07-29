@@ -16,13 +16,17 @@ const getOrigin = (urlStr) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const apiOrigin = getOrigin(rawApiUrl);
 
+// في dev محتاجين 'unsafe-eval' عشان Next.js HMR / React Fast Refresh
+// في production لا نسمح بيها أبداً لأنها تُضعف الحماية من XSS
+const isDev = process.env.NODE_ENV === "development";
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://apis.google.com https://accept.paymob.com;
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accept.paymob.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
   font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com;
-  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com;
+  img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com;
+  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org;
   frame-src 'self' https://accept.paymob.com;
   object-src 'none';
   base-uri 'self';
@@ -60,6 +64,7 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // PWA manifest يُضاف عبر <link> في الـ layout — لا نحتاج مكتبة خارجية
+  transpilePackages: ["leaflet", "react-leaflet"],
   experimental: {
   },
   eslint: {
@@ -74,6 +79,9 @@ const nextConfig = {
     ];
   },
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: "https",

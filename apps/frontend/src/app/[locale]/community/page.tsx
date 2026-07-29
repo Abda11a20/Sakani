@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 import {
   Search,
   Filter,
@@ -22,7 +23,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { communityRepository } from "@/features/community";
 import { EGYPTIAN_GOVERNORATES } from "@/lib/constants";
 import Link from "next/link";
 
@@ -106,8 +107,8 @@ export default function CommunityPage() {
 
   // Load categories
   useEffect(() => {
-    api.get("/community/categories")
-      .then((res) => setCategories(res.data))
+    communityRepository.getCategories()
+      .then((data) => setCategories(data))
       .catch((err) => console.error("Error loading categories", err));
   }, []);
 
@@ -125,10 +126,10 @@ export default function CommunityPage() {
     if (genderPref) params.genderPreference = genderPref;
     if (selectedDate) params.date = selectedDate;
 
-    api.get("/community", { params })
-      .then((res) => {
-        setPosts(res.data.posts);
-        setTotalCount(res.data.total);
+    communityRepository.getPosts(params)
+      .then((data) => {
+        setPosts(data.posts);
+        setTotalCount(data.total);
       })
       .catch((err) => {
         console.error("Error loading posts", err);
@@ -154,7 +155,7 @@ export default function CommunityPage() {
     }
 
     try {
-      await api.post("/community", {
+      await communityRepository.createPost({
         title: newTitle,
         description: newDesc,
         categoryId: newCat,
@@ -201,7 +202,7 @@ export default function CommunityPage() {
     }
 
     try {
-      await api.post("/community/alerts", {
+      await communityRepository.createAlert({
         categoryId: alertCat,
         governorateId: alertGov,
         cityId: alertCity,
@@ -227,7 +228,7 @@ export default function CommunityPage() {
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-16">
+    <div className="min-h-screen bg-slate-50 pb-16">
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-12 px-4 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
@@ -277,17 +278,17 @@ export default function CommunityPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
-          <div className="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-fit space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
-              <Filter size={18} className="text-blue-600 dark:text-blue-400" />
-              <h2 className="font-bold text-slate-950 dark:text-white font-cairo">
+          <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit space-y-6">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Filter size={18} className="text-blue-600" />
+              <h2 className="font-bold text-slate-950 font-cairo">
                 {isRtl ? "تصفية الأنشطة" : "Filter Activities"}
               </h2>
             </div>
 
             {/* Search Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "البحث بالاسم والوصف" : "Search Title / Desc"}
               </label>
               <div className="relative">
@@ -299,7 +300,7 @@ export default function CommunityPage() {
                     setSearchQuery(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 pl-9 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 pl-9 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
               </div>
@@ -307,7 +308,7 @@ export default function CommunityPage() {
 
             {/* Categories Select */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "التصنيف" : "Category"}
               </label>
               <select
@@ -316,7 +317,7 @@ export default function CommunityPage() {
                   setSelectedCategory(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
               >
                 <option value="">{isRtl ? "كل التصنيفات" : "All Categories"}</option>
                 {categories.map((cat) => (
@@ -329,7 +330,7 @@ export default function CommunityPage() {
 
             {/* Governorate Select */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "المحافظة" : "Governorate"}
               </label>
               <select
@@ -338,7 +339,7 @@ export default function CommunityPage() {
                   setSelectedGov(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
               >
                 <option value="">{isRtl ? "كل المحافظات" : "All Governorates"}</option>
                 {EGYPTIAN_GOVERNORATES.map((gov) => (
@@ -351,7 +352,7 @@ export default function CommunityPage() {
 
             {/* City / District */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "المدينة / الحي" : "City / District"}
               </label>
               <input
@@ -362,13 +363,13 @@ export default function CommunityPage() {
                   setCityQuery(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
               />
             </div>
 
             {/* Gender Preference */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "الجنس المستهدف" : "Target Gender"}
               </label>
               <select
@@ -377,7 +378,7 @@ export default function CommunityPage() {
                   setGenderPref(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
               >
                 <option value="">{isRtl ? "الجميع" : "All"}</option>
                 <option value="MALES_ONLY">{isRtl ? "ذكور فقط" : "Males Only"}</option>
@@ -388,7 +389,7 @@ export default function CommunityPage() {
 
             {/* Datepicker */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+              <label className="text-xs font-semibold text-slate-500 font-cairo">
                 {isRtl ? "التاريخ" : "Date"}
               </label>
               <input
@@ -398,7 +399,7 @@ export default function CommunityPage() {
                   setSelectedDate(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -413,7 +414,7 @@ export default function CommunityPage() {
                 setSelectedDate("");
                 setPage(1);
               }}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all font-cairo"
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all font-cairo"
             >
               {isRtl ? "إعادة تعيين الفلاتر" : "Reset Filters"}
             </button>
@@ -426,14 +427,14 @@ export default function CommunityPage() {
                 {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
-                    className="bg-white dark:bg-slate-800 h-64 border border-slate-200 dark:border-slate-700 rounded-2xl animate-pulse"
+                    className="bg-white h-64 border border-slate-200 rounded-2xl animate-pulse"
                   />
                 ))}
               </div>
             ) : posts.length === 0 ? (
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
-                <Compass size={48} className="text-slate-300 dark:text-slate-600" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo">
+              <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+                <Compass size={48} className="text-slate-300" />
+                <h3 className="text-lg font-bold text-slate-900 font-cairo">
                   {isRtl ? "لا توجد أنشطة مطابقة" : "No Matching Activities"}
                 </h3>
                 <p className="text-slate-500 max-w-sm text-sm font-cairo">
@@ -454,11 +455,11 @@ export default function CommunityPage() {
                     return (
                       <div
                         key={post.id}
-                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm relative group"
+                        className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm relative group"
                       >
                         {/* Top Category Badge */}
                         <div className="flex justify-between items-start mb-3">
-                          <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-xs font-bold font-cairo">
+                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-bold font-cairo">
                             <span>{post.category.icon}</span>
                             <span>{isRtl ? post.category.nameAr : post.category.nameEn}</span>
                           </span>
@@ -466,8 +467,8 @@ export default function CommunityPage() {
                           <span
                             className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-cairo ${
                               isFull
-                                ? "bg-red-50 dark:bg-red-900/30 text-red-600"
-                                : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"
+                                ? "bg-red-50 text-red-600"
+                                : "bg-emerald-50 text-emerald-600"
                             }`}
                           >
                             {isFull ? (isRtl ? "مكتمل العدد" : "Full") : `${acceptedParticipantsCount} / ${post.maxParticipants} ${isRtl ? "أماكن" : "places"}`}
@@ -476,15 +477,22 @@ export default function CommunityPage() {
 
                         {/* Host / Organizer Trust Rating */}
                         <div className="flex items-center gap-2 mb-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
+                          <div className="relative w-8 h-8 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200">
                             {post.user.avatarUrl ? (
-                              <img src={post.user.avatarUrl} alt="" className="object-cover w-full h-full" />
+                              <Image
+                                src={post.user.avatarUrl}
+                                alt={post.user.name}
+                                fill
+                                sizes="32px"
+                                className="object-cover"
+                                unoptimized={post.user.avatarUrl.includes('api.dicebear.com')}
+                              />
                             ) : (
                               <span className="text-xs font-bold text-slate-500">{post.user.name[0]}</span>
                             )}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 font-cairo">
+                            <p className="text-xs font-bold text-slate-800 font-cairo">
                               {post.user.name}
                             </p>
                             <div className="flex items-center gap-1 text-[10px] text-amber-500 font-semibold">
@@ -497,16 +505,16 @@ export default function CommunityPage() {
 
                         {/* Info details */}
                         <div className="space-y-1 mb-4 flex-1">
-                          <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1 text-base font-cairo">
+                          <h3 className="font-bold text-slate-900 line-clamp-1 text-base font-cairo">
                             {post.title}
                           </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 font-cairo">
+                          <p className="text-xs text-slate-500 line-clamp-2 font-cairo">
                             {post.description}
                           </p>
                         </div>
 
                         {/* Meta info footer inside card */}
-                        <div className="border-t border-slate-100 dark:border-slate-700 pt-3 mt-auto space-y-2 text-xs text-slate-500 dark:text-slate-400 font-cairo">
+                        <div className="border-t border-slate-100 pt-3 mt-auto space-y-2 text-xs text-slate-500 font-cairo">
                           <div className="flex items-center justify-between gap-1 flex-wrap">
                             <span className="flex items-center gap-1">
                               <MapPin size={12} className="text-blue-500" />
@@ -519,14 +527,14 @@ export default function CommunityPage() {
                           </div>
 
                           <div className="flex items-center justify-between pt-1">
-                            <span className="flex items-center gap-1 font-semibold text-slate-600 dark:text-slate-300">
+                            <span className="flex items-center gap-1 font-semibold text-slate-600">
                               <Clock size={12} />
                               <span>{post.timeSlot}</span>
                             </span>
 
                             <Link
                               href={`/${locale}/community/${post.id}`}
-                              className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-0.5"
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-0.5"
                             >
                               {isRtl ? "عرض التفاصيل ←" : "View Details →"}
                             </Link>
@@ -543,17 +551,17 @@ export default function CommunityPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(p - 1, 1))}
                       disabled={page === 1}
-                      className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                      className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50"
                     >
                       <ChevronRight size={16} className={isRtl ? "" : "rotate-180"} />
                     </button>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
+                    <span className="text-sm font-semibold text-slate-700 font-cairo">
                       {isRtl ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
                     </span>
                     <button
                       onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
                       disabled={page === totalPages}
-                      className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                      className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50"
                     >
                       <ChevronLeft size={16} className={isRtl ? "" : "rotate-180"} />
                     </button>
@@ -568,42 +576,42 @@ export default function CommunityPage() {
       {/* CREATE ALERT MODAL */}
       {alertFormOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
                 <Bell size={18} className="text-amber-500" />
                 {isRtl ? "إعداد تنبيه بالأنشطة الذكي" : "Setup Smart Activity Alert"}
               </h3>
               <button
                 onClick={() => setAlertFormOpen(false)}
-                className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300"
+                className="text-slate-400 hover:text-slate-500"
               >
                 <X size={20} />
               </button>
             </div>
 
             {alertSuccess ? (
-              <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo">
+              <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo">
                 <CheckCircle size={20} />
                 <span>{isRtl ? "تم حفظ التنبيه الذكي بنجاح!" : "Smart alert saved successfully!"}</span>
               </div>
             ) : (
               <form onSubmit={handleCreateAlert} className="space-y-4">
                 {alertError && (
-                  <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold">
+                  <div className="bg-red-50 text-red-600 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold">
                     <AlertTriangle size={16} />
                     <span>{alertError}</span>
                   </div>
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                  <label className="text-xs font-semibold text-slate-500 font-cairo">
                     {isRtl ? "نوع النشاط المطلوب" : "Activity Category"}
                   </label>
                   <select
                     value={alertCat}
                     onChange={(e) => setAlertCat(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                     required
                   >
                     <option value="">{isRtl ? "اختر التصنيف..." : "Choose Category..."}</option>
@@ -616,13 +624,13 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                  <label className="text-xs font-semibold text-slate-500 font-cairo">
                     {isRtl ? "المحافظة" : "Governorate"}
                   </label>
                   <select
                     value={alertGov}
                     onChange={(e) => setAlertGov(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                     required
                   >
                     <option value="">{isRtl ? "اختر المحافظة..." : "Choose Governorate..."}</option>
@@ -635,7 +643,7 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                  <label className="text-xs font-semibold text-slate-500 font-cairo">
                     {isRtl ? "المدينة أو الحي" : "City or District"}
                   </label>
                   <input
@@ -643,19 +651,19 @@ export default function CommunityPage() {
                     placeholder={isRtl ? "مثال: مدينة نصر" : "e.g. City"}
                     value={alertCity}
                     onChange={(e) => setAlertCity(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                  <label className="text-xs font-semibold text-slate-500 font-cairo">
                     {isRtl ? "تفضيل الجنس" : "Gender Preference"}
                   </label>
                   <select
                     value={alertGender}
                     onChange={(e) => setAlertGender(e.target.value as any)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                   >
                     <option value="ALL">{isRtl ? "الجميع" : "All"}</option>
                     <option value="MALES_ONLY">{isRtl ? "ذكور فقط" : "Males Only"}</option>
@@ -678,29 +686,29 @@ export default function CommunityPage() {
       {/* CREATE POST MODAL */}
       {createModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
                 <Plus size={18} className="text-amber-500" />
                 {isRtl ? "إضافة منشور نشاط جديد" : "Create New Activity Post"}
               </h3>
               <button
                 onClick={() => setCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300"
+                className="text-slate-400 hover:text-slate-500"
               >
                 <X size={20} />
               </button>
             </div>
 
             {createSuccess ? (
-              <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo">
+              <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo">
                 <CheckCircle size={20} />
                 <span>{isRtl ? "تم نشر النشاط بنجاح وتنبيه المشتركين المهتمين!" : "Activity published successfully and alerts sent!"}</span>
               </div>
             ) : (
               <form onSubmit={handleCreatePost} className="space-y-4">
                 {createError && (
-                  <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold font-cairo">
+                  <div className="bg-red-50 text-red-600 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold font-cairo">
                     <AlertTriangle size={16} />
                     <span>{createError}</span>
                   </div>
@@ -708,7 +716,7 @@ export default function CommunityPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1 col-span-2">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "عنوان النشاط" : "Activity Title"} *
                     </label>
                     <input
@@ -716,13 +724,13 @@ export default function CommunityPage() {
                       placeholder={isRtl ? "مثال: نلعب كورة قدم في الجيزة" : "e.g. Football match"}
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     />
                   </div>
 
                   <div className="space-y-1 col-span-2">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "الوصف والتفاصيل" : "Description / Details"} *
                     </label>
                     <textarea
@@ -730,19 +738,19 @@ export default function CommunityPage() {
                       value={newDesc}
                       onChange={(e) => setNewDesc(e.target.value)}
                       rows={3}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "التصنيف" : "Category"} *
                     </label>
                     <select
                       value={newCat}
                       onChange={(e) => setNewCat(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     >
                       <option value="">{isRtl ? "اختر..." : "Choose..."}</option>
@@ -755,7 +763,7 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "الحد الأقصى للمشاركين" : "Max Participants"} *
                     </label>
                     <input
@@ -764,19 +772,19 @@ export default function CommunityPage() {
                       max={100}
                       value={newMaxPart}
                       onChange={(e) => setNewMaxPart(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "المحافظة" : "Governorate"} *
                     </label>
                     <select
                       value={newGov}
                       onChange={(e) => setNewGov(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     >
                       <option value="">{isRtl ? "اختر..." : "Choose..."}</option>
@@ -789,7 +797,7 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "المدينة أو الحي" : "City / District"} *
                     </label>
                     <input
@@ -797,26 +805,26 @@ export default function CommunityPage() {
                       placeholder={isRtl ? "مثال: مدينة نصر" : "e.g. Heliopolis"}
                       value={newCity}
                       onChange={(e) => setNewCity(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "التاريخ" : "Date"} *
                     </label>
                     <input
                       type="date"
                       value={newEventDate}
                       onChange={(e) => setNewEventDate(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "توقيت التجمع" : "Time Slot"} *
                     </label>
                     <input
@@ -824,19 +832,19 @@ export default function CommunityPage() {
                       placeholder={isRtl ? "مثال: 07:00 مساءً" : "e.g. 07:00 PM"}
                       value={newTimeSlot}
                       onChange={(e) => setNewTimeSlot(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                       required
                     />
                   </div>
 
                   <div className="space-y-1 col-span-2">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "تفضيل الجنس" : "Target Gender"}
                     </label>
                     <select
                       value={newGender}
                       onChange={(e) => setNewGender(e.target.value as any)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                     >
                       <option value="ALL">{isRtl ? "مفتوح للجميع" : "All"}</option>
                       <option value="MALES_ONLY">{isRtl ? "ذكور فقط" : "Males Only"}</option>
@@ -845,7 +853,7 @@ export default function CommunityPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-900 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400 font-cairo">
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-start gap-2.5 text-xs text-slate-500 font-cairo">
                   <Info size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
                   <span>
                     {isRtl

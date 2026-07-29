@@ -46,7 +46,6 @@ enum GenderTarget {
 enum ElectricityType {
   prepaid_card
   old_meter
-  modern_meter
 }
 
 enum BedStatus {
@@ -156,7 +155,9 @@ model Listing {
   price                  Int
   securityDeposit        Int             @default(0)
   includesBills          Boolean         @default(false)
-  electricityType        ElectricityType @default(modern_meter)
+  electricityType        ElectricityType @default(prepaid_card)
+  isFurnished            Boolean         @default(true)
+  hasExactLocation       Boolean         @default(false)
   totalBeds              Int?
   availableBeds          Int?
   genderTarget           GenderTarget    @default(mixed)

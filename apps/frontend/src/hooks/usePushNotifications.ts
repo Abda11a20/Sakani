@@ -1,16 +1,9 @@
 // apps/frontend/src/hooks/usePushNotifications.ts
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { notificationsApi, type PushSubscriptionItem } from "@/features/notifications";
 
-export interface PushSubscriptionItem {
-  id: string;
-  endpoint: string;
-  deviceName: string | null;
-  browser: string | null;
-  createdAt: string;
-  lastUsedAt: string | null;
-}
+export type { PushSubscriptionItem };
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -47,10 +40,7 @@ function getBrowserAndDevice() {
 export const usePushSubscriptions = () => {
   return useQuery<PushSubscriptionItem[]>({
     queryKey: ["push-subscriptions"],
-    queryFn: async (): Promise<PushSubscriptionItem[]> => {
-      const response = await api.get<PushSubscriptionItem[]>("/notifications/push/subscriptions/me");
-      return response.data;
-    },
+    queryFn: () => notificationsApi.getPushSubscriptions(),
   });
 };
 
@@ -58,10 +48,7 @@ export const usePushSubscriptions = () => {
 export const useVapidPublicKey = () => {
   return useQuery<{ publicKey: string | null }>({
     queryKey: ["vapid-public-key"],
-    queryFn: async () => {
-      const response = await api.get<{ publicKey: string | null }>("/notifications/push/vapid-public-key");
-      return response.data;
-    },
+    queryFn: () => notificationsApi.getVapidPublicKey(),
   });
 };
 
@@ -76,8 +63,8 @@ export const useSubscribePush = () => {
       }
 
       // 1. Fetch VAPID public key
-      const keyRes = await api.get<{ publicKey: string | null }>("/notifications/push/vapid-public-key");
-      const vapidPublicKey = keyRes.data.publicKey;
+      const keyRes = await notificationsApi.getVapidPublicKey();
+      const vapidPublicKey = keyRes.publicKey;
 
       if (!vapidPublicKey) {
         throw new Error("Push notifications server VAPID key is missing");
@@ -85,8 +72,6 @@ export const useSubscribePush = () => {
 
       // 2. Register Service Worker and subscribe
       const registration = await navigator.serviceWorker.register("/sw.js");
-      
-      // Wait for registration to become active
       await navigator.serviceWorker.ready;
 
       const subscription = await registration.pushManager.subscribe({
@@ -107,14 +92,11 @@ export const useSubscribePush = () => {
         : '';
 
       // 3. Send subscription to backend
-      const response = await api.post("/notifications/push/subscribe", {
+      return await notificationsApi.subscribePush({
         endpoint: subscription.endpoint,
         keys: { p256dh, auth },
-        deviceName: device,
-        browser,
+        userAgent: `${device} - ${browser}`,
       });
-
-      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["push-subscriptions"] });
@@ -137,9 +119,7 @@ export const useUnsubscribePush = () => {
 
       if (subscription) {
         // 1. Inform backend
-        await api.delete("/notifications/push/unsubscribe", {
-          data: { endpoint: subscription.endpoint },
-        });
+        await notificationsApi.unsubscribePush({ endpoint: subscription.endpoint });
 
         // 2. Unsubscribe locally
         await subscription.unsubscribe();
@@ -156,10 +136,7 @@ export const useDeleteSubscriptionDevice = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await api.delete(`/notifications/push/subscriptions/${id}`);
-      return response.data;
-    },
+    mutationFn: (id: string) => notificationsApi.deletePushSubscription(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["push-subscriptions"] });
     },

@@ -10,12 +10,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
-import { ListingStatus, UnitType, Prisma, UserRole } from '@prisma/client';
+import { ListingStatus, UnitType, Prisma, UserRole, NotificationType, BedStatus } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
+import { NotificationService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ListingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   // ── 1. إنشاء إعلان ──────────────────────────────────────────────────────────
   async create(landlordId: string, dto: CreateListingDto) {
@@ -58,6 +62,7 @@ export class ListingsService {
         securityDeposit: dto.securityDeposit,
         includesBills: dto.includesBills,
         electricityType: dto.electricityType,
+        isFurnished: dto.unitType === UnitType.bed ? true : (dto.isFurnished ?? true),
         totalBeds: dto.totalBeds,
         availableBeds: dto.unitType === UnitType.bed ? dto.totalBeds : null,
         genderTarget: dto.genderTarget,
@@ -66,6 +71,7 @@ export class ListingsService {
         address: dto.address,
         lat: dto.lat ?? 30.0444,
         lng: dto.lng ?? 31.2357,
+        hasExactLocation: dto.hasExactLocation === true,
         amenities: dto.amenities ?? [],
         roommateFeatureEnabled: dto.roommateFeatureEnabled,
         status: ListingStatus.pending_review,
@@ -82,7 +88,31 @@ export class ListingsService {
       include: { beds: true },
     });
 
-    // Fire-and-forget: notify matched alerts (no await — don't block response)
+    // ── إرسال إشعار فوري لجميع المسؤولين والـ Super Admins بوجود إعلان جديد ──
+    const landlord = await this.prisma.user.findUnique({
+      where: { id: landlordId },
+      select: { name: true },
+    });
+    const landlordName = landlord?.name || 'مُعلِن';
+
+    const admins = await this.prisma.user.findMany({
+      where: { role: { in: ['admin', 'super_admin'] } },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      this.notificationService
+        .createUnique({
+          userId: admin.id,
+          type: NotificationType.ALERT,
+          title: 'إعلان جديد بانتظار المراجعة',
+          body: `قام المؤجر "${landlordName}" بنشر إعلان جديد: "${listing.title}" وهو بانتظار المراجعة.`,
+          entityType: 'LISTING',
+          entityId: listing.id,
+        })
+        .catch(() => {});
+    }
+
     return listing;
   }
 
@@ -127,7 +157,12 @@ export class ListingsService {
     }
 
     if (verifiedOnly) {
-      where.landlord = { emailVerifiedAt: { not: null } };
+      where.landlord = {
+        OR: [
+          { emailVerifiedAt: { not: null } },
+          { phoneVerifiedAt: { not: null } },
+        ],
+      };
     }
 
     const [listings, total] = await Promise.all([
@@ -222,12 +257,15 @@ export class ListingsService {
       throw new BadRequestException('لا يمكن تغيير نوع الوحدة بعد الإنشاء');
     }
 
+    const updateData: any = { ...dto, status: ListingStatus.pending_review };
+
+    if (dto.hasExactLocation !== undefined) {
+      updateData.hasExactLocation = dto.hasExactLocation === true;
+    }
+
     return this.prisma.listing.update({
       where: { id },
-      data: {
-        ...dto,
-        status: ListingStatus.pending_review, // أي تعديل يعيد الإعلان للمراجعة
-      },
+      data: updateData,
     });
   }
 
@@ -288,7 +326,6 @@ export class ListingsService {
       where: {
         landlordId,
         isDeleted: false,
-        status: { not: ListingStatus.paused },
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -301,6 +338,51 @@ export class ListingsService {
         },
       },
     });
+  }
+
+  // ── 6.1. إعادة نشر الإعلان المتوقف ──────────────────────────────────────────
+  async republishListing(id: string, landlordId: string) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id },
+    });
+
+    if (!listing || listing.isDeleted) {
+      throw new NotFoundException('الإعلان غير موجود أو تم حذفه');
+    }
+
+    if (listing.landlordId !== landlordId) {
+      throw new ForbiddenException('ليس لديك صلاحية لإعادة نشر هذا الإعلان');
+    }
+
+    if (listing.status !== ListingStatus.paused) {
+      throw new BadRequestException('يمكن إعادة نشر الإعلانات المتوقفة فقط');
+    }
+
+    if (listing.unitType === UnitType.bed) {
+      const availableBeds = await this.prisma.listingBed.count({
+        where: { listingId: id, status: BedStatus.available },
+      });
+      const newStatus =
+        availableBeds === 0 ? ListingStatus.rented : ListingStatus.active;
+
+      return this.prisma.listing.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          availableBeds,
+        },
+      });
+    } else {
+      return this.prisma.listing.update({
+        where: { id },
+        data: {
+          status: ListingStatus.active,
+          currentTenantId: null,
+          rentedSince: null,
+          rentedUntil: null,
+        },
+      });
+    }
   }
 
   // ── 7. إخلاء الوحدة ──────────────────────────────────────────────────────

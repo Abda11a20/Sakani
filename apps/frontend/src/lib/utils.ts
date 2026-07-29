@@ -9,25 +9,6 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-/**
- * تنسيق السعر بالجنيه المصري
- */
-export function formatPrice(price: number, currency = "ج.م"): string {
-  return `${price.toLocaleString("ar-EG")} ${currency}`;
-}
-
-/**
- * تنسيق التاريخ بالعربية
- */
-export function formatDate(
-  date: string | Date,
-  locale: "ar" | "en" = "ar"
-): string {
-  return new Date(date).toLocaleDateString(
-    locale === "ar" ? "ar-EG" : "en-US",
-    { year: "numeric", month: "long", day: "numeric" }
-  );
-}
 
 /**
  * استخراج رابط الصورة بشكل آمن يدعم كلاً من السلسلة النصية وكائنات صور العقار (ListingImage)
@@ -36,6 +17,57 @@ export function getImageUrl(img: string | { url: string } | null | undefined): s
   if (!img) return '';
   if (typeof img === 'object' && img.url) return img.url;
   return String(img);
+}
+
+/**
+ * يُنشئ رابط Cloudinary محسَّن مع Transformations تلقائية (WebP/AVIF + ضغط + تغيير حجم).
+ * - إذا لم يكن الرابط من Cloudinary، يُعيده كما هو.
+ * - إذا كان الرابط يحتوي مسبقاً على transformations، لا يُعيد إضافتها.
+ *
+ * @param img  - رابط الصورة (string أو { url: string } أو null)
+ * @param opts - خيارات التحويل: width, height, quality, crop
+ */
+export function getCloudinaryUrl(
+  img: string | { url: string } | null | undefined,
+  opts: {
+    width?: number;
+    height?: number;
+    quality?: number | 'auto';
+    crop?: 'fill' | 'fit' | 'scale' | 'thumb';
+    format?: 'auto' | 'webp' | 'avif';
+  } = {}
+): string {
+  const rawUrl = getImageUrl(img);
+  if (!rawUrl) return '';
+
+  // فقط روابط Cloudinary يمكن تحويلها
+  if (!rawUrl.includes('res.cloudinary.com')) return rawUrl;
+
+  // إذا كان الرابط يحتوي على transformations مسبقة، أعده كما هو
+  const uploadMarker = '/image/upload/';
+  const uploadIdx = rawUrl.indexOf(uploadMarker);
+  if (uploadIdx === -1) return rawUrl;
+
+  const afterUpload = rawUrl.slice(uploadIdx + uploadMarker.length);
+  // الـ transformations تبدأ بـ "v" أو بحرف أو رقم غير slash
+  // إذا كان هناك فاصلة في الجزء الأول، فالتحويلات موجودة بالفعل
+  const firstSegment = afterUpload.split('/')[0];
+  if (firstSegment.includes(',') || firstSegment.startsWith('f_') || firstSegment.startsWith('q_') || firstSegment.startsWith('w_')) {
+    return rawUrl;
+  }
+
+  const { width, height, quality = 'auto', crop = 'fill', format = 'auto' } = opts;
+
+  const transforms: string[] = [`f_${format}`, `q_${quality}`];
+  if (width) transforms.push(`w_${width}`);
+  if (height) transforms.push(`h_${height}`);
+  if (width && height) transforms.push(`c_${crop}`);
+
+  const transformStr = transforms.join(',');
+  const baseUrl = rawUrl.slice(0, uploadIdx + uploadMarker.length);
+  const rest = rawUrl.slice(uploadIdx + uploadMarker.length);
+
+  return `${baseUrl}${transformStr}/${rest}`;
 }
 
 /**

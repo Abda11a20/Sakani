@@ -1,8 +1,8 @@
 // apps/frontend/src/hooks/useAlerts.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { alertsApi } from "@/lib/api/alerts.api";
+import { alertsApi } from "@/features/alerts";
 import type { Alert } from "@/types";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 
 /**
  * جلب تنبيهات المستخدم الحالي — يعمل فقط عند وجود توكن صالح
@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/auth.store";
  */
 export const useMyAlerts = () => {
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
 
   return useQuery<Alert[]>({
     queryKey: ["alerts", "my"],
@@ -17,8 +18,8 @@ export const useMyAlerts = () => {
       const response = await alertsApi.getMy();
       return response.data as Alert[];
     },
-    // لا تُشغّل الـ query إلا عند وجود توكن مصادقة
-    enabled: !!token,
+    // لا تُشغّل الـ query إلا عند وجود توكن مصادقة ومستأجر فقط
+    enabled: !!token && user?.role === "tenant",
   });
 };
 

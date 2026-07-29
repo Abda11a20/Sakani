@@ -44,8 +44,8 @@ export class NotificationDispatcher {
 
         await this.pushService.sendPush(
           notification.userId,
-          notification.title,
-          notification.body,
+          notification.title || 'إشعار جديد',
+          notification.body || '',
           route,
         );
       }
@@ -116,6 +116,19 @@ export class NotificationDispatcher {
           ? `/dashboard/landlord/advertisements/${entityId}`
           : `/listings/${entityId}`
         : '/';
+    }
+
+    // 4. Contract lifecycle events
+    if (
+      entityType === 'contract.expired' ||
+      entityType === 'contract.terminated' ||
+      entityType === 'contract.renewed' ||
+      entityType === 'unit.rental.completed' ||
+      entityType === 'bed.rental.completed'
+    ) {
+      return isLandlord
+        ? '/dashboard/landlord/rental-history'
+        : '/dashboard/tenant/rental-history';
     }
 
     return '/';

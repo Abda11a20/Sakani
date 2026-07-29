@@ -1,4 +1,4 @@
-// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/page.tsx
+﻿// apps/frontend/src/app/[locale]/dashboard/landlord/properties/apartments/page.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -79,14 +79,14 @@ export default function LandlordApartmentsPage() {
                 {isRtl ? "إدارة العقارات" : "My Properties"}
               </Link>
               <ChevronRight size={14} className={isRtl ? "rotate-180" : ""} />
-              <span className="text-slate-900 dark:text-slate-200">
+              <span className="text-slate-900">
                 {isRtl ? "الشقق والمساكن" : "Apartments"}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-cairo">
+            <h1 className="text-2xl font-bold text-slate-900 font-cairo">
               {isRtl ? "الشقق السكنية" : "Apartment Properties"}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo mt-1">
+            <p className="text-sm text-slate-500 font-cairo mt-1">
               {isRtl
                 ? "تتبع حالة إشغال شققك، أدر المستأجرين، واطلع على عقود الإيجار."
                 : "Track occupancy of your apartments, manage tenants, and view rental contracts."}
@@ -95,7 +95,7 @@ export default function LandlordApartmentsPage() {
         </div>
 
         {/* Filters Panel */}
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-slate-200">
           {/* Search Input */}
           <div className="relative w-full lg:max-w-xs">
             <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18} />
@@ -104,20 +104,20 @@ export default function LandlordApartmentsPage() {
               placeholder={isRtl ? "بحث بالاسم أو الحي..." : "Search by name or district..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-cairo"
+              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/20 focus:border-[#0EA5E9] font-cairo"
             />
           </div>
 
           {/* Right Filters */}
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
             {/* Occupancy Status Filters */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setOccupancyFilter("all")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all ${
                   occupancyFilter === "all"
-                    ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {isRtl ? "الكل" : "All"}
@@ -126,8 +126,8 @@ export default function LandlordApartmentsPage() {
                 onClick={() => setOccupancyFilter("vacant")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all ${
                   occupancyFilter === "vacant"
-                    ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {isRtl ? "شاغرة" : "Vacant"}
@@ -136,8 +136,8 @@ export default function LandlordApartmentsPage() {
                 onClick={() => setOccupancyFilter("rented")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all ${
                   occupancyFilter === "rented"
-                    ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {isRtl ? "مؤجرة" : "Rented"}
@@ -145,12 +145,12 @@ export default function LandlordApartmentsPage() {
             </div>
 
             {/* Sort Filter */}
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl">
               <ArrowUpDown size={14} className="text-slate-400" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-transparent text-xs font-semibold font-cairo text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-semibold font-cairo text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option value="newest">{isRtl ? "الأحدث" : "Newest"}</option>
                 <option value="price-asc">{isRtl ? "السعر: من الأقل" : "Price: Low to High"}</option>
@@ -166,12 +166,12 @@ export default function LandlordApartmentsPage() {
             <Spinner size="lg" />
           </div>
         ) : filteredApartments.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo">
-            <Building2 size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+          <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
+            <Building2 size={48} className="mx-auto mb-4 text-slate-300" />
+            <h3 className="text-lg font-bold text-slate-800">
               {isRtl ? "لا توجد شقق" : "No Apartments Found"}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto text-sm">
+            <p className="text-slate-500 mt-1 max-w-sm mx-auto text-sm">
               {isRtl
                 ? "لم نجد أي شقق تطابق خيارات التصفية المحددة."
                 : "No apartment units match the selected filters."}
@@ -185,18 +185,18 @@ export default function LandlordApartmentsPage() {
               return (
                 <div
                   key={apt.id}
-                  className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all gap-4"
+                  className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all gap-4"
                 >
                   {/* Left Section: Info */}
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                       <Building2 size={24} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100 font-cairo text-base">
+                      <h3 className="font-bold text-slate-900 font-cairo text-base">
                         {apt.title}
                       </h3>
-                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs mt-1 font-cairo">
+                      <div className="flex items-center gap-1 text-slate-500 text-xs mt-1 font-cairo">
                         <MapPin size={13} className="text-amber-500" />
                         <span>
                           {apt.district}، {apt.city}
@@ -205,7 +205,7 @@ export default function LandlordApartmentsPage() {
 
                       {/* Current Tenant Preview if rented */}
                       {isRented && apt.currentTenant && (
-                        <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 mt-2 font-cairo font-medium">
+                        <div className="flex items-center gap-1.5 text-xs text-green-600 mt-2 font-cairo font-medium">
                           <User size={12} />
                           <span>
                             {isRtl ? "المستأجر:" : "Tenant:"} {apt.currentTenant.name}
@@ -216,21 +216,21 @@ export default function LandlordApartmentsPage() {
                   </div>
 
                   {/* Middle Section: Status / Price */}
-                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
                     <div className="flex items-center gap-2">
                       {isRented ? (
-                        <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 font-cairo">
+                        <Badge className="bg-emerald-100 text-emerald-800 font-cairo">
                           {isRtl ? "مؤجرة" : "Rented"}
                         </Badge>
                       ) : (
-                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 font-cairo">
+                        <Badge className="bg-amber-100 text-amber-800 font-cairo">
                           {isRtl ? "شاغرة" : "Vacant"}
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm font-sans font-bold text-slate-700 dark:text-slate-300">
+                    <div className="text-sm font-sans font-bold text-slate-700">
                       {new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(apt.price)}{" "}
-                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400 font-cairo">
+                      <span className="text-xs font-normal text-slate-500 font-cairo">
                         {isRtl ? "ج.م / شهر" : "EGP/mo"}
                       </span>
                     </div>
@@ -244,7 +244,7 @@ export default function LandlordApartmentsPage() {
                     >
                       <Button
                         variant="outline"
-                        className="w-full md:w-auto py-2.5 px-4 text-xs font-bold font-cairo rounded-xl flex items-center justify-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-850"
+                        className="w-full md:w-auto py-2.5 px-4 text-xs font-bold font-cairo rounded-xl flex items-center justify-center gap-1 hover:bg-slate-50"
                       >
                         <Eye size={14} />
                         <span>{isRtl ? "تفاصيل العقار" : "Property Details"}</span>

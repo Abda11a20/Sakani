@@ -35,7 +35,7 @@ export const PriceDisplay = ({
       <span className="text-muted-foreground text-sm">/شهر</span>
     )}
     {includesBills && (
-      <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full">
+      <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
         شامل الفواتير
       </span>
     )}

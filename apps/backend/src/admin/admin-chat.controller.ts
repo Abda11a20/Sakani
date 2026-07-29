@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, UserRole } from '@prisma/client';
+import { User, UserRole, ChatBlockReason } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -39,11 +39,17 @@ export class AdminChatController {
     @CurrentUser() admin: SafeUser,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @Query('reason') reason?: string,
+    @Query('search') search?: string,
   ) {
     return this.conversationService.getSupportConversations(
       admin.id,
       page,
       limit,
+      status,
+      reason,
+      search,
     );
   }
 
@@ -68,18 +74,23 @@ export class AdminChatController {
   async blockConversation(
     @CurrentUser() admin: SafeUser,
     @Param('id') conversationId: string,
-    @Body('reason') reason: string,
+    @Body('reason') reason?: ChatBlockReason,
+    @Body('note') note?: string,
   ) {
     return this.conversationService.blockConversation(
       conversationId,
       admin.id,
       reason,
+      note,
     );
   }
 
   // ── Unblock conversation ─────────────────────────────────────────────────
   @Post('conversations/:id/unblock')
-  async unblockConversation(@Param('id') conversationId: string) {
-    return this.conversationService.unblockConversation(conversationId);
+  async unblockConversation(
+    @CurrentUser() admin: SafeUser,
+    @Param('id') conversationId: string,
+  ) {
+    return this.conversationService.unblockConversation(conversationId, admin.id);
   }
 }

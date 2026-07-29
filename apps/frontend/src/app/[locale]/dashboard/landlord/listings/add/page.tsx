@@ -2,10 +2,10 @@
 "use client";
 
 import React from "react";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { useCreateListing } from "@/hooks/useListings";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import ListingForm from "@/components/dashboard/ListingForm";
+import { ListingForm } from "@/features/dashboard";
 import { Spinner } from "@/components/ui";
 
 export default function AddListingPage() {
@@ -29,7 +29,7 @@ export default function AddListingPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold font-cairo">إضافة إعلان جديد</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             املأ الخطوات الأربع التالية لنشر عقارك على منصة سكني.
           </p>
         </div>

@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus } from "@/hooks/useRequests";
 import LandlordLayout from "@/components/layout/LandlordLayout";
@@ -113,7 +113,7 @@ export default function LandlordRequests() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold font-cairo">الطلبات الواردة</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             إدارة طلبات المعاينة والاستئجار المقدمة من قبل الطلاب والشباب لعقاراتك.
           </p>
         </div>
@@ -121,12 +121,12 @@ export default function LandlordRequests() {
         {/* Stats Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "إجمالي الطلبات", value: statsTotal, color: "text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900" },
-            { label: "جديد (ينتظر ردك)", value: statsPending, color: "text-amber-600 dark:text-amber-400 bg-amber-500/10" },
-            { label: "طلبات مقبولة", value: statsApproved, color: "text-green-600 dark:text-green-400 bg-green-500/10" },
-            { label: "طلبات مرفوضة", value: statsRejected, color: "text-red-600 dark:text-red-400 bg-red-500/10" },
+            { label: "إجمالي الطلبات", value: statsTotal, color: "text-slate-600 bg-slate-100" },
+            { label: "جديد (ينتظر ردك)", value: statsPending, color: "text-amber-600 bg-amber-500/10" },
+            { label: "طلبات مقبولة", value: statsApproved, color: "text-green-600 bg-green-500/10" },
+            { label: "طلبات مرفوضة", value: statsRejected, color: "text-red-600 bg-red-500/10" },
           ].map((stat, idx) => (
-            <div key={idx} className={`p-4 rounded-2xl flex flex-col justify-center border border-slate-200/50 dark:border-slate-800/80 ${stat.color}`}>
+            <div key={idx} className={`p-4 rounded-2xl flex flex-col justify-center border border-slate-200/50 ${stat.color}`}>
               <span className="text-xs font-semibold font-cairo opacity-70">{stat.label}</span>
               <span className="text-2xl font-bold font-sans mt-1">{stat.value}</span>
             </div>
@@ -134,7 +134,7 @@ export default function LandlordRequests() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
           {(
             [
               { key: "all", label: "الكل" },
@@ -149,7 +149,7 @@ export default function LandlordRequests() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${activeTab === tab.key
                   ? "bg-amber-500 text-white shadow-sm font-bold"
-                  : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
             >
               {tab.label}
@@ -159,10 +159,10 @@ export default function LandlordRequests() {
 
         {/* Request Cards Grid */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo">
-            <FileText size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">لا توجد طلبات</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto text-sm">
+          <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
+            <FileText size={48} className="mx-auto mb-4 text-slate-300" />
+            <h3 className="text-lg font-bold text-slate-800">لا توجد طلبات</h3>
+            <p className="text-slate-500 mt-1 max-w-sm mx-auto text-sm">
               لا توجد طلبات معاينة حالية تطابق التصفية المحددة.
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function LandlordRequests() {
               <Card
                 key={req.id}
                 onClick={() => setSelectedRequest(req)}
-                className="cursor-pointer border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
+                className="cursor-pointer border border-slate-200 rounded-3xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
               >
                 <CardBody className="p-4 sm:p-5 flex flex-col items-center text-center gap-3">
                   <Avatar
@@ -182,10 +182,10 @@ export default function LandlordRequests() {
                   />
 
                   <div className="space-y-1 w-full">
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 font-cairo line-clamp-1">
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900 font-cairo line-clamp-1">
                       {req.tenant?.name || "مستأجر غير معروف"}
                     </h3>
-                    <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-cairo line-clamp-2 px-1 h-8 sm:h-auto">
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-cairo line-clamp-2 px-1 h-8 sm:h-auto">
                       {req.listing?.title || "عقار غير محدد"}
                     </p>
                   </div>
@@ -215,7 +215,7 @@ export default function LandlordRequests() {
                   size="xl"
                 />
                 <div>
-                  <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
+                  <h3 className="font-bold text-lg sm:text-xl text-slate-900">
                     {selectedRequest.tenant?.name || "مستأجر غير معروف"}
                   </h3>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -228,16 +228,16 @@ export default function LandlordRequests() {
               </div>
 
               {/* Listing Title */}
-              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">العقار المطلوب</p>
-                <p className="font-bold text-amber-600 dark:text-amber-400 text-sm sm:text-base">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="text-xs text-slate-500 font-medium mb-1">العقار المطلوب</p>
+                <p className="font-bold text-amber-600 text-sm sm:text-base">
                   {selectedRequest.listing?.title || "غير محدد"}
                 </p>
               </div>
 
               {/* Grid details */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-slate-500">
                     <Calendar size={14} className="sm:w-4 sm:h-4 shrink-0" />
                     <span className="text-[10px] sm:text-xs font-medium">موعد المعاينة</span>
@@ -250,7 +250,7 @@ export default function LandlordRequests() {
                 </div>
 
                 {selectedRequest.tenant?.phone && ((selectedRequest.status as string) === "accepted" || selectedRequest.status === "approved" || selectedRequest.status === "completed") ? (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100">
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-slate-500">
                       <User size={14} className="sm:w-4 sm:h-4 shrink-0" />
                       <span className="text-[10px] sm:text-xs font-medium">رقم الهاتف</span>
@@ -260,7 +260,7 @@ export default function LandlordRequests() {
                     </a>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 opacity-50 flex flex-col items-center justify-center text-center">
+                  <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 opacity-50 flex flex-col items-center justify-center text-center">
                     <User size={14} className="text-slate-400 mb-1" />
                     <span className="text-[10px] sm:text-xs font-medium text-slate-500">يظهر بعد القبول</span>
                   </div>
@@ -270,15 +270,15 @@ export default function LandlordRequests() {
               {/* Message */}
               {selectedRequest.notes && (
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1.5">رسالة المستأجر</p>
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                  <p className="text-xs text-slate-500 font-medium mb-1.5">رسالة المستأجر</p>
+                  <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 text-xs sm:text-sm text-slate-700">
                     {selectedRequest.notes}
                   </div>
                 </div>
               )}
 
               {/* Actions */}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+              <div className="pt-4 border-t border-slate-200 flex flex-col gap-2">
                 {selectedRequest.status === "pending" && (
                   <div className="flex gap-2">
                     <Button
@@ -296,7 +296,7 @@ export default function LandlordRequests() {
                         setModalAction({ requestId: selectedRequest.id, action: "rejected" });
                       }}
                       variant="outline"
-                      className="flex-1 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/10 font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm"
+                      className="flex-1 text-red-600 border-red-500/20 hover:bg-red-500/10 font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm"
                     >
                       رفض الطلب
                     </Button>
@@ -313,14 +313,14 @@ export default function LandlordRequests() {
                 )}
 
                 {selectedRequest.status === "completed" && (
-                  <div className="flex items-center justify-center gap-1.5 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 p-3 rounded-xl text-sm">
+                  <div className="flex items-center justify-center gap-1.5 text-green-600 font-bold bg-green-50 p-3 rounded-xl text-sm">
                     <CheckCircle size={16} />
                     <span>تمت المعاينة بنجاح</span>
                   </div>
                 )}
 
                 {selectedRequest.status === "rejected" && (
-                  <div className="flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-sm">
+                  <div className="flex items-center justify-center gap-1.5 text-slate-500 font-bold bg-slate-50 p-3 rounded-xl text-sm">
                     <XCircle size={16} />
                     <span>تم رفض الطلب</span>
                   </div>
@@ -338,20 +338,20 @@ export default function LandlordRequests() {
             title="تأكيد اتخاذ الإجراء"
           >
             <div className="p-6 text-center space-y-4 font-cairo">
-              <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto">
                 <HelpCircle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">
                 هل أنت متأكد من تنفيذ هذا الإجراء؟
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 {actionText[modalAction.action]}
               </p>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setModalAction(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800 font-semibold"
+                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold"
                 >
                   تراجع
                 </Button>

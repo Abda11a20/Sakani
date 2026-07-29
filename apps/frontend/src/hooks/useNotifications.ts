@@ -1,74 +1,180 @@
 // apps/frontend/src/hooks/useNotifications.ts
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { Notification, PaginationMeta } from "@/types";
+import { notificationsApi, type NotificationsResponse, type UnreadCountResponse } from "@/features/notifications";
+import type { Notification } from "@/types";
 
-export interface NotificationsResponse {
-  notifications: Notification[];
-  meta: PaginationMeta;
-}
-
-export interface UnreadCountResponse {
-  unreadCount: number;
-}
+export type { NotificationsResponse, UnreadCountResponse };
 
 /** Paginated list of notifications (newest first). */
 export const useNotifications = (page = 1, limit = 20) => {
   return useQuery<NotificationsResponse>({
     queryKey: ["notifications", page, limit],
-    queryFn: async (): Promise<NotificationsResponse> => {
-      const response = await api.get<NotificationsResponse>("/notifications", {
-        params: { page, limit },
-      });
-      return response.data;
-    },
+    queryFn: () => notificationsApi.getNotifications(page, limit),
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
+
+/** Multi-tab sync channel to eliminate duplicate polling across open browser tabs. */
+const BROADCAST_CHANNEL_NAME = "sakani_notifications_channel";
+const LEADER_LOCK_KEY = "sakani_leader_tab_lock";
 
 /**
- * Unread notification count — polls every 60 s so the badge stays fresh
- * without hammering the server.
+ * Leader Tab Election Hook using Web Locks API with LocalStorage Heartbeat fallback.
+ * Ensures strictly ONE open browser tab acts as the Leader polling HTTP,
+ * while follower tabs listen to BroadcastChannel updates with 0 HTTP polling.
+ */
+function useIsLeaderTab(): boolean {
+  const [isLeader, setIsLeader] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let isMounted = true;
+    const TAB_ID = Math.random().toString(36).substring(2, 9);
+    const LEASE_MS = 5000;
+
+    // 1. Web Locks API (supported in 98%+ modern browsers)
+    if ("locks" in navigator) {
+      navigator.locks
+        .request(LEADER_LOCK_KEY, { mode: "exclusive" }, async () => {
+          if (isMounted) setIsLeader(true);
+          return new Promise<void>((resolve) => {
+            window.addEventListener("beforeunload", () => resolve(), { once: true });
+          });
+        })
+        .catch(() => {
+          if (isMounted) setIsLeader(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    // 2. LocalStorage Heartbeat Fallback
+    const claimLeader = () => {
+      const now = Date.now();
+      const raw = localStorage.getItem(LEADER_LOCK_KEY);
+      if (raw) {
+        try {
+          const { tabId, expiry } = JSON.parse(raw);
+          if (tabId === TAB_ID) {
+            localStorage.setItem(LEADER_LOCK_KEY, JSON.stringify({ tabId: TAB_ID, expiry: now + LEASE_MS }));
+            if (isMounted) setIsLeader(true);
+            return;
+          }
+          if (now < expiry) {
+            if (isMounted) setIsLeader(false);
+            return;
+          }
+        } catch {}
+      }
+      localStorage.setItem(LEADER_LOCK_KEY, JSON.stringify({ tabId: TAB_ID, expiry: now + LEASE_MS }));
+      if (isMounted) setIsLeader(true);
+    };
+
+    claimLeader();
+    const interval = setInterval(claimLeader, 2000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  return isLeader;
+}
+
+/**
+ * Smart Conditional Polling for Unread Count.
+ * ONLY the Leader Tab polls HTTP every 15s (`refetchInterval: isLeader ? 15_000 : false`).
+ * Follower tabs receive updates via BroadcastChannel with 0 HTTP polling requests.
  */
 export const useUnreadNotificationsCount = () => {
-  return useQuery<UnreadCountResponse>({
+  const queryClient = useQueryClient();
+  const isLeader = useIsLeaderTab();
+  const prevCountRef = useRef<number | null>(null);
+
+  // Sync state with other open browser tabs
+  useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "UNREAD_COUNT_UPDATE" && typeof event.data.count === "number") {
+        queryClient.setQueryData(["notifications", "unread-count"], {
+          unreadCount: event.data.count,
+        });
+      }
+    };
+
+    channel.addEventListener("message", handleMessage);
+    return () => {
+      channel.removeEventListener("message", handleMessage);
+      channel.close();
+    };
+  }, [queryClient]);
+
+  const query = useQuery<UnreadCountResponse>({
     queryKey: ["notifications", "unread-count"],
-    queryFn: async (): Promise<UnreadCountResponse> => {
-      const response = await api.get<UnreadCountResponse>(
-        "/notifications/unread-count",
-      );
-      return response.data;
-    },
+    queryFn: () => notificationsApi.getUnreadCount(),
+    refetchInterval: isLeader ? 15_000 : false, // ONLY Leader Tab polls HTTP!
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 5_000,
   });
+
+  useEffect(() => {
+    if (isLeader && query.data?.unreadCount !== undefined) {
+      const currentCount = query.data.unreadCount;
+      const prevCount = prevCountRef.current;
+
+      // Broadcast to follower tabs so they update without additional HTTP requests
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        try {
+          const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+          channel.postMessage({ type: "UNREAD_COUNT_UPDATE", count: currentCount });
+          channel.close();
+        } catch {}
+      }
+
+      // If new unread notifications arrive
+      if (prevCount !== null && currentCount > prevCount) {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["rental-history"] });
+        queryClient.invalidateQueries({ queryKey: ["listings"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      }
+
+      prevCountRef.current = currentCount;
+    }
+  }, [isLeader, query.data?.unreadCount, queryClient]);
+
+  return query;
 };
 
-/** Mark a single notification as read; refreshes both list and unread count. */
+
+/** Mark a single notification as read. */
 export const useMarkNotificationRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation<Notification, Error, string>({
-    mutationFn: async (id): Promise<Notification> => {
-      const response = await api.patch<Notification>(
-        `/notifications/${id}/read`,
-      );
-      return response.data;
-    },
+    mutationFn: (id) => notificationsApi.markAsRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 };
 
-/** Mark all notifications as read; refreshes both list and unread count. */
+/** Mark all notifications as read. */
 export const useMarkAllNotificationsRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation<{ updatedCount: number }, Error>({
-    mutationFn: async (): Promise<{ updatedCount: number }> => {
-      const response = await api.patch<{ updatedCount: number }>(
-        "/notifications/read-all",
-      );
-      return response.data;
-    },
+    mutationFn: () => notificationsApi.markAllAsRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
@@ -80,9 +186,7 @@ export const useDeleteNotification = () => {
   const queryClient = useQueryClient();
 
   return useMutation<void, Error, string>({
-    mutationFn: async (id): Promise<void> => {
-      await api.delete(`/notifications/${id}`);
-    },
+    mutationFn: (id) => notificationsApi.deleteNotification(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
@@ -94,9 +198,7 @@ export const useDeleteAllNotifications = () => {
   const queryClient = useQueryClient();
 
   return useMutation<void, Error>({
-    mutationFn: async (): Promise<void> => {
-      await api.delete("/notifications");
-    },
+    mutationFn: () => notificationsApi.deleteAllNotifications(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },

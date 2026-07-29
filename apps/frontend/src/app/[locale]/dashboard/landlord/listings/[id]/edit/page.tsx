@@ -3,10 +3,10 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { useListing, useUpdateListing } from "@/hooks/useListings";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import ListingForm from "@/components/dashboard/ListingForm";
+import { ListingForm } from "@/features/dashboard";
 import { Spinner } from "@/components/ui";
 
 export default function EditListingPage() {
@@ -46,7 +46,7 @@ export default function EditListingPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold font-cairo">تعديل الإعلان</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             قم بتحديث مواصفات أو صور أو سعر العقار المنشور.
           </p>
         </div>

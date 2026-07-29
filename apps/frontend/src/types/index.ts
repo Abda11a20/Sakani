@@ -1,136 +1,14 @@
 // apps/frontend/src/types/index.ts
+/**
+ * Global Types Kernel — Barrel Re-exporter from Domain Feature Packages (Clean Architecture)
+ */
 
-export type UserRole = "tenant" | "landlord" | "admin" | "super_admin";
+export * from "@/features/auth/domain/types/auth.types";
+export * from "@/features/listings/domain/types/listings.types";
+export * from "@/features/beds/domain/types/beds.types";
 
-export interface User {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  nationalId?: string;
-  role: UserRole;
-  avatarUrl?: string | null;
-  avatarPublicId?: string | null;
-  idCardPublicId?: string | null;
-  nationalIdEnc?: string | null;
-  nationalIdVerified?: boolean;
-  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
-  // emailVerifiedAt replaces the old boolean "verified"
-  emailVerifiedAt: string | null;
-  phoneVerifiedAt: string | null;
-  isActive?: boolean;
-  otpChannel?: "EMAIL" | "TELEGRAM";
-  telegramChatId?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type IdentityVerificationStatus = 'verified' | 'pending' | 'rejected' | 'unverified';
-
-export const getIdentityVerificationStatus = (user?: {
-  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
-  idCardPublicId?: string | null;
-  nationalIdEnc?: string | null;
-  nationalIdVerified?: boolean | null;
-} | null): IdentityVerificationStatus => {
-  if (!user) return 'unverified';
-  if (user.identityStatus === 'VERIFIED' || user.nationalIdVerified) return 'verified';
-  if (user.identityStatus === 'PENDING') return 'pending';
-  if (user.identityStatus === 'REJECTED') return 'rejected';
-  
-  // Fallbacks for compatibility
-  if (user.identityStatus === 'NONE') return 'unverified';
-  if (user.idCardPublicId || user.nationalIdEnc) {
-    if (user.idCardPublicId === 'REJECTED') return 'rejected';
-    return 'pending';
-  }
-  return 'unverified';
-};
-
-// Helper to check if user is verified
-export const isUserVerified = (user?: {
-  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
-  nationalIdVerified?: boolean | null;
-} | null): boolean =>
-  getIdentityVerificationStatus(user) === 'verified';
-
-export type ListingType = "apartment" | "bed";
-export type ListingStatus = "draft" | "pending_review" | "active" | "rented" | "paused" | "rejected";
-export type UnitType = "apartment" | "bed";
-export type GenderTarget = "male" | "female" | "mixed" | "family" | "any";
-
-export interface LandlordPublicInfo {
-  id: string;
-  name: string;
-  avatarUrl?: string | null;
-  emailVerifiedAt?: string | null;
-  phoneVerifiedAt?: string | null;
-  nationalIdVerified?: boolean | null;
-  identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
-  createdAt: string;
-  phone?: string;
-  idCardPublicId?: string | null;
-  ratingAvg?: number;
-  _count?: {
-    listings: number;
-  };
-}
-
-export interface Listing {
-  id: string;
-  title: string;
-  description: string;
-  type: ListingType;
-  unitType?: UnitType;
-  status: ListingStatus;
-  price: number;
-  address: string;
-  city: string;
-  district: string;
-  governorate?: string;
-  latitude?: number;
-  longitude?: number;
-  images: string[];
-  amenities: string[];
-  genderTarget?: GenderTarget;
-  isVerified: boolean;
-  isFeatured: boolean;
-  landlordId: string;
-  landlord?: LandlordPublicInfo;
-  currentTenantId?: string | null;
-  currentTenant?: Pick<User, "id" | "name" | "phone"> | null;
-  beds?: Bed[];
-  totalBeds?: number;
-  availableBeds?: number;
-  viewCount: number;
-  views?: number;
-  rentedSince?: string | null;
-  rentedUntil?: string | null;
-  rules?: string;
-  includesBills?: boolean;
-  securityDeposit?: number;
-  electricityType?: string;
-  createdAt: string;
-  updatedAt: string;
-  // ── Soft Delete ───────────────────────────────────────────────────────────
-  isDeleted?: boolean;
-  deletedAt?: string | null;
-  deletedById?: string | null;
-  deletedByRole?: string | null;
-  deletedReason?: string | null;
-  statusBeforeDelete?: string | null;
-}
-
-export interface Bed {
-  id: string;
-  listingId: string;
-  bedNumber: number;
-  isAvailable: boolean;
-  currentTenantId?: string | null;
-  currentTenant?: Pick<User, "id" | "name"> | null;
-  tenantId?: string;
-  tenant?: Pick<User, "id" | "name"> | null;
-}
+import type { UnitType, GenderTarget, Listing } from "@/features/listings";
+import type { User, UserRole } from "@/features/auth";
 
 export type ViewingRequestStatus = "pending" | "accepted" | "approved" | "rejected" | "completed";
 
@@ -178,12 +56,53 @@ export type NotificationType =
   | "CHAT"
   | "ALERT";
 
+export type NotificationEventKey =
+  | "CONTRACT_EXPIRED"
+  | "CONTRACT_RENEWED"
+  | "CONTRACT_TERMINATED"
+  | "UNIT_RENTAL_COMPLETED"
+  | "BED_RENTAL_COMPLETED"
+  | "LISTING_APPROVED"
+  | "LISTING_REJECTED"
+  | "LISTING_PAUSED"
+  | "LISTING_REPUBLISHED"
+  | "REQUEST_CREATED"
+  | "REQUEST_ACCEPTED"
+  | "REQUEST_REJECTED"
+  | "REQUEST_CANCELED"
+  | "PAYMENT_SUCCESS"
+  | "PAYMENT_FAILED"
+  | "SUBSCRIPTION_RENEWED"
+  | "COMMUNITY_POST_REPLY"
+  | "COMMUNITY_ALERT_MATCH";
+
+export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
+
+export interface NotificationPayload {
+  version?: number;
+  listingId?: string;
+  listingTitle?: string;
+  tenantId?: string;
+  tenantName?: string;
+  contractId?: string;
+  contractNumber?: string;
+  oldContractNumber?: string;
+  newContractNumber?: string;
+  newEndDate?: string;
+  amount?: number;
+  rejectionReason?: string | null;
+  [key: string]: any;
+}
+
 export interface Notification {
   id: string;
   userId: string;
   type: NotificationType;
-  title: string;
-  body: string;
+  eventKey?: NotificationEventKey | null;
+  priority?: NotificationPriority;
+  payload?: NotificationPayload | null;
+  title?: string | null;
+  body?: string | null;
   entityType?: string | null;
   entityId?: string | null;
   isRead: boolean;
@@ -196,7 +115,6 @@ export interface District {
   count: number;
 }
 
-// API Response wrappers
 export interface ApiResponse<T> {
   data: T;
   message?: string;
@@ -216,18 +134,6 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-export interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface OtpResponse {
-  message: string;
-  expiresIn: number;
-}
-
-// Search filters type
 export interface SearchFilters {
   query?: string;
   unitType?: UnitType;
@@ -237,13 +143,13 @@ export interface SearchFilters {
   maxPrice?: number;
   genderTarget?: GenderTarget;
   verifiedOnly?: boolean;
+  isFurnished?: boolean;
   sortBy?: "newest" | "oldest" | "cheapest" | "expensive" | "popular";
   page?: number;
   limit?: number;
   amenities?: string[];
 }
 
-// Admin-specific Types
 export interface DashboardStats {
   totalUsers: number;
   totalListings: number;
@@ -293,12 +199,10 @@ export interface BannedUser {
   updatedAt: string;
 }
 
-// ── Rental History ────────────────────────────────────────────────────────────
-// Source: ViewingRequest WHERE status = 'completed'
-// NOTE: ViewingRequest is the primary source for the current implementation.
-// As the system evolves (contract termination, renewal, multiple tenants over
-// time), a dedicated RentalContract model should be introduced.
-// NOTE: updatedAt is used as a `completedAt` proxy until a dedicated field exists.
+export type ContractStatus = "active" | "expired" | "terminated" | "renewed";
+export type PaymentCycle = "monthly" | "quarterly" | "yearly";
+export type TerminationReason = "tenant_request" | "landlord_request" | "violation" | "mutual_agreement" | "other";
+export type ContractCreatedBy = "VIEWING_REQUEST" | "MANUAL" | "AUTO_RENEW" | "MIGRATION";
 
 export interface RentalHistoryListing {
   id: string;
@@ -315,11 +219,6 @@ export interface RentalHistoryListing {
     phone?: string | null;
   };
 }
-
-export type ContractStatus = "active" | "expired" | "terminated" | "renewed";
-export type PaymentCycle = "monthly" | "quarterly" | "yearly";
-export type TerminationReason = "tenant_request" | "landlord_request" | "violation" | "mutual_agreement" | "other";
-export type ContractCreatedBy = "VIEWING_REQUEST" | "MANUAL" | "AUTO_RENEW" | "MIGRATION";
 
 export interface RentalHistoryItem {
   id: string;
@@ -367,5 +266,5 @@ export interface RentalHistoryQuery {
   from?: string;
   to?: string;
   sort?: "asc" | "desc";
-  status?: string; // Add filter by status
+  status?: string;
 }

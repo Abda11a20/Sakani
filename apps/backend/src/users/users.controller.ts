@@ -63,8 +63,11 @@ export class UsersController {
   @ApiBearerAuth()
   @Delete('users/profile')
   @UseGuards(JwtAuthGuard)
-  async deleteProfile(@CurrentUser() user: SafeUser) {
-    return this.usersService.deleteAccount(user.id);
+  async deleteProfile(
+    @CurrentUser() user: SafeUser,
+    @Body('reason') reason?: string,
+  ) {
+    return this.usersService.deleteAccount(user.id, reason);
   }
 
   // ── 4.5. البحث عن مستأجر برقم الهاتف ──────────────────────────────────

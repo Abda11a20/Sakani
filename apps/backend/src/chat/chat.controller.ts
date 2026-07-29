@@ -1,5 +1,3 @@
-// apps/backend/src/chat/chat.controller.ts
-
 import {
   Controller,
   Post,
@@ -11,14 +9,20 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConversationService } from './conversation.service';
 import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '@prisma/client';
+import { User, MessageType } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
+import { UploadsService } from '../uploads/uploads.service';
+import * as path from 'path';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -30,6 +34,7 @@ export class ChatController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   // ── Get or create own support conversation ────────────────────────────────
@@ -91,6 +96,60 @@ export class ChatController {
     );
   }
 
+  // ── Upload Chat Image Attachment ──────────────────────────────────────────
+  @Post('conversations/:id/upload-image')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(
+    @CurrentUser() user: SafeUser,
+    @Param('id') conversationId: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('يجب إرفاق ملف صورة');
+    }
+
+    // 1. File size check (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('حجم الصورة يجب ألا يتجاوز 5 ميجابايت');
+    }
+
+    // 2. Extension check (Strict whitelist - NO SVG!)
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowedExts.includes(ext)) {
+      throw new BadRequestException('نوع الملف غير مسموح به. يرجى رفع صورة JPG أو PNG أو WEBP فقط.');
+    }
+
+    // 3. MIME type check
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException('صيغة الصورة غير مدعومة.');
+    }
+
+    // 4. Magic Bytes Validation
+    const buf = file.buffer;
+    const isJpeg = buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+    const isPng = buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+    const isWebp = buf.length >= 12 &&
+      buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
+
+    if (!isJpeg && !isPng && !isWebp) {
+      throw new BadRequestException('الملف المرفق ليس صورة صالحة (فشل التحقق الأمني من محتوى الملف).');
+    }
+
+    // 5. Upload file via UploadsService to Cloudinary / Storage
+    const uploadRes = await this.uploadsService.uploadChatAttachment(user.id, file);
+
+    // 6. Automatically create ChatMessage with type IMAGE
+    return this.messageService.sendMessage(
+      user.id,
+      conversationId,
+      uploadRes.url,
+      MessageType.IMAGE,
+    );
+  }
+
   // ── Mark conversation as read ─────────────────────────────────────────────
   @Patch('conversations/:id/read')
   async markAsRead(
@@ -104,5 +163,19 @@ export class ChatController {
   @Get('unread-count')
   async getUnreadCount(@CurrentUser() user: SafeUser) {
     return this.messageService.getUnreadCount(user.id);
+  }
+
+  // ── Notify typing status ──────────────────────────────────────────────────
+  @Post('conversations/:id/typing')
+  async notifyTyping(
+    @CurrentUser() user: SafeUser,
+    @Param('id') conversationId: string,
+    @Body('isTyping') isTyping: boolean,
+  ) {
+    return this.messageService.notifyTyping(
+      conversationId,
+      user.id,
+      isTyping ?? true,
+    );
   }
 }

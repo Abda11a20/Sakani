@@ -1,11 +1,18 @@
 // apps/frontend/src/app/[locale]/admin/layout.tsx
-import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import AdminLayout from "@/components/layout/AdminLayout";
 
-interface AdminRouteLayoutProps {
-  children: ReactNode;
-}
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
-export default function AdminRouteLayout({ children }: AdminRouteLayoutProps) {
+export default function AdminRootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <AdminLayout>{children}</AdminLayout>;
 }

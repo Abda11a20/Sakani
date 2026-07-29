@@ -6,14 +6,17 @@ import {
   Building2,
   Users,
   ShieldBan,
+  ShieldAlert,
   ClipboardList,
-  MessageCircle,
-  Archive,
   FileText,
+  MessageCircle,
   Compass,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import UnifiedDashboardLayout, { type DashboardMenuItem } from "./UnifiedDashboardLayout";
+import { useDashboardSummary } from "@/features/dashboard";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,6 +24,10 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const locale = useLocale();
+  const { data: summaryData } = useDashboardSummary("admin");
+
+  const pendingListings = Number(summaryData?.stats?.pendingListingsCount || summaryData?.stats?.pendingListings || 0);
+  const pendingReports = Number(summaryData?.stats?.pendingReportsCount || summaryData?.stats?.reportsCount || 0);
 
   const menuItems: DashboardMenuItem[] = [
     {
@@ -35,6 +42,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       labelEn: "Review Listings",
       icon: Building2,
       href: `/${locale}/admin/listings`,
+      badge: pendingListings > 0 ? pendingListings : undefined,
     },
     {
       label: "إدارة المستخدمين",
@@ -47,6 +55,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       labelEn: "Banned",
       icon: ShieldBan,
       href: `/${locale}/admin/banned`,
+    },
+    {
+      label: "دورة حياة الحسابات",
+      labelEn: "Account Lifecycle",
+      icon: RotateCcw,
+      href: `/${locale}/admin/account-lifecycle`,
+    },
+    {
+      label: "البلاغات",
+      labelEn: "Reports",
+      icon: ShieldAlert,
+      href: `/${locale}/admin/reports`,
+      badge: pendingReports > 0 ? pendingReports : undefined,
     },
     {
       label: "طلبات المعاينة",
@@ -71,6 +92,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       labelEn: "Community Management",
       icon: Compass,
       href: `/${locale}/admin/community`,
+      exact: true,
+    },
+    {
+      label: "أرشيف الفعاليات",
+      labelEn: "Archived Events",
+      icon: Archive,
+      href: `/${locale}/admin/community/archived`,
     },
     {
       label: "إعلانات محذوفة",

@@ -1,11 +1,11 @@
 // apps/frontend/src/app/[locale]/dashboard/notifications/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -17,7 +17,7 @@ import {
   useDeleteAllNotifications,
   useUnreadNotificationsCount,
 } from "@/hooks/useNotifications";
-import { resolveNotificationRoute } from "@/lib/utils/notification-router";
+import { formatNotification, FormattedNotification } from "@/lib/utils/notification-formatter";
 import {
   Card,
   CardBody,
@@ -35,103 +35,45 @@ import {
   Loader2,
   ChevronRight,
   ChevronLeft,
+  Home,
+  FileText,
+  UserCheck,
+  CreditCard,
+  Star,
+  MessageSquare,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 
-const TYPE_COLORS: Record<string, { bg: string; text: string; labelAr: string; labelEn: string }> = {
-  SYSTEM: { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-400", labelAr: "نظام", labelEn: "System" },
-  REQUEST: { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600 dark:text-blue-400", labelAr: "طلب معاينة", labelEn: "Viewing Request" },
-  REVIEW: { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400", labelAr: "تقييم", labelEn: "Review" },
-  PAYMENT: { bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-600 dark:text-emerald-400", labelAr: "دفع", labelEn: "Payment" },
-  CHAT: { bg: "bg-purple-50 dark:bg-purple-950/30", text: "text-purple-600 dark:text-purple-400", labelAr: "محادثة", labelEn: "Chat" },
-  ALERT: { bg: "bg-rose-50 dark:bg-rose-950/30", text: "text-rose-600 dark:text-rose-400", labelAr: "تنبيه", labelEn: "Alert" },
+const ICON_MAP: Record<FormattedNotification["iconName"], React.ElementType> = {
+  Home,
+  FileText,
+  UserCheck,
+  CreditCard,
+  Star,
+  MessageSquare,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Bell,
 };
 
-const translateNotification = (title: string, body: string, isRtl: boolean) => {
-  if (!isRtl) return { title, body };
-
-  let translatedTitle = title;
-  const lowerTitle = title.toLowerCase();
-
-  // Translate Titles
-  if (lowerTitle.includes("bed rental completed")) {
-    translatedTitle = "تم تأجير السرير بنجاح";
-  } else if (lowerTitle.includes("rental completed")) {
-    translatedTitle = "تم تأجير الوحدة بنجاح";
-  } else if (lowerTitle.includes("new viewing request")) {
-    translatedTitle = "طلب معاينة جديد";
-  } else if (lowerTitle.includes("viewing request accepted")) {
-    translatedTitle = "تم قبول طلب المعاينة";
-  } else if (lowerTitle.includes("viewing request rejected")) {
-    translatedTitle = "تم رفض طلب المعاينة";
-  } else if (lowerTitle.includes("viewing request canceled")) {
-    translatedTitle = "تم إلغاء طلب المعاينة";
-  } else if (lowerTitle.includes("listing approved")) {
-    translatedTitle = "تمت الموافقة على الإعلان";
-  } else if (lowerTitle.includes("listing rejected")) {
-    translatedTitle = "تم رفض الإعلان";
-  } else if (lowerTitle.includes("new message")) {
-    translatedTitle = "رسالة جديدة";
-  } else if (lowerTitle.includes("password reset successful")) {
-    translatedTitle = "تغيير كلمة المرور بنجاح";
-  }
-
-  // Translate Body and handle dynamic quoted values
-  let translatedBody = body;
-  const quoteMatch = body.match(/"([^"]+)"/);
-  const propertyName = quoteMatch ? quoteMatch[1] : "";
-
-  const lowerBody = body.toLowerCase();
-
-  if (lowerBody.includes("bed rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName 
-      ? `تم إتمام عملية تأجير سرير بنجاح في العقار "${propertyName}".`
-      : "تم إتمام عملية تأجير سرير بنجاح.";
-  } else if (lowerBody.includes("your bed rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName 
-      ? `تم إتمام عملية تأجير سرير لك بنجاح في العقار "${propertyName}".`
-      : "تم إتمام عملية تأجير السرير لك بنجاح.";
-  } else if (lowerBody.includes("rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName 
-      ? `تم إتمام تأجير العقار "${propertyName}" بنجاح.`
-      : "تم إتمام تأجير العقار بنجاح.";
-  } else if (lowerBody.includes("your rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName 
-      ? `تم إتمام عقد إيجار العقار "${propertyName}" الخاص بك بنجاح.`
-      : "تم إتمام عقد الإيجار بنجاح.";
-  } else if (lowerBody.includes("requested to view")) {
-    translatedBody = propertyName 
-      ? `قام مستأجر بتقديم طلب معاينة للعقار "${propertyName}".`
-      : "قام مستأجر بتقديم طلب معاينة جديد لعقارك.";
-  } else if (lowerBody.includes("viewing request for") && lowerBody.includes("accepted")) {
-    translatedBody = propertyName 
-      ? `تم قبول طلب المعاينة الخاص بك للعقار "${propertyName}" من قبل المؤجر.`
-      : "تم قبول طلب المعاينة الخاص بك من قبل المؤجر.";
-  } else if (lowerBody.includes("viewing request for") && lowerBody.includes("rejected")) {
-    translatedBody = propertyName 
-      ? `تم رفض طلب المعاينة الخاص بك للعقار "${propertyName}" من قبل المؤجر.`
-      : "تم رفض طلب المعاينة الخاص بك من قبل المؤجر.";
-  } else if (lowerBody.includes("canceled their viewing request")) {
-    translatedBody = propertyName 
-      ? `قام المستأجر بإلغاء طلب المعاينة الخاص به للعقار "${propertyName}".`
-      : "قام المستأجر بإلغاء طلب المعاينة للعقار.";
-  } else if (lowerBody.includes("has been approved")) {
-    translatedBody = propertyName 
-      ? `تمت الموافقة على إعلانك "${propertyName}" بنجاح وهو الآن نشط وظاهر بالمنصة.`
-      : "تمت الموافقة على إعلانك بنجاح وأصبح ظاهراً بالمنصة.";
-  } else if (lowerBody.includes("was rejected")) {
-    translatedBody = propertyName 
-      ? `تم رفض إعلانك "${propertyName}" من قبل الإدارة.`
-      : "تم رفض إعلانك من قبل الإدارة.";
-  } else if (lowerBody.includes("received a new message")) {
-    translatedBody = "لقد تلقيت رسالة جديدة في الدعم الفني.";
-  } else if (lowerBody.includes("password has been successfully reset")) {
-    translatedBody = "تم إعادة تعيين كلمة المرور الخاصة بك بنجاح.";
-  }
-
-  return { title: translatedTitle, body: translatedBody };
+const CATEGORY_STYLES: Record<FormattedNotification["category"], { bg: string; text: string; labelAr: string; labelEn: string }> = {
+  listing: { bg: "bg-blue-50 border-blue-200", text: "text-blue-600", labelAr: "إعلان", labelEn: "Listing" },
+  rental: { bg: "bg-amber-50 border-amber-200", text: "text-amber-600", labelAr: "عقد إيجار", labelEn: "Rental" },
+  request: { bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-600", labelAr: "طلب معاينة", labelEn: "Viewing Request" },
+  payment: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-600", labelAr: "دفع", labelEn: "Payment" },
+  community: { bg: "bg-purple-50 border-purple-200", text: "text-purple-600", labelAr: "مجتمع", labelEn: "Community" },
+  alert: { bg: "bg-rose-50 border-rose-200", text: "text-rose-600", labelAr: "تنبيه", labelEn: "Alert" },
+  system: { bg: "bg-slate-50 border-slate-200", text: "text-slate-600", labelAr: "نظام", labelEn: "System" },
 };
+
+type FilterType = "all" | "unread" | "rental" | "request" | "listing" | "payment";
 
 export default function NotificationsPage() {
   const locale = useLocale();
@@ -145,6 +87,8 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const limit = 15;
 
+  const [filter, setFilter] = useState<FilterType>("all");
+
   const { data, isLoading: isNotificationsLoading, isFetching } = useNotifications(page, limit);
   const { refetch: refetchUnreadCount } = useUnreadNotificationsCount();
 
@@ -153,12 +97,48 @@ export default function NotificationsPage() {
   const deleteNotification = useDeleteNotification();
   const deleteAllNotifications = useDeleteAllNotifications();
 
-  const notifications = data?.notifications ?? [];
+  const rawNotifications = data?.notifications ?? [];
   const meta = data?.meta;
 
+  // Filter notifications by category/read status
+  const filteredNotifications = useMemo(() => {
+    return rawNotifications.filter((n: any) => {
+      if (filter === "unread") return !n.isRead;
+      if (filter === "all") return true;
+
+      const formatted = formatNotification(n, locale, user?.role);
+      return formatted.category === filter;
+    });
+  }, [rawNotifications, filter, locale, user?.role]);
+
+  // Group notifications into Date Buckets
+  const groupedNotifications = useMemo(() => {
+    const groups: {
+      today: any[];
+      yesterday: any[];
+      thisWeek: any[];
+      earlier: any[];
+    } = { today: [], yesterday: [], thisWeek: [], earlier: [] };
+
+    filteredNotifications.forEach((n: any) => {
+      const d = new Date(n.createdAt);
+      if (isToday(d)) {
+        groups.today.push(n);
+      } else if (isYesterday(d)) {
+        groups.yesterday.push(n);
+      } else if (isThisWeek(d)) {
+        groups.thisWeek.push(n);
+      } else {
+        groups.earlier.push(n);
+      }
+    });
+
+    return groups;
+  }, [filteredNotifications]);
+
   const handleNotificationClick = (notification: any) => {
-    const rawPath = resolveNotificationRoute(notification, user?.role);
-    const navigateTo = rawPath ? `/${locale}${rawPath}` : null;
+    const formatted = formatNotification(notification, locale, user?.role);
+    const navigateTo = formatted.route ? `/${locale}${formatted.route}` : null;
 
     const navigate = () => {
       if (navigateTo) {
@@ -172,30 +152,24 @@ export default function NotificationsPage() {
     }
 
     // Optimistic Update: Set isRead = true in the notifications query data
-    queryClient.setQueryData(
-      ["notifications", page, limit],
-      (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          notifications: old.notifications.map((n: any) =>
-            n.id === notification.id ? { ...n, isRead: true } : n
-          ),
-        };
-      }
-    );
+    queryClient.setQueryData(["notifications", page, limit], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        notifications: old.notifications.map((n: any) =>
+          n.id === notification.id ? { ...n, isRead: true } : n
+        ),
+      };
+    });
 
     // Optimistic Update: Decrement unread notifications count
-    queryClient.setQueryData(
-      ["notifications", "unread-count"],
-      (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          unreadCount: Math.max(0, old.unreadCount - 1),
-        };
-      }
-    );
+    queryClient.setQueryData(["notifications", "unread-count"], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        unreadCount: Math.max(0, old.unreadCount - 1),
+      };
+    });
 
     markRead.mutate(notification.id, {
       onSuccess: () => {
@@ -203,39 +177,26 @@ export default function NotificationsPage() {
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
         navigate();
       },
-      onError: (err) => {
-        console.error("Failed to mark as read:", err);
-        // Rollback state by refetching
+      onError: () => {
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
-        navigate(); // Navigate anyway if mark fails
+        navigate();
       },
     });
   };
 
   const handleMarkAllRead = () => {
-    // Optimistic Update: Set all as read
-    queryClient.setQueryData(
-      ["notifications", page, limit],
-      (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          notifications: old.notifications.map((n: any) => ({ ...n, isRead: true })),
-        };
-      }
-    );
+    queryClient.setQueryData(["notifications", page, limit], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        notifications: old.notifications.map((n: any) => ({ ...n, isRead: true })),
+      };
+    });
 
-    // Optimistic Update: Set unread count to 0
-    queryClient.setQueryData(
-      ["notifications", "unread-count"],
-      (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          unreadCount: 0,
-        };
-      }
-    );
+    queryClient.setQueryData(["notifications", "unread-count"], (old: any) => {
+      if (!old) return old;
+      return { ...old, unreadCount: 0 };
+    });
 
     markAllRead.mutate(undefined, {
       onSuccess: () => {
@@ -261,33 +222,25 @@ export default function NotificationsPage() {
   const handleDeleteNotification = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
 
-    const targetNotification = notifications.find((n: any) => n.id === id);
+    const targetNotification = rawNotifications.find((n: any) => n.id === id);
     const wasUnread = targetNotification ? !targetNotification.isRead : false;
 
-    // Optimistic Update: Remove from list
-    queryClient.setQueryData(
-      ["notifications", page, limit],
-      (old: any) => {
+    queryClient.setQueryData(["notifications", page, limit], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        notifications: old.notifications.filter((n: any) => n.id !== id),
+      };
+    });
+
+    if (wasUnread) {
+      queryClient.setQueryData(["notifications", "unread-count"], (old: any) => {
         if (!old) return old;
         return {
           ...old,
-          notifications: old.notifications.filter((n: any) => n.id !== id),
+          unreadCount: Math.max(0, old.unreadCount - 1),
         };
-      }
-    );
-
-    // Optimistic Update: Decrement unread count
-    if (wasUnread) {
-      queryClient.setQueryData(
-        ["notifications", "unread-count"],
-        (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            unreadCount: Math.max(0, old.unreadCount - 1),
-          };
-        }
-      );
+      });
     }
 
     deleteNotification.mutate(id, {
@@ -344,7 +297,6 @@ export default function NotificationsPage() {
     );
   }
 
-  // Resolve Layout dynamically based on user role
   let Layout: any = TenantLayout;
   if (user.role === "landlord") {
     Layout = LandlordLayout;
@@ -352,7 +304,14 @@ export default function NotificationsPage() {
     Layout = AdminLayout;
   }
 
-  const hasUnread = notifications.some((n) => !n.isRead);
+  const hasUnread = rawNotifications.some((n: any) => !n.isRead);
+
+  const dateSections = [
+    { key: "today", titleAr: "اليوم", titleEn: "Today", items: groupedNotifications.today },
+    { key: "yesterday", titleAr: "أمس", titleEn: "Yesterday", items: groupedNotifications.yesterday },
+    { key: "thisWeek", titleAr: "هذا الأسبوع", titleEn: "This Week", items: groupedNotifications.thisWeek },
+    { key: "earlier", titleAr: "أقدم من ذلك", titleEn: "Earlier", items: groupedNotifications.earlier },
+  ].filter((section) => section.items.length > 0);
 
   return (
     <Layout>
@@ -360,23 +319,23 @@ export default function NotificationsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#1B4F8A] to-[#D4A847] p-0.5 flex items-center justify-center shadow-lg shrink-0">
-              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#1B4F8A] dark:text-[#E8C06A]">
-                <Bell size={22} className="animate-swing" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0EA5E9] to-[#0EA5E9] p-0.5 flex items-center justify-center shadow-lg shrink-0">
+              <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center text-[#0EA5E9]">
+                <Bell size={22} />
               </div>
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white">
+              <h1 className="text-xl font-black text-slate-900">
                 {isRtl ? "مركز الإشعارات" : "Notification Center"}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {isRtl ? "تابع تنبيهات حسابك وتحديثات طلباتك وعقاراتك." : "Track your account alerts, requests, and listings."}
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isRtl ? "تابع تنبيهات حسابك وتحديثات عقودك وطلباتك." : "Track your account alerts, contracts, and requests."}
               </p>
             </div>
           </div>
 
           {/* Action buttons */}
-          {notifications.length > 0 && (
+          {rawNotifications.length > 0 && (
             <div className="flex items-center gap-2">
               {hasUnread && (
                 <Button
@@ -384,7 +343,7 @@ export default function NotificationsPage() {
                   disabled={markAllRead.isPending}
                   variant="outline"
                   size="sm"
-                  className="rounded-xl flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  className="rounded-xl flex items-center gap-1.5 text-xs text-blue-600 border-blue-100 hover:bg-blue-50"
                 >
                   {markAllRead.isPending ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -400,7 +359,7 @@ export default function NotificationsPage() {
                 disabled={deleteAllNotifications.isPending}
                 variant="outline"
                 size="sm"
-                className="rounded-xl flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 border-red-100 dark:border-red-950/20 hover:bg-red-50 dark:hover:bg-red-950/30"
+                className="rounded-xl flex items-center gap-1.5 text-xs text-red-600 border-red-100 hover:bg-red-50"
               >
                 {deleteAllNotifications.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -413,121 +372,154 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {/* Content Card */}
-        <Card className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {[
+            { key: "all", labelAr: "الكل", labelEn: "All" },
+            { key: "unread", labelAr: "غير مقروء", labelEn: "Unread" },
+            { key: "rental", labelAr: "عقود وإيجارات", labelEn: "Rentals" },
+            { key: "request", labelAr: "طلبات معاينة", labelEn: "Requests" },
+            { key: "listing", labelAr: "إعلانات", labelEn: "Listings" },
+            { key: "payment", labelAr: "مدفوعات", labelEn: "Payments" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key as FilterType)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-cairo transition-all shrink-0 border cursor-pointer ${
+                filter === tab.key
+                  ? "bg-[#0EA5E9] text-white border-[#0EA5E9] shadow-sm"
+                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {isRtl ? tab.labelAr : tab.labelEn}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Card with Date Grouping */}
+        <Card className="border border-slate-200 rounded-3xl bg-white shadow-sm overflow-hidden">
           <CardBody className="p-0">
             {isNotificationsLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3">
                 <Spinner size="lg" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-slate-500">
                   {isRtl ? "جاري تحميل الإشعارات..." : "Loading notifications..."}
                 </p>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center mb-4 text-slate-400 dark:text-slate-500">
+                <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mb-4 text-slate-400">
                   <BellOff size={28} />
                 </div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                <h3 className="text-base font-bold text-slate-800">
                   {isRtl ? "صندوق الإشعارات فارغ" : "No notifications yet"}
                 </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-sm mt-1">
+                <p className="text-xs text-slate-400 max-w-sm mt-1">
                   {isRtl
-                    ? "عندما يحدث أي جديد بخصوص إعلاناتك أو طلباتك، ستظهر التنبيهات هنا مباشرة."
-                    : "When something happens regarding your listings or requests, notifications will appear here."}
+                    ? "عندما يحدث أي جديد بخصوص إعلاناتك أو عقودك أو طلباتك، ستظهر التنبيهات هنا مباشرة."
+                    : "When something happens regarding your listings, contracts, or requests, notifications will appear here."}
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.map((notification) => {
-                  const typeInfo = TYPE_COLORS[notification.type] ?? {
-                    bg: "bg-slate-100",
-                    text: "text-slate-600",
-                    labelAr: "تنبيه",
-                    labelEn: "Alert",
-                  };
-                  const typeLabel = isRtl ? typeInfo.labelAr : typeInfo.labelEn;
-                  const { title: displayTitle, body: displayBody } = translateNotification(
-                    notification.title,
-                    notification.body,
-                    isRtl
-                  );
-                  const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
-                    addSuffix: true,
-                    locale: dateLocale,
-                  });
+              <div className="divide-y divide-slate-100">
+                {dateSections.map((section) => (
+                  <div key={section.key}>
+                    {/* Date Section Header */}
+                    <div className="bg-slate-50/70 px-5 py-2.5 border-y border-slate-100">
+                      <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
+                        {isRtl ? section.titleAr : section.titleEn}
+                      </span>
+                    </div>
 
-                  return (
-                    <div
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`flex items-start gap-4 p-5 transition-all duration-200 cursor-pointer group hover:bg-slate-50 dark:hover:bg-slate-800/30 ${
-                        !notification.isRead ? "bg-blue-50/20 dark:bg-blue-950/10" : ""
-                      }`}
-                    >
-                      {/* Left: Indicator & Icon wrapper */}
-                      <div className="flex-shrink-0 flex items-center gap-3">
-                        {/* Unread indicator */}
-                        <div
-                          className={`w-2 h-2 rounded-full bg-blue-500 transition-opacity duration-200 shrink-0 ${
-                            notification.isRead ? "opacity-0" : "opacity-100"
-                          }`}
-                        />
-                        {/* Badge */}
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${typeInfo.bg} ${typeInfo.text}`}>
-                          {typeLabel}
-                        </span>
-                      </div>
+                    {/* Section Notifications List */}
+                    <div className="divide-y divide-slate-100">
+                      {section.items.map((notification: any) => {
+                        const formatted = formatNotification(notification, locale, user?.role);
+                        const IconComponent = ICON_MAP[formatted.iconName] || Bell;
+                        const categoryStyle = CATEGORY_STYLES[formatted.category] || CATEGORY_STYLES.system;
 
-                      {/* Middle: Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p
-                            className={`text-sm truncate ${
-                              !notification.isRead
-                                ? "text-slate-900 dark:text-white font-bold"
-                                : "text-slate-700 dark:text-slate-350"
+                        const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                          locale: dateLocale,
+                        });
+
+                        return (
+                          <div
+                            key={notification.id}
+                            onClick={() => handleNotificationClick(notification)}
+                            className={`flex items-start gap-4 p-5 transition-all duration-200 cursor-pointer group hover:bg-slate-50 ${
+                              !notification.isRead ? "bg-blue-50/30" : ""
                             }`}
                           >
-                            {displayTitle}
-                          </p>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {displayBody}
-                        </p>
-                        
-                        <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 dark:text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={11} />
-                            {timeAgo}
-                          </span>
-                          {notification.entityId && (
-                            <span className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400 hover:underline">
-                              <ExternalLink size={10} />
-                              {isRtl ? "تفاصيل الوجهة" : "Destination details"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                            {/* Left: Unread indicator & Icon */}
+                            <div className="flex-shrink-0 flex items-center gap-3">
+                              <div
+                                className={`w-2.5 h-2.5 rounded-full bg-blue-600 transition-opacity duration-200 shrink-0 ${
+                                  notification.isRead ? "opacity-0" : "opacity-100"
+                                }`}
+                              />
+                              <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${categoryStyle.bg} ${categoryStyle.text}`}
+                              >
+                                <IconComponent className="w-5 h-5" />
+                              </div>
+                            </div>
 
-                      {/* Right: Actions */}
-                      <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          onClick={(e) => handleDeleteNotification(e, notification.id)}
-                          disabled={deleteNotification.isPending && deleteNotification.variables === notification.id}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
-                          title={isRtl ? "حذف" : "Delete"}
-                        >
-                          {deleteNotification.isPending && deleteNotification.variables === notification.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                        </button>
-                      </div>
+                            {/* Middle: Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${categoryStyle.bg} ${categoryStyle.text}`}>
+                                  {isRtl ? categoryStyle.labelAr : categoryStyle.labelEn}
+                                </span>
+                                <h2
+                                  className={`text-sm truncate ${
+                                    !notification.isRead ? "text-slate-900 font-extrabold" : "text-slate-800 font-semibold"
+                                  }`}
+                                >
+                                  {formatted.title}
+                                </h2>
+                              </div>
+
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                {formatted.body}
+                              </p>
+
+                              <div className="flex items-center gap-4 mt-2.5 text-[11px] text-slate-400">
+                                <span className="flex items-center gap-1">
+                                  <Calendar size={11} />
+                                  {timeAgo}
+                                </span>
+
+                                {formatted.route && (
+                                  <span className="flex items-center gap-1 text-blue-600 font-bold hover:underline">
+                                    <ExternalLink size={11} />
+                                    {isRtl ? "انتقال للتفاصيل" : "Go to details"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Right: Delete Action */}
+                            <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={(e) => handleDeleteNotification(e, notification.id)}
+                                disabled={deleteNotification.isPending && deleteNotification.variables === notification.id}
+                                className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
+                                title={isRtl ? "حذف" : "Delete"}
+                              >
+                                {deleteNotification.isPending && deleteNotification.variables === notification.id ? (
+                                  <Loader2 size={15} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={15} />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </CardBody>
@@ -535,7 +527,7 @@ export default function NotificationsPage() {
 
         {/* Pagination */}
         {meta && meta.lastPage > 1 && (
-          <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div className="flex justify-between items-center bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <Button
               variant="outline"
               size="sm"
@@ -546,8 +538,8 @@ export default function NotificationsPage() {
               <ChevronRight size={15} className={isRtl ? "" : "rotate-180"} />
               {isRtl ? "السابق" : "Previous"}
             </Button>
-            
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+
+            <span className="text-xs text-slate-500 font-bold">
               {isRtl
                 ? `صفحة ${page} من ${meta.lastPage}`
                 : `Page ${page} of ${meta.lastPage}`}

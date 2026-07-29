@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
-import AdminLayout from "@/components/layout/AdminLayout";
+
 import {
   Compass,
   Flag,
@@ -15,7 +15,7 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { adminRepository } from "@/features/admin";
 import Link from "next/link";
 
 interface Category {
@@ -96,7 +96,7 @@ export default function AdminCommunityPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await api.get("/admin/community/stats");
+      const res = await adminRepository.getCommunityStats();
       setStats(res.data);
     } catch (err) {
       console.error("Failed to fetch admin stats", err);
@@ -107,9 +107,7 @@ export default function AdminCommunityPage() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/admin/community/posts", {
-        params: { page, limit },
-      });
+      const res = await adminRepository.getCommunityPosts({ page, limit });
       setPosts(res.data.posts);
       setTotalCount(res.data.total);
     } catch (err) {
@@ -123,9 +121,7 @@ export default function AdminCommunityPage() {
   const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/admin/community/reports", {
-        params: { page, limit },
-      });
+      const res = await adminRepository.getCommunityReports({ page, limit });
       setReports(res.data.reports);
       setTotalCount(res.data.total);
     } catch (err) {
@@ -155,7 +151,7 @@ export default function AdminCommunityPage() {
     setActionLoading(true);
 
     try {
-      await api.patch(`/admin/community/posts/${postId}/status`, { status });
+      await adminRepository.updateCommunityPostStatus(postId, status);
       setSuccessMsg(
         status === "BLOCKED"
           ? isRtl
@@ -181,7 +177,7 @@ export default function AdminCommunityPage() {
     setActionLoading(true);
 
     try {
-      await api.patch(`/admin/community/reports/${reportId}/resolve`, { status });
+      await adminRepository.resolveCommunityReport(reportId, status);
       setSuccessMsg(
         status === "RESOLVED"
           ? isRtl
@@ -203,16 +199,15 @@ export default function AdminCommunityPage() {
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
-    <AdminLayout>
-      <div className="space-y-6 p-6">
+    <div className="space-y-6">
         {/* Header Title */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold text-slate-900 font-cairo flex items-center gap-2">
               <Compass className="text-amber-500" />
               {isRtl ? "رقابة وإشراف قسم المجتمع" : "Community Moderation Panel"}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-cairo">
+            <p className="text-xs sm:text-sm text-slate-500 font-cairo">
               {isRtl
                 ? "إدارة منشورات المجتمع المنشورة بواسطة الأعضاء ومراجعة البلاغات الواردة فوراً للحد من إساءة الاستخدام."
                 : "Manage community posts published by members and review incoming abuse reports."}
@@ -222,14 +217,14 @@ export default function AdminCommunityPage() {
 
         {/* Success/Error Alerts */}
         {successMsg && (
-          <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold font-cairo border border-emerald-100 dark:border-emerald-900/50">
+          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold font-cairo border border-emerald-100">
             <CheckCircle size={18} />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold font-cairo border border-red-100 dark:border-red-900/50">
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold font-cairo border border-red-100">
             <AlertCircle size={18} />
             <span>{errorMsg}</span>
           </div>
@@ -238,28 +233,28 @@ export default function AdminCommunityPage() {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "إجمالي الأنشطة" : "Total Activities"}
               </span>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-sans">
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-sans">
                 {stats.activities}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "المشاركون المقبولون" : "Accepted Members"}
               </span>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-sans">
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-sans">
                 {stats.participants}
               </p>
             </div>
 
             <div className={`p-4 rounded-2xl border shadow-sm space-y-1 ${
               stats.pendingReports > 0
-                ? "bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400"
-                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                ? "bg-red-50/50 border-red-200 text-red-700"
+                : "bg-white border-slate-200 text-slate-900"
             }`}>
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "بلاغات معلقة" : "Pending Reports"}
@@ -269,25 +264,25 @@ export default function AdminCommunityPage() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "أنشطة محظورة" : "Blocked Posts"}
               </span>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-sans">
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-sans">
                 {stats.blockedActivities}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "أنشطة مؤرشفة" : "Archived Posts"}
               </span>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-sans">
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-sans">
                 {stats.archivedActivities}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "متوسط التقييم" : "Average Rating"}
               </span>
@@ -299,13 +294,13 @@ export default function AdminCommunityPage() {
         )}
 
         {/* Tab Controls */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 gap-1">
+        <div className="flex border-b border-slate-200 gap-1">
           <button
             onClick={() => setActiveTab("posts")}
             className={`px-6 py-3 font-bold text-sm font-cairo border-b-2 transition-all ${
               activeTab === "posts"
-                ? "border-amber-500 text-amber-500"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "border-[#0EA5E9] text-amber-500"
+                : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
             {isRtl ? "منشورات الأعضاء" : "Community Posts"}
@@ -314,8 +309,8 @@ export default function AdminCommunityPage() {
             onClick={() => setActiveTab("reports")}
             className={`px-6 py-3 font-bold text-sm font-cairo border-b-2 transition-all flex items-center gap-1.5 ${
               activeTab === "reports"
-                ? "border-amber-500 text-amber-500"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "border-[#0EA5E9] text-amber-500"
+                : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
             <Flag size={14} />
@@ -324,10 +319,10 @@ export default function AdminCommunityPage() {
         </div>
 
         {/* Data list table view */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full" />
+              <div className="animate-spin w-8 h-8 border-4 border-[#0EA5E9] border-t-transparent rounded-full" />
             </div>
           ) : activeTab === "posts" ? (
             // POSTS TAB TABLE
@@ -339,7 +334,7 @@ export default function AdminCommunityPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-cairo font-bold">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-cairo font-bold">
                       <th className="px-6 py-4">{isRtl ? "العنوان والتصنيف" : "Title / Cat"}</th>
                       <th className="px-6 py-4">{isRtl ? "الناشر" : "Publisher"}</th>
                       <th className="px-6 py-4">{isRtl ? "الموقع والتاريخ" : "Location / Date"}</th>
@@ -351,19 +346,19 @@ export default function AdminCommunityPage() {
                     {posts.map((post) => (
                       <tr
                         key={post.id}
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-55 dark:hover:bg-slate-850"
+                        className="border-b border-slate-100 hover:bg-slate-55"
                       >
                         <td className="px-6 py-4 space-y-1">
-                          <h4 className="font-bold text-slate-900 dark:text-white font-cairo line-clamp-1">{post.title}</h4>
-                          <span className="inline-flex gap-1 text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 font-semibold font-cairo">
+                          <h4 className="font-bold text-slate-900 font-cairo line-clamp-1">{post.title}</h4>
+                          <span className="inline-flex gap-1 text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-semibold font-cairo">
                             {post.category.icon} {isRtl ? post.category.nameAr : post.category.nameEn}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200 font-cairo">{post.user.name}</p>
+                          <p className="font-semibold text-slate-800 font-cairo">{post.user.name}</p>
                           <p className="text-[10px] text-slate-400 font-mono">{post.user.email}</p>
                         </td>
-                        <td className="px-6 py-4 space-y-0.5 text-slate-600 dark:text-slate-300 font-cairo">
+                        <td className="px-6 py-4 space-y-0.5 text-slate-600 font-cairo">
                           <p>{post.governorateId}، {post.cityId}</p>
                           <p className="text-[10px] font-sans text-slate-400">{new Date(post.eventDate).toLocaleDateString(locale)}</p>
                         </td>
@@ -371,10 +366,10 @@ export default function AdminCommunityPage() {
                           <span
                             className={`inline-flex px-2 py-1 rounded text-[10px] font-bold font-cairo ${
                               post.status === "ACTIVE"
-                                ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600"
+                                ? "bg-emerald-50 text-emerald-600"
                                 : post.status === "BLOCKED"
-                                ? "bg-red-50 dark:bg-red-950/30 text-red-600"
-                                : "bg-slate-100 dark:bg-slate-700 text-slate-500"
+                                ? "bg-red-50 text-red-600"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
                             {post.status === "ACTIVE" && (isRtl ? "متاح" : "Active")}
@@ -386,7 +381,7 @@ export default function AdminCommunityPage() {
                         <td className="px-6 py-4 text-left space-x-1 space-x-reverse">
                           <Link
                             href={`/${locale}/community/${post.id}`}
-                            className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 rounded-lg text-xs transition-all"
+                            className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs transition-all"
                             title={isRtl ? "عرض النشاط" : "View"}
                           >
                             <Eye size={14} />
@@ -427,7 +422,7 @@ export default function AdminCommunityPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-cairo font-bold">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-cairo font-bold">
                       <th className="px-6 py-4">{isRtl ? "المنشور ومضيفه" : "Abused Post / Host"}</th>
                       <th className="px-6 py-4">{isRtl ? "صاحب البلاغ" : "Reporter"}</th>
                       <th className="px-6 py-4">{isRtl ? "السبب والتفاصيل" : "Reason / Details"}</th>
@@ -439,20 +434,20 @@ export default function AdminCommunityPage() {
                     {reports.map((report) => (
                       <tr
                         key={report.id}
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-55 dark:hover:bg-slate-850"
+                        className="border-b border-slate-100 hover:bg-slate-55"
                       >
                         <td className="px-6 py-4 space-y-1">
-                          <h4 className="font-bold text-slate-900 dark:text-white font-cairo line-clamp-1">{report.post.title}</h4>
+                          <h4 className="font-bold text-slate-900 font-cairo line-clamp-1">{report.post.title}</h4>
                           <span className="text-[10px] text-slate-400 font-cairo block">
                             {isRtl ? "بواسطة المضيف: " : "Host: "} {report.post.user.name}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200 font-cairo">{report.reporter.name}</p>
+                          <p className="font-semibold text-slate-800 font-cairo">{report.reporter.name}</p>
                           <p className="text-[10px] text-slate-400 font-mono">{report.reporter.email}</p>
                         </td>
                         <td className="px-6 py-4 space-y-1">
-                          <span className="inline-flex px-2 py-0.5 bg-red-50 dark:bg-red-950/20 text-red-600 rounded text-[10px] font-bold font-cairo">
+                          <span className="inline-flex px-2 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-bold font-cairo">
                             {report.reason === "SPAM" && (isRtl ? "سبام / إزعاج" : "Spam")}
                             {report.reason === "HARASSMENT" && (isRtl ? "إساءة / مضايقة" : "Harassment")}
                             {report.reason === "INAPPROPRIATE" && (isRtl ? "غير لائق أخلاقياً" : "Inappropriate")}
@@ -460,17 +455,17 @@ export default function AdminCommunityPage() {
                             {report.reason === "OTHER" && (isRtl ? "أسباب أخرى" : "Other")}
                           </span>
                           {report.details && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo max-w-xs">{report.details}</p>
+                            <p className="text-xs text-slate-500 font-cairo max-w-xs">{report.details}</p>
                           )}
                         </td>
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex px-2 py-1 rounded text-[10px] font-bold font-cairo ${
                               report.status === "PENDING"
-                                ? "bg-amber-50 dark:bg-amber-955/30 text-amber-600"
+                                ? "bg-amber-50 text-amber-600"
                                 : report.status === "RESOLVED"
-                                ? "bg-emerald-50 dark:bg-emerald-955/30 text-emerald-600"
-                                : "bg-slate-100 dark:bg-slate-700 text-slate-500"
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
                             {report.status === "PENDING" && (isRtl ? "قيد الانتظار" : "Pending")}
@@ -481,7 +476,7 @@ export default function AdminCommunityPage() {
                         <td className="px-6 py-4 text-left space-x-1 space-x-reverse">
                           <Link
                             href={`/${locale}/community/${report.postId}`}
-                            className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 rounded-lg text-xs transition-all"
+                            className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs transition-all"
                             title={isRtl ? "عرض تفاصيل المنشور" : "View"}
                           >
                             <Eye size={14} />
@@ -517,28 +512,27 @@ export default function AdminCommunityPage() {
 
           {/* Pagination Footer */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex justify-center items-center gap-2 py-4 bg-slate-50 border-t border-slate-100">
               <button
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={page === 1}
-                className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50"
               >
                 <ChevronRight size={16} className={isRtl ? "" : "rotate-180"} />
               </button>
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 font-cairo">
+              <span className="text-xs font-semibold text-slate-700 font-cairo">
                 {isRtl ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
                 disabled={page === totalPages}
-                className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-50"
               >
                 <ChevronLeft size={16} className={isRtl ? "" : "rotate-180"} />
               </button>
             </div>
           )}
         </div>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }

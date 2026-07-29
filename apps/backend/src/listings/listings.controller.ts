@@ -99,6 +99,17 @@ export class ListingsController {
     return this.listingsService.update(id, user.id, updateListingDto);
   }
 
+  @ApiBearerAuth()
+  @Patch(':id/republish')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.landlord)
+  async republishListing(
+    @Param('id') id: string,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.listingsService.republishListing(id, user.id);
+  }
+
   // ── 6. حذف الإعلان (Soft Delete) للمؤجر صاحبه فقط ────────────────────────
   @ApiBearerAuth()
   @Delete(':id')

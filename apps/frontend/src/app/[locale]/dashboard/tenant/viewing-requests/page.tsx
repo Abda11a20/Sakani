@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 // eslint-disable-next-line import/no-named-as-default-member
 import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
@@ -143,13 +143,13 @@ export default function TenantRequests() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold font-cairo">طلبات الاستئجار</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             تابع حالة طلبات المعاينة التي قمت بتقديمها وتواصل مع المؤجرين.
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
           {(
             [
               { key: "all", label: "الكل" },
@@ -165,7 +165,7 @@ export default function TenantRequests() {
               className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${
                 activeTab === tab.key
                   ? "bg-blue-600 text-white shadow-sm font-bold"
-                  : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
               {tab.label}
@@ -175,10 +175,10 @@ export default function TenantRequests() {
 
         {/* List Grid */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo">
-            <FileText size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">لا توجد طلبات</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto text-sm">
+          <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
+            <FileText size={48} className="mx-auto mb-4 text-slate-300" />
+            <h3 className="text-lg font-bold text-slate-800">لا توجد طلبات</h3>
+            <p className="text-slate-500 mt-1 max-w-sm mx-auto text-sm">
               لم تقم بتقديم طلبات استئجار تطابق التصفية الحالية.
             </p>
           </div>
@@ -194,13 +194,13 @@ export default function TenantRequests() {
               return (
                 <Card
                   key={req.id}
-                  className="border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="border border-slate-200 rounded-3xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <CardBody className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                       {/* Left: Thumbnail & Details */}
                       <div className="flex flex-col sm:flex-row items-start gap-4 flex-1">
-                        <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800">
+                        <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-100">
                           {req.listing?.images?.[0] ? (
                             <img
                               src={getImageUrl(req.listing.images[0])}
@@ -214,13 +214,13 @@ export default function TenantRequests() {
 
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate font-cairo">
+                            <h3 className="font-bold text-slate-900 text-sm truncate font-cairo">
                               {req.listing?.title || "عقار غير معروف"}
                             </h3>
                             {getStatusBadge(req.status)}
                           </div>
                           
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo">
+                          <p className="text-xs text-slate-500 font-cairo">
                             {req.listing?.address || "عنوان غير محدد"}
                           </p>
 
@@ -237,7 +237,7 @@ export default function TenantRequests() {
 
                           {/* Notes */}
                           {req.message && (
-                            <div className="flex gap-1.5 text-slate-600 dark:text-slate-400 text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800/80 mt-2">
+                            <div className="flex gap-1.5 text-slate-600 text-xs p-2 bg-slate-50 rounded-xl border border-slate-100 mt-2">
                               <MessageSquare size={13} className="text-slate-400 shrink-0 mt-0.5" />
                               <p className="font-cairo truncate">{req.message}</p>
                             </div>
@@ -246,7 +246,7 @@ export default function TenantRequests() {
                       </div>
 
                       {/* Right: Actions */}
-                      <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 dark:border-slate-800/50 pt-4 lg:pt-0 lg:ps-6 justify-end">
+                      <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 pt-4 lg:pt-0 lg:ps-6 justify-end">
                         <Button
                           onClick={() => router.push(`/${locale}/listings/${req.listingId}`)}
                           className="flex-1 lg:w-32 bg-blue-600 hover:bg-blue-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
@@ -266,14 +266,14 @@ export default function TenantRequests() {
                         )}
 
                         {isAccepted && (
-                          <div className="text-center font-cairo text-xs text-green-600 dark:text-green-400 font-bold flex items-center gap-1 bg-green-500/10 py-1.5 px-3 rounded-full">
+                          <div className="text-center font-cairo text-xs text-green-600 font-bold flex items-center gap-1 bg-green-500/10 py-1.5 px-3 rounded-full">
                             <CheckCircle size={12} />
                             <span>تم القبول من المؤجر</span>
                           </div>
                         )}
 
                         {isRejected && (
-                          <div className="text-center font-cairo text-xs text-red-600 dark:text-red-400 font-bold flex items-center gap-1 bg-red-500/10 py-1.5 px-3 rounded-full">
+                          <div className="text-center font-cairo text-xs text-red-600 font-bold flex items-center gap-1 bg-red-500/10 py-1.5 px-3 rounded-full">
                             <XCircle size={12} />
                             <span>مرفوض</span>
                           </div>
@@ -282,7 +282,7 @@ export default function TenantRequests() {
                         {isCompleted && req.listing && !hasReviewed && (
                           <Button
                             onClick={() => setReviewModalListing({ id: req.listingId, title: req.listing?.title || "" })}
-                            className="flex-1 lg:w-32 bg-amber-500 hover:bg-amber-600 text-white font-bold font-cairo flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs"
+                            className="flex-1 lg:w-32 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold font-cairo flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs"
                           >
                             <Star size={13} />
                             <span>كتابة تقييم</span>
@@ -290,7 +290,7 @@ export default function TenantRequests() {
                         )}
 
                         {isCompleted && hasReviewed && (
-                          <div className="text-center font-cairo text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 bg-amber-500/10 py-1.5 px-3 rounded-full">
+                          <div className="text-center font-cairo text-xs text-amber-600 font-bold flex items-center gap-1 bg-[#0EA5E9]/10 py-1.5 px-3 rounded-full">
                             <Star size={12} />
                             <span>تم إضافة التقييم</span>
                           </div>
@@ -312,20 +312,20 @@ export default function TenantRequests() {
             title="تأكيد إلغاء الطلب"
           >
             <div className="p-6 text-center space-y-4 font-cairo">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
                 <HelpCircle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">
                 هل أنت متأكد من إلغاء طلب المعاينة؟
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 سيتم إزالة الطلب وإشعار المؤجر بإلغائه. لا يمكنك التراجع عن هذا الإجراء.
               </p>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setCancelModalId(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800 font-semibold"
+                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold"
                 >
                   تراجع
                 </Button>
@@ -349,7 +349,7 @@ export default function TenantRequests() {
             title="كتابة تقييم للعقار والمؤجر"
           >
             <form onSubmit={handleReviewSubmit} className="p-6 space-y-4 font-cairo">
-              <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+              <h4 className="font-bold text-sm text-slate-800">
                 تقييمك لعقار: <span className="text-blue-600">{reviewModalListing.title}</span>
               </h4>
 
@@ -376,7 +376,7 @@ export default function TenantRequests() {
                           className={
                             isLit
                               ? "text-yellow-400 fill-yellow-400 stroke-yellow-500"
-                              : "text-slate-300 stroke-slate-400 dark:text-slate-700"
+                              : "text-slate-300 stroke-slate-400"
                           }
                         />
                       </button>
@@ -393,23 +393,23 @@ export default function TenantRequests() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={4}
-                  className="w-full text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-slate-800 dark:text-slate-100"
+                  className="w-full text-sm rounded-xl border border-slate-200 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] resize-none text-slate-800"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex gap-3 pt-4 border-t border-slate-100">
                 <Button
                   type="button"
                   onClick={() => setReviewModalListing(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800"
+                  className="flex-1 rounded-xl py-3 border-slate-200"
                 >
                   إلغاء
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmittingReview}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl py-3"
+                  className="flex-1 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold rounded-xl py-3"
                 >
                   {isSubmittingReview ? "جاري الإرسال..." : "إرسال التقييم"}
                 </Button>

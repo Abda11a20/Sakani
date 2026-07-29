@@ -2,6 +2,7 @@
 
 /* ── Google Fonts ── */
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import "leaflet/dist/leaflet.css";
 
 @tailwind base;
 @tailwind components;
@@ -11,6 +12,7 @@
    CSS Variables — Light Mode
    ════════════════════════════════════════════════ */
 :root {
+  /* Legacy Mappings (Backward Compatibility) */
   --background: #f8f9fc;
   --foreground: #0f1a2e;
   --primary: #1b4f8a;
@@ -24,25 +26,48 @@
   --muted: #64748b;
   --shadow: rgba(27, 79, 138, 0.08);
   --radius: 0.75rem;
+
+  /* Semantic Token Variables */
+  --color-primary: #1b4f8a;
+  --color-primary-hover: #1a3a6b;
+  --color-primary-active: #142e54;
+  --color-primary-light: #2e6bc4;
+  --color-accent: #d4a847;
+  --color-accent-hover: #c49535;
+  --color-accent-active: #b38426;
+  --color-accent-light: #e8c06a;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f8f9fc;
+  --color-surface-tertiary: #edf0f7;
+  --color-text: #0f1a2e;
+  --color-text-secondary: #64748b;
+  --color-text-tertiary: #94a3b8;
+  --color-border: #e2e8f0;
+  --color-border-divider: #f1f5f9;
 }
 
-/* ════════════════════════════════════════════════
-   CSS Variables — Dark Mode
-   ════════════════════════════════════════════════ */
 .dark {
   --background: #0f1a2e;
   --foreground: #f8f9fc;
-  --primary: #2e6bc4;
-  --primary-dark: #1b4f8a;
-  --primary-light: #5a8fd4;
-  --gold: #e8c06a;
-  --gold-dark: #d4a847;
-  --gold-light: #f0d48e;
-  --card: #1b2e4a;
-  --border: #2d4a6e;
-  --muted: #8bafd4;
-  --shadow: rgba(0, 0, 0, 0.3);
+  --card: #182642;
+  --border: #2a3e63;
+  --muted: #94a3b8;
+
+  --color-primary: #2e6bc4;
+  --color-primary-hover: #407cd6;
+  --color-primary-active: #1b4f8a;
+  --color-surface: #182642;
+  --color-surface-secondary: #0f1a2e;
+  --color-surface-tertiary: #1f3154;
+  --color-text: #f8f9fc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+  --color-border: #2a3e63;
+  --color-border-divider: #1f3154;
 }
+
+
+
 
 /* ════════════════════════════════════════════════
    Base Styles
@@ -212,11 +237,11 @@
   }
 
   .badge-success {
-    @apply badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400;
+    @apply badge bg-green-100 text-green-700
   }
 
   .badge-danger {
-    @apply badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+    @apply badge bg-red-100 text-red-700
   }
 
   .badge-muted {

@@ -2,8 +2,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 import {
   MapPin,
   Calendar,
@@ -20,7 +21,9 @@ import {
   ArrowRight,
   ShieldAlert,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { communityRepository } from "@/features/community";
+import { chatApi } from "@/features/chat";
+import { Button } from "@/components/ui";
 
 interface Category {
   id: string;
@@ -102,8 +105,8 @@ export function CommunityPostDetailClient({
   // Refresh post details
   const refreshPost = async () => {
     try {
-      const res = await api.get(`/community/${post.id}`);
-      setPost(res.data.data ?? res.data);
+      const data = await communityRepository.getPost(post.id);
+      setPost(data.data ?? data);
     } catch (err) {
       console.error("Failed to refresh post", err);
     }
@@ -120,7 +123,7 @@ export function CommunityPostDetailClient({
     setActionLoading(true);
 
     try {
-      await api.post(`/community/${post.id}/join`);
+      await communityRepository.joinPost(post.id);
       setSuccessMsg(isRtl ? "تم إرسال طلب الانضمام للمضيف بنجاح!" : "Join request sent successfully!");
       await refreshPost();
     } catch (err: any) {
@@ -137,7 +140,7 @@ export function CommunityPostDetailClient({
     setActionLoading(true);
 
     try {
-      await api.post(`/community/${post.id}/leave`);
+      await communityRepository.leavePost(post.id);
       setSuccessMsg(isRtl ? "لقد غادرت النشاط بنجاح." : "You have left the activity successfully.");
       await refreshPost();
     } catch (err: any) {
@@ -154,7 +157,7 @@ export function CommunityPostDetailClient({
     setActionLoading(true);
 
     try {
-      await api.patch(`/community/participants/${participantId}`, { status });
+      await communityRepository.updateParticipantStatus(participantId, status);
       setSuccessMsg(
         status === "ACCEPTED"
           ? isRtl
@@ -180,7 +183,7 @@ export function CommunityPostDetailClient({
     setActionLoading(true);
 
     try {
-      await api.post(`/community/${post.id}/cancel`);
+      await communityRepository.cancelPost(post.id);
       setSuccessMsg(isRtl ? "تم إلغاء النشاط بنجاح." : "Activity cancelled successfully.");
       await refreshPost();
     } catch (err: any) {
@@ -198,7 +201,7 @@ export function CommunityPostDetailClient({
     setActionLoading(true);
 
     try {
-      await api.delete(`/community/${post.id}`);
+      await communityRepository.deletePost(post.id);
       alert(isRtl ? "تم حذف النشاط بنجاح." : "Activity deleted successfully.");
       router.push(`/${locale}/community`);
     } catch (err: any) {
@@ -214,7 +217,7 @@ export function CommunityPostDetailClient({
     setSuccessMsg("");
 
     try {
-      await api.post(`/community/${post.id}/report`, {
+      await communityRepository.reportPost(post.id, {
         reason: reportReason,
         details: reportDetails,
       });
@@ -233,14 +236,16 @@ export function CommunityPostDetailClient({
     setSuccessMsg("");
 
     try {
-      await api.post(`/community/${post.id}/rate`, {
-        rating: Number(rateValue),
+      await communityRepository.ratePost(post.id, {
+        targetUserId: post.user.id,
+        score: Number(rateValue),
       });
       setSuccessMsg(isRtl ? "شكراً لتقييمك للمضيف!" : "Thank you for rating the host!");
       setRateModalOpen(false);
       await refreshPost();
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || (isRtl ? "فشل إرسال التقييم." : "Failed to submit rating."));
+      const msg = err.response?.data?.message || (isRtl ? "فشل إرسال التقييم." : "Failed to submit rating.");
+      setErrorMsg(msg);
     }
   };
 
@@ -248,10 +253,11 @@ export function CommunityPostDetailClient({
   const handleOpenChat = async () => {
     setActionLoading(true);
     try {
-      const res = await api.post("/chat/conversations/private", {
-        userId: post.user.id,
+      const data = await chatApi.createPrivateConversation({
+        targetUserId: post.user.id,
       });
-      router.push(`/${locale}/dashboard/support?conversationId=${res.data.id}`);
+      const convId = (data as any).id || (data as any).conversation?.id;
+      router.push(`/${locale}/dashboard/support?conversationId=${convId}`);
     } catch (err) {
       console.error("Failed to start chat", err);
       setErrorMsg(isRtl ? "فشل بدء المحادثة مع المضيف." : "Failed to start conversation with host.");
@@ -263,37 +269,39 @@ export function CommunityPostDetailClient({
   const isExpired = new Date(post.eventDate) <= new Date() || post.status === "ARCHIVED";
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 py-12 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Back Link */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.push(`/${locale}/community`)}
-          className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-bold font-cairo transition-all"
+          leftIcon={<ArrowRight size={16} className={isRtl ? "" : "rotate-180"} />}
+          className="text-text-secondary hover:text-text font-bold"
         >
-          <ArrowRight size={16} className={isRtl ? "" : "rotate-180"} />
-          <span>{isRtl ? "العودة لقسم المجتمع" : "Back to Community"}</span>
-        </button>
+          {isRtl ? "العودة لقسم المجتمع" : "Back to Community"}
+        </Button>
 
         {/* Messages Alert Block */}
         {successMsg && (
-          <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo border border-emerald-100 dark:border-emerald-900/50">
+          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo border border-emerald-100">
             <CheckCircle size={20} />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo border border-red-100 dark:border-red-900/50">
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 text-sm font-semibold font-cairo border border-red-100">
             <AlertCircle size={20} />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Main Details Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
           {/* Top badges */}
           <div className="flex flex-wrap justify-between items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3.5 py-1.5 rounded-xl text-xs font-bold font-cairo border border-blue-100/50 dark:border-blue-900/50">
+            <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3.5 py-1.5 rounded-xl text-xs font-bold font-cairo border border-blue-100/50">
               <span>{post.category.icon}</span>
               <span>{isRtl ? post.category.nameAr : post.category.nameEn}</span>
             </span>
@@ -303,10 +311,10 @@ export function CommunityPostDetailClient({
               <span
                 className={`inline-flex px-3 py-1 rounded-xl text-xs font-bold font-cairo ${
                   post.status === "ACTIVE"
-                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"
+                    ? "bg-emerald-50 text-emerald-600"
                     : post.status === "ARCHIVED"
-                    ? "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                    : "bg-red-50 dark:bg-red-900/30 text-red-600"
+                    ? "bg-slate-100 text-slate-500"
+                    : "bg-red-50 text-red-600"
                 }`}
               >
                 {post.status === "ACTIVE" && (isRtl ? "نشط ومتاح" : "Active")}
@@ -315,7 +323,7 @@ export function CommunityPostDetailClient({
                 {post.status === "BLOCKED" && (isRtl ? "محظور من الإدارة" : "Blocked by Admin")}
               </span>
 
-              <span className="inline-flex bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-xl text-xs font-semibold font-cairo text-slate-600 dark:text-slate-300">
+              <span className="inline-flex bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl text-xs font-semibold font-cairo text-slate-600">
                 {isRtl ? "الجنس المطلوب: " : "Gender: "}
                 {post.genderPreference === "ALL" && (isRtl ? "الجميع" : "All")}
                 {post.genderPreference === "MALES_ONLY" && (isRtl ? "ذكور فقط" : "Males Only")}
@@ -326,21 +334,21 @@ export function CommunityPostDetailClient({
 
           {/* Title & Desc */}
           <div className="space-y-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white font-cairo">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-cairo">
               {post.title}
             </h1>
-            <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base font-cairo whitespace-pre-wrap leading-relaxed">
+            <p className="text-slate-600 text-sm sm:text-base font-cairo whitespace-pre-wrap leading-relaxed">
               {post.description}
             </p>
           </div>
 
           {/* Activity Meta Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-100">
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "الموقع الجغرافي" : "Location"}
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 font-cairo">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1 font-cairo">
                 <MapPin size={14} className="text-blue-500" />
                 {post.governorateId}، {post.cityId}
               </span>
@@ -350,7 +358,7 @@ export function CommunityPostDetailClient({
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "تاريخ الفعالية" : "Event Date"}
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 font-cairo">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1 font-cairo">
                 <Calendar size={14} className="text-blue-500" />
                 {new Date(post.eventDate).toLocaleDateString(locale)}
               </span>
@@ -360,7 +368,7 @@ export function CommunityPostDetailClient({
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "توقيت التجمع" : "Time Slot"}
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 font-cairo">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1 font-cairo">
                 <Clock size={14} className="text-blue-500" />
                 {post.timeSlot}
               </span>
@@ -370,7 +378,7 @@ export function CommunityPostDetailClient({
               <span className="text-[10px] text-slate-400 font-bold block uppercase font-cairo">
                 {isRtl ? "المشاركون المقبولون" : "Accepted Slots"}
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 font-cairo">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1 font-cairo">
                 <Users size={14} className="text-blue-500" />
                 {acceptedCount} / {post.maxParticipants}
               </span>
@@ -378,18 +386,25 @@ export function CommunityPostDetailClient({
           </div>
 
           {/* Host details box */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-700 pt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center">
+              <div className="relative w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
                 {post.user.avatarUrl ? (
-                  <img src={post.user.avatarUrl} alt="" className="object-cover w-full h-full" />
+                  <Image
+                    src={post.user.avatarUrl}
+                    alt={post.user.name}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                    unoptimized={post.user.avatarUrl.includes('api.dicebear.com')}
+                  />
                 ) : (
                   <span className="text-sm font-bold text-slate-500">{post.user.name[0]}</span>
                 )}
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold font-cairo">{isRtl ? "منظم النشاط والمضيف" : "Host & Organizer"}</p>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white font-cairo">{post.user.name}</h4>
+                <h4 className="text-sm font-bold text-slate-900 font-cairo">{post.user.name}</h4>
                 <div className="flex items-center gap-1 text-xs text-amber-500 font-bold mt-0.5">
                   <Star size={12} fill="currentColor" />
                   <span>{post.user.communityRatingAvg ? post.user.communityRatingAvg.toFixed(1) : "0.0"}</span>
@@ -403,7 +418,7 @@ export function CommunityPostDetailClient({
               {!isHost && isAuthenticated && (
                 <button
                   onClick={() => setReportModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold text-slate-500 dark:text-slate-300 font-cairo transition-all"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-500 font-cairo transition-all"
                 >
                   <Flag size={14} />
                   {isRtl ? "إبلاغ" : "Report"}
@@ -416,7 +431,7 @@ export function CommunityPostDetailClient({
                   <button
                     onClick={handleCancelPost}
                     disabled={actionLoading}
-                    className="px-4 py-2 border border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-xl text-xs font-bold font-cairo transition-all"
+                    className="px-4 py-2 border border-amber-300 text-amber-600 hover:bg-amber-50 rounded-xl text-xs font-bold font-cairo transition-all"
                   >
                     {isRtl ? "إلغاء النشاط" : "Cancel Activity"}
                   </button>
@@ -445,7 +460,7 @@ export function CommunityPostDetailClient({
                   )}
 
                   {isPending && (
-                    <span className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-bold font-cairo">
+                    <span className="px-4 py-2.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-xl text-xs font-bold font-cairo">
                       {isRtl ? "طلبك قيد المراجعة" : "Pending Host Approval"}
                     </span>
                   )}
@@ -465,7 +480,7 @@ export function CommunityPostDetailClient({
                         <button
                           onClick={handleLeave}
                           disabled={actionLoading}
-                          className="px-3 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-xs font-bold font-cairo transition-all"
+                          className="px-3 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold font-cairo transition-all"
                         >
                           {isRtl ? "مغادرة" : "Leave"}
                         </button>
@@ -477,7 +492,7 @@ export function CommunityPostDetailClient({
                   {isAccepted && isExpired && (
                     <button
                       onClick={() => setRateModalOpen(true)}
-                      className="flex items-center gap-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl text-xs font-bold font-cairo transition-all shadow-md shadow-amber-500/10"
+                      className="flex items-center gap-1 px-4 py-2.5 bg-[#0EA5E9] hover:bg-[#0284C7] text-slate-900 rounded-xl text-xs font-bold font-cairo transition-all shadow-md shadow-amber-500/10"
                     >
                       <Star size={14} fill="currentColor" />
                       {isRtl ? "تقييم المضيف" : "Rate Host"}
@@ -491,14 +506,14 @@ export function CommunityPostDetailClient({
 
         {/* Host Management Console: View join requests */}
         {isHost && post.status === "ACTIVE" && (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
-            <h3 className="text-base sm:text-lg font-bold text-slate-950 dark:text-white font-cairo flex items-center gap-2">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 className="text-base sm:text-lg font-bold text-slate-950 font-cairo flex items-center gap-2">
               <UserCheck size={18} className="text-blue-500" />
               {isRtl ? "طلبات الانضمام الواردة" : "Join Requests"}
             </h3>
 
             {post.participants.filter((p) => p.status === "PENDING").length === 0 ? (
-              <p className="text-xs text-slate-400 font-cairo text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+              <p className="text-xs text-slate-400 font-cairo text-center py-6 bg-slate-50 rounded-xl">
                 {isRtl ? "لا توجد طلبات انضمام معلقة حالياً." : "No pending requests at the moment."}
               </p>
             ) : (
@@ -508,18 +523,25 @@ export function CommunityPostDetailClient({
                   .map((participant) => (
                     <div
                       key={participant.id}
-                      className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-xl"
+                      className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-xl"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-slate-500">
+                        <div className="relative w-9 h-9 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-slate-500">
                           {participant.user.avatarUrl ? (
-                            <img src={participant.user.avatarUrl} alt="" className="object-cover w-full h-full" />
+                            <Image
+                              src={participant.user.avatarUrl}
+                              alt={participant.user.name}
+                              fill
+                              sizes="36px"
+                              className="object-cover"
+                              unoptimized={participant.user.avatarUrl.includes('api.dicebear.com')}
+                            />
                           ) : (
                             participant.user.name[0]
                           )}
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white font-cairo">
+                          <h4 className="text-xs font-bold text-slate-900 font-cairo">
                             {participant.user.name}
                           </h4>
                           <span className="text-[10px] text-amber-500 flex items-center gap-0.5 font-bold font-cairo">
@@ -540,7 +562,7 @@ export function CommunityPostDetailClient({
                         <button
                           onClick={() => handleParticipantResponse(participant.id, "REJECTED")}
                           disabled={actionLoading}
-                          className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 rounded-lg text-xs font-bold font-cairo transition-all"
+                          className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold font-cairo transition-all"
                         >
                           {isRtl ? "رفض" : "Reject"}
                         </button>
@@ -553,14 +575,14 @@ export function CommunityPostDetailClient({
         )}
 
         {/* Accepted Participants List */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
-          <h3 className="text-base sm:text-lg font-bold text-slate-950 dark:text-white font-cairo flex items-center gap-2">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <h3 className="text-base sm:text-lg font-bold text-slate-950 font-cairo flex items-center gap-2">
             <Users size={18} className="text-blue-500" />
             {isRtl ? "المشاركون المقبولون" : "Participants List"}
           </h3>
 
           {acceptedCount === 0 ? (
-            <p className="text-xs text-slate-400 font-cairo text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+            <p className="text-xs text-slate-400 font-cairo text-center py-6 bg-slate-50 rounded-xl">
               {isRtl ? "لا يوجد مشاركون مقبولون بعد." : "No accepted participants yet."}
             </p>
           ) : (
@@ -568,17 +590,24 @@ export function CommunityPostDetailClient({
               {acceptedParticipants.map((participant) => (
                 <div
                   key={participant.id}
-                  className="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl"
+                  className="flex items-center gap-2.5 p-3 bg-slate-50 border border-slate-100 rounded-xl"
                 >
-                  <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-500">
+                  <div className="relative w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-500">
                     {participant.user.avatarUrl ? (
-                      <img src={participant.user.avatarUrl} alt="" className="object-cover w-full h-full" />
+                      <Image
+                        src={participant.user.avatarUrl}
+                        alt={participant.user.name}
+                        fill
+                        sizes="32px"
+                        className="object-cover"
+                        unoptimized={participant.user.avatarUrl.includes('api.dicebear.com')}
+                      />
                     ) : (
                       participant.user.name[0]
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate font-cairo">
+                    <h4 className="text-xs font-bold text-slate-900 truncate font-cairo">
                       {participant.user.name}
                     </h4>
                     <span className="text-[10px] text-amber-500 flex items-center gap-0.5 font-bold">
@@ -596,15 +625,15 @@ export function CommunityPostDetailClient({
       {/* REPORT MODAL */}
       {reportModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
                 <ShieldAlert size={18} className="text-red-500" />
                 {isRtl ? "تقديم بلاغ عن محتوى غير لائق" : "Submit Abuse Report"}
               </h3>
               <button
                 onClick={() => setReportModalOpen(false)}
-                className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300"
+                className="text-slate-400 hover:text-slate-500"
               >
                 <X size={20} />
               </button>
@@ -612,13 +641,13 @@ export function CommunityPostDetailClient({
 
             <form onSubmit={handleReportPost} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                <label className="text-xs font-semibold text-slate-500 font-cairo">
                   {isRtl ? "سبب البلاغ" : "Report Reason"}
                 </label>
                 <select
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                 >
                   <option value="SPAM">{isRtl ? "محتوى عشوائي / مزعج (Spam)" : "Spam"}</option>
                   <option value="HARASSMENT">{isRtl ? "إساءة أو مضايقة (Harassment)" : "Harassment"}</option>
@@ -629,7 +658,7 @@ export function CommunityPostDetailClient({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">
+                <label className="text-xs font-semibold text-slate-500 font-cairo">
                   {isRtl ? "التفاصيل" : "Abuse Details"} {reportReason === "OTHER" && "*"}
                 </label>
                 <textarea
@@ -638,7 +667,7 @@ export function CommunityPostDetailClient({
                   onChange={(e) => setReportDetails(e.target.value)}
                   rows={3}
                   required={reportReason === "OTHER"}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-900 dark:text-white font-cairo"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
                 />
               </div>
 
@@ -656,22 +685,22 @@ export function CommunityPostDetailClient({
       {/* RATE MODAL */}
       {rateModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
                 <Star size={18} className="text-amber-500" />
                 {isRtl ? "تقييم منظم الفعالية" : "Rate Organizer"}
               </h3>
               <button
                 onClick={() => setRateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300"
+                className="text-slate-400 hover:text-slate-500"
               >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleRateHost} className="space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-cairo text-center leading-relaxed">
+              <p className="text-xs text-slate-500 font-cairo text-center leading-relaxed">
                 {isRtl
                   ? "كيف كانت تجربتك مع هذا المضيف؟ يرجى تحديد تقييم بالنجوم من 1 (سيء) إلى 5 (ممتاز)."
                   : "How was your coliving gathering with this host? Leave a star rating from 1 to 5."}

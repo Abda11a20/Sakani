@@ -1,8 +1,7 @@
 // apps/frontend/src/hooks/useRequests.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { requestsApi } from "@/lib/api/requests.api";
-import { useAuthStore } from "@/store/auth.store";
+import { requestsApi } from "@/features/requests";
+import { useAuthStore } from "@/features/auth";
 import type { Listing, ViewingRequest, ViewingRequestStatus } from "@/types";
 
 export interface RequestStats {
@@ -84,7 +83,6 @@ export const useUpdateRequestStatus = () => {
     { requestId: string; status: ViewingRequestStatus | "accepted" }
   >({
     mutationFn: async ({ requestId, status }): Promise<ViewingRequest> => {
-      // The backend expects 'accepted' instead of 'approved'
       const backendStatus = status === "approved" ? "accepted" : status;
       const response = await requestsApi.updateStatus(requestId, { status: backendStatus });
       return response.data as ViewingRequest;
@@ -108,7 +106,6 @@ export interface FinalizeUnitRentalPayload {
   endDate: string;
 }
 
-// Response types derived from actual endpoint usage in onSuccess handlers
 interface FinalizeBedRentalResponse {
   bed?: { listingId?: string; id?: string };
   listing?: Listing;
@@ -125,13 +122,12 @@ interface QuickRentResponse {
   message?: string;
 }
 
-// Special endpoints — kept with api directly
 export const useFinalizeBedRental = () => {
   const queryClient = useQueryClient();
 
   return useMutation<FinalizeBedRentalResponse, Error, FinalizeBedRentalPayload>({
     mutationFn: async ({ requestId, bedId, startDate, endDate }): Promise<FinalizeBedRentalResponse> => {
-      const response = await api.patch<FinalizeBedRentalResponse>(`/requests/${requestId}/finalize-bed-rental`, {
+      const response = await requestsApi.finalizeBedRental(requestId, {
         bedId,
         rentedSince: startDate,
         rentedUntil: endDate,
@@ -152,7 +148,6 @@ export const useFinalizeBedRental = () => {
           current?.map((item) => (item.id === listing.id ? { ...item, ...listing } : item))
         );
       }
-      // Access listingId directly via data.bed — avoids ambiguous union with data itself
       const bedListingId = data?.bed?.listingId;
       if (bedListingId) {
         queryClient.invalidateQueries({ queryKey: ["listings", bedListingId] });
@@ -168,7 +163,7 @@ export const useFinalizeUnitRental = () => {
 
   return useMutation<FinalizeUnitRentalResponse, Error, FinalizeUnitRentalPayload>({
     mutationFn: async ({ requestId, startDate, endDate }): Promise<FinalizeUnitRentalResponse> => {
-      const response = await api.patch<FinalizeUnitRentalResponse>(`/requests/${requestId}/finalize-unit-rental`, {
+      const response = await requestsApi.finalizeUnitRental(requestId, {
         rentedSince: startDate,
         rentedUntil: endDate,
       });
@@ -218,7 +213,6 @@ export const useCancelRequest = () => {
   });
 };
 
-// Special quick-rent endpoint — kept with api directly
 export const useQuickRent = () => {
   const queryClient = useQueryClient();
 
@@ -228,7 +222,7 @@ export const useQuickRent = () => {
     { listingId: string; phone: string; startDate: string; endDate: string; bedId?: string }
   >({
     mutationFn: async ({ listingId, phone, startDate, endDate, bedId }) => {
-      const response = await api.post("/requests/quick-rent", {
+      const response = await requestsApi.quickRent({
         listingId,
         phone,
         rentedSince: startDate,
@@ -249,15 +243,11 @@ export const useQuickRent = () => {
   });
 };
 
-// Special contact-access endpoint — kept with api directly
 export const useListingContactAccess = (listingId: string, enabled: boolean) => {
-  return useQuery({
+  return useQuery<{ canViewPhone: boolean; phone: string | null }>({
     queryKey: ["contact-access", listingId],
     queryFn: async () => {
-      const response = await api.get<{ canViewPhone: boolean; phone: string | null }>(
-        `/requests/listing/${listingId}/contact-access`
-      );
-      return response.data;
+      return await requestsApi.viewPhone(listingId);
     },
     enabled,
     staleTime: 5 * 60 * 1000,

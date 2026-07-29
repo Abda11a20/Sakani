@@ -17,6 +17,10 @@ import {
   Prisma,
   RentalContract,
   NotificationType,
+  NotificationEventKey,
+  NotificationPriority,
+  ListingStatus,
+  BedStatus,
 } from '@prisma/client';
 import { ListingsService } from '../listings/listings.service';
 import { BedsService } from '../beds/beds.service';
@@ -124,6 +128,13 @@ export class RentalContractsService {
         {
           userId: contract.tenantId,
           type: NotificationType.ALERT,
+          eventKey: NotificationEventKey.CONTRACT_TERMINATED,
+          priority: NotificationPriority.HIGH,
+          payload: {
+            contractNumber: contract.contractNumber,
+            listingTitle: contract.listing?.title || '',
+            contractId: contract.id,
+          },
           title: 'إنهاء عقد الإيجار',
           body: `تم إنهاء عقد الإيجار رقم ${contract.contractNumber} مبكراً.`,
           entityType: 'contract.terminated',
@@ -136,6 +147,13 @@ export class RentalContractsService {
         {
           userId: contract.landlordId,
           type: NotificationType.ALERT,
+          eventKey: NotificationEventKey.CONTRACT_TERMINATED,
+          priority: NotificationPriority.HIGH,
+          payload: {
+            contractNumber: contract.contractNumber,
+            listingTitle: contract.listing?.title || '',
+            contractId: contract.id,
+          },
           title: 'تم إنهاء عقد الإيجار',
           body: `تم تسجيل إنهاء عقد الإيجار رقم ${contract.contractNumber} للمستأجر بنجاح.`,
           entityType: 'contract.terminated',
@@ -173,13 +191,13 @@ export class RentalContractsService {
         );
       }
 
-      // Mark old as renewed
+      // 1. Mark old contract as renewed
       await tx.rentalContract.update({
         where: { id: contractId },
         data: { status: ContractStatus.renewed },
       });
 
-      // Create new contract
+      // 2. Create new active contract
       const newContract = await this.createContract(
         {
           listingId: old.listingId,
@@ -204,19 +222,86 @@ export class RentalContractsService {
         tx,
       );
 
-      // Update Listing rentedUntil Cache
-      await tx.listing.update({
-        where: { id: old.listingId },
-        data: { rentedUntil: new Date(dto.newEndDate) },
-      });
+      // 3. Update Listing & Bed Occupancy States
+      if (!old.bedId) {
+        // Apartment contract: restore listing status to rented & current tenant details
+        await tx.listing.update({
+          where: { id: old.listingId },
+          data: {
+            status: ListingStatus.rented,
+            currentTenantId: old.tenantId,
+            rentedSince: newContract.startDate,
+            rentedUntil: newContract.endDate,
+          },
+        });
+      } else {
+        // Bed contract: update bed status & recalculate availableBeds
+        await tx.listingBed.update({
+          where: { id: old.bedId },
+          data: {
+            status: BedStatus.rented,
+            currentTenantId: old.tenantId,
+            rentedSince: newContract.startDate,
+            rentedUntil: newContract.endDate,
+          },
+        });
 
-      // Notify tenant
+        const availableBedsCount = await tx.listingBed.count({
+          where: { listingId: old.listingId, status: BedStatus.available },
+        });
+
+        await tx.listing.update({
+          where: { id: old.listingId },
+          data: {
+            availableBeds: availableBedsCount,
+            status:
+              availableBedsCount === 0
+                ? ListingStatus.rented
+                : ListingStatus.active,
+            rentedUntil: newContract.endDate,
+          },
+        });
+      }
+
+      // 4. Send Notifications (Tenant & Landlord)
+      const formattedDate = newContract.endDate.toLocaleDateString('ar-EG');
+
       await this.notificationService.createUnique(
         {
           userId: old.tenantId,
           type: NotificationType.ALERT,
+          eventKey: NotificationEventKey.CONTRACT_RENEWED,
+          priority: NotificationPriority.HIGH,
+          payload: {
+            oldContractNumber: old.contractNumber,
+            newContractNumber: newContract.contractNumber,
+            listingTitle: old.listing?.title || '',
+            newEndDate: formattedDate,
+            contractId: newContract.id,
+          },
           title: 'تجديد عقد الإيجار',
-          body: `تم تجديد عقد الإيجار رقم ${old.contractNumber} بعقد جديد رقم ${newContract.contractNumber} حتى ${newContract.endDate.toLocaleDateString('ar-EG')}.`,
+          body: `تم تجديد عقد الإيجار رقم ${old.contractNumber} بعقد جديد رقم ${newContract.contractNumber} حتى ${formattedDate}.`,
+          entityType: 'contract.renewed',
+          entityId: newContract.id,
+        },
+        tx,
+      );
+
+      await this.notificationService.createUnique(
+        {
+          userId: old.landlordId,
+          type: NotificationType.ALERT,
+          eventKey: NotificationEventKey.CONTRACT_RENEWED,
+          priority: NotificationPriority.HIGH,
+          payload: {
+            oldContractNumber: old.contractNumber,
+            newContractNumber: newContract.contractNumber,
+            listingTitle: old.listing?.title || '',
+            newEndDate: formattedDate,
+            contractId: newContract.id,
+          },
+          title: 'تم تجديد عقد الإيجار بنجاح',
+          body: `تم تجديد العقد رقم ${old.contractNumber} بعقد جديد رقم ${newContract.contractNumber} حتى ${formattedDate}.`,
           entityType: 'contract.renewed',
           entityId: newContract.id,
         },
@@ -296,6 +381,13 @@ export class RentalContractsService {
       {
         userId: contract.landlordId,
         type: NotificationType.ALERT,
+        eventKey: NotificationEventKey.CONTRACT_EXPIRED,
+        priority: NotificationPriority.HIGH,
+        payload: {
+          contractNumber: contract.contractNumber,
+          listingTitle: (contract as any).listing?.title || '',
+          contractId: contract.id,
+        },
         title: 'انتهاء عقد الإيجار',
         body: `انتهى عقد الإيجار رقم ${contract.contractNumber}. تم إخلاء العقار وتغيير حالته إلى "موقف مؤقتاً" بانتظار قرارك.`,
         entityType: 'contract.expired',
@@ -308,6 +400,13 @@ export class RentalContractsService {
       {
         userId: contract.tenantId,
         type: NotificationType.ALERT,
+        eventKey: NotificationEventKey.CONTRACT_EXPIRED,
+        priority: NotificationPriority.HIGH,
+        payload: {
+          contractNumber: contract.contractNumber,
+          listingTitle: (contract as any).listing?.title || '',
+          contractId: contract.id,
+        },
         title: 'انتهاء عقد إيجارك',
         body: `انتهت مدة عقد الإيجار رقم ${contract.contractNumber} للمسكن.`,
         entityType: 'contract.expired',

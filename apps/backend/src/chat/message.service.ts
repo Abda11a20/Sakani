@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { PusherService } from './pusher.service';
 import { ConversationService } from './conversation.service';
-import { ParticipantRole } from '@prisma/client';
+import { MessageType, ParticipantRole } from '@prisma/client';
 
 @Injectable()
 export class MessageService {
@@ -18,7 +18,12 @@ export class MessageService {
     private readonly conversationService: ConversationService,
   ) {}
 
-  async sendMessage(senderId: string, conversationId: string, content: string) {
+  async sendMessage(
+    senderId: string,
+    conversationId: string,
+    content: string,
+    type: MessageType = MessageType.TEXT,
+  ) {
     // 1. Fetch conversation
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -76,6 +81,7 @@ export class MessageService {
         conversationId,
         senderId,
         content,
+        type,
       },
       include: {
         sender: {
@@ -112,6 +118,7 @@ export class MessageService {
         id: message.id,
         conversationId: message.conversationId,
         content: message.content,
+        type: message.type,
         createdAt: message.createdAt,
         sender: message.sender,
       },
@@ -214,6 +221,15 @@ export class MessageService {
       },
     );
 
+    return { success: true };
+  }
+
+  async notifyTyping(conversationId: string, userId: string, isTyping: boolean) {
+    await this.pusherService.broadcastToConversation(
+      conversationId,
+      'user.typing',
+      { userId, isTyping },
+    );
     return { success: true };
   }
 

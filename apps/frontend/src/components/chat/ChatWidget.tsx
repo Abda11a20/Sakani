@@ -11,12 +11,15 @@ import {
   HeadphonesIcon,
   Bot,
   ShieldAlert,
+  Image as ImageIcon,
 } from "lucide-react";
-import Pusher from "pusher-js";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useAuthStore } from "@/store/auth.store";
+import { chatApi } from "@/features/chat";
+import { useAuthStore } from "@/features/auth";
+import { useChatRealtime } from "@/hooks/realtime/useChatRealtime";
 import { cn } from "@/lib/utils";
+
+import { usePathname } from "next/navigation";
 
 interface ChatMessage {
   id: string;
@@ -37,9 +40,15 @@ interface ChatWidgetProps {
 export default function ChatWidget({ conversationId: propConversationId, title }: ChatWidgetProps) {
   const locale = useLocale();
   const isRtl = locale === "ar";
+  const pathname = usePathname();
   const { user, token } = useAuthStore();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Do not render floating ChatWidget on Admin Chat Page to avoid UI duplication
+  if (pathname && pathname.includes("/admin/chat") && !propConversationId) {
+    return null;
+  }
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -53,10 +62,10 @@ export default function ChatWidget({ conversationId: propConversationId, title }
 
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const pusherRef = useRef<Pusher | null>(null);
-  const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Sync prop changes
@@ -73,8 +82,8 @@ export default function ChatWidget({ conversationId: propConversationId, title }
     if (!token || !user) return;
     const fetchUnreadCount = async () => {
       try {
-        const res = await api.get<{ unreadCount: number }>("/chat/unread-count");
-        setUnreadCount(res.data.unreadCount);
+        const data = await chatApi.getUnreadCount();
+        setUnreadCount(data.unreadCount);
       } catch {
         // fail silently
       }
@@ -94,7 +103,7 @@ export default function ChatWidget({ conversationId: propConversationId, title }
     if (isOpen && conversationId && user) {
       const markAsRead = async () => {
         try {
-          await api.patch(`/chat/conversations/${conversationId}/read`);
+          await chatApi.markAsRead(conversationId);
           setUnreadCount(0);
           queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
         } catch {
@@ -108,14 +117,15 @@ export default function ChatWidget({ conversationId: propConversationId, title }
   // Get or Create Support Conversation for User
   useEffect(() => {
     if (!isOpen || !token || !user || conversationId) return;
-    
+
     const initSupportConversation = async () => {
       try {
-        const res = await api.get("/chat/support/me");
-        setConversationId(res.data.id);
-        if (res.data.blockedAt) {
+        const data = await chatApi.getSupportMe();
+        const conv = data.conversation || data;
+        setConversationId(conv.id);
+        if ((conv as any).blockedAt) {
           setIsBlocked(true);
-          setBlockReason(res.data.blockReason);
+          setBlockReason((conv as any).blockReason);
         } else {
           setIsBlocked(false);
           setBlockReason(null);
@@ -133,8 +143,9 @@ export default function ChatWidget({ conversationId: propConversationId, title }
 
     const loadHistory = async () => {
       try {
-        const res = await api.get(`/chat/conversations/${conversationId}/messages?limit=50`);
-        const history = res.data.messages.map((m: any) => ({
+        const data = await chatApi.getMessages(conversationId, 50);
+        const rawMessages = Array.isArray(data) ? data : (data as any).messages || [];
+        const history = rawMessages.map((m: any) => ({
           id: m.id,
           content: m.content,
           senderId: m.sender.id,
@@ -148,82 +159,60 @@ export default function ChatWidget({ conversationId: propConversationId, title }
       }
     };
     loadHistory();
-  }, [isOpen, conversationId, token, user]);
-
-  // Connect Pusher to conversation channel
-  useEffect(() => {
-    if (!isOpen || !token || !user || !conversationId) return;
-    if (pusherRef.current) return; // already connected
-
-    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY ?? "";
-    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER ?? "eu";
-    const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
-
-    pusherRef.current = new Pusher(pusherKey, {
-      cluster: pusherCluster,
-      authEndpoint: `${backendUrl}/chat/pusher/auth`,
-      auth: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    const ch = `private-conversation-${conversationId}`;
-    const channel = pusherRef.current.subscribe(ch);
-    channelRef.current = channel;
-
-    channel.bind("pusher:subscription_succeeded", () => setIsConnected(true));
-    channel.bind("pusher:subscription_error", () => setIsConnected(false));
-
-    channel.bind("message.created", (data: any) => {
-      // Ignore own message from another session (will be handled by optimistic updates)
-      if (data.sender.id === user.id) return;
-
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === data.id)) return prev;
-        return [
-          ...prev,
-          {
-            id: data.id,
-            content: data.content,
-            senderId: data.sender.id,
-            senderName: data.sender.name,
-            createdAt: data.createdAt,
-            isOwn: false,
-          },
-        ];
-      });
-
-      if (isOpen) {
-        api.patch(`/chat/conversations/${conversationId}/read`).catch(() => {});
-        queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
-      } else {
-        setUnreadCount((prev) => prev + 1);
-        queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
-      }
-    });
-
-    channel.bind("conversation.updated", (data: any) => {
-      if (data.blockedAt) {
-        setIsBlocked(true);
-        setBlockReason(data.blockReason);
-      } else {
-        setIsBlocked(false);
-        setBlockReason(null);
-      }
-    });
-
-    return () => {
-      channel.unbind_all();
-      pusherRef.current?.unsubscribe(ch);
-      pusherRef.current?.disconnect();
-      pusherRef.current = null;
-      channelRef.current = null;
-      setIsConnected(false);
-    };
   }, [isOpen, token, user, conversationId]);
+
+  // Realtime subscription via centralized useChatRealtime hook
+  const { isConnected } = useChatRealtime(
+    isOpen && token && user && conversationId ? conversationId : null,
+    {
+      onMessageCreated: (data: any) => {
+        if (data.sender.id === user?.id) return;
+
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [
+            ...prev,
+            {
+              id: data.id,
+              content: data.content,
+              senderId: data.sender.id,
+              senderName: data.sender.name,
+              createdAt: data.createdAt,
+              isOwn: false,
+            },
+          ];
+        });
+
+        if (isOpen && conversationId) {
+          chatApi.markAsRead(conversationId).catch(() => {});
+          queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
+        } else {
+          setUnreadCount((prev) => prev + 1);
+          queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
+        }
+      },
+      onUserTyping: (data: any) => {
+        if (data.userId !== user?.id) {
+          setIsPartnerTyping(data.isTyping);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          if (data.isTyping) {
+            typingTimeoutRef.current = setTimeout(() => {
+              setIsPartnerTyping(false);
+            }, 3000);
+          }
+        }
+      },
+      onConversationUpdated: (data: any) => {
+        if (data.blockedAt) {
+          setIsBlocked(true);
+          setBlockReason(data.blockReason);
+        } else {
+          setIsBlocked(false);
+          setBlockReason(null);
+        }
+      },
+    }
+  );
 
   const handleSend = async () => {
     if (!input.trim() || isSending || !user || !conversationId) return;
@@ -232,8 +221,8 @@ export default function ChatWidget({ conversationId: propConversationId, title }
     setIsSending(true);
 
     try {
-      await api.post("/chat/messages", { conversationId, content });
-      
+      await chatApi.sendMessage({ conversationId, content });
+
       // Optimistic update
       setMessages((prev) => [
         ...prev,
@@ -247,163 +236,167 @@ export default function ChatWidget({ conversationId: propConversationId, title }
         },
       ]);
     } catch {
-      // silently fail
+      // fail silently or handle
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    if (!conversationId) return;
+
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 2000) {
+      lastTypingSentRef.current = now;
+      chatApi.sendTyping(conversationId, true).catch(() => {});
     }
   };
 
-  if (!mounted || !user) return null;
-
-  const widgetTitle = title ?? (isRtl ? "الدعم الفني" : "Support Chat");
+  if (!mounted) return null;
 
   return (
-    <>
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen((o) => !o)}
-        id="chat-widget-toggle"
-        className={cn(
-          "fixed bottom-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95",
-          isRtl ? "left-6" : "right-6",
-          isOpen
-            ? "bg-slate-700 dark:bg-slate-600"
-            : "bg-gradient-to-br from-amber-400 to-amber-600"
-        )}
-        aria-label={widgetTitle}
-      >
-        {isOpen ? (
-          <X size={22} className="text-white" />
-        ) : (
-          <MessageCircle size={22} className="text-white" />
-        )}
-        {/* Unread badge */}
-        {!isOpen && unreadCount > 0 && (
-          <span className="absolute -top-1 -end-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
+    <div className="fixed bottom-6 end-6 z-50 font-cairo">
+      {/* Floating Toggle Button */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all group"
+          aria-label="محادثة الدعم الفني"
+        >
+          <MessageCircle size={26} className="group-hover:rotate-12 transition-transform" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -end-1 flex items-center justify-center w-6 h-6 text-xs font-bold bg-red-500 text-white rounded-full border-2 border-background animate-pulse">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
+      )}
 
-      {/* Chat Drawer */}
-      <div
-        className={cn(
-          "fixed bottom-24 z-50 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300",
-          isRtl ? "left-6" : "right-6",
-          isOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-4 pointer-events-none"
-        )}
-        style={{ maxHeight: "480px" }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-            <HeadphonesIcon size={16} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-white font-cairo">{widgetTitle}</p>
-            <p className="text-xs text-amber-100 font-cairo">
-              {isConnected ? (isRtl ? "متصل" : "Connected") : (isRtl ? "جاري الاتصال..." : "Connecting...")}
-            </p>
-          </div>
-          <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-emerald-300" : "bg-amber-200 animate-pulse")} />
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-3">
-                <Bot size={22} className="text-amber-500" />
+      {/* Floating Chat Box */}
+      {isOpen && (
+        <div className="w-[360px] sm:w-[400px] h-[520px] bg-card border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+          {/* Header */}
+          <div className="bg-primary px-5 py-4 text-white flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm">
+                <HeadphonesIcon size={20} />
               </div>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo">
-                {isRtl ? "أهلاً! كيف يمكننا مساعدتك؟" : "Hi! How can we help?"}
-              </p>
-              <p className="text-xs text-slate-400 font-cairo mt-1">
-                {isRtl ? "ابدأ المحادثة الآن" : "Start chatting now"}
-              </p>
+              <div>
+                <h3 className="font-bold text-sm leading-snug">{title || "فريق خدمة العملاء"}</h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className={cn(
+                      "w-2 h-2 rounded-full",
+                      isConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                    )}
+                  />
+                  <span className="text-[11px] text-white/80 font-medium">
+                    {isConnected ? "متصل الآن" : "جارٍ الاتصال..."}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Blocked Notice Banner */}
+          {isBlocked && (
+            <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-3 text-red-500 flex items-start gap-2.5 shrink-0 text-xs">
+              <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">المحادثة محظورة من قِبَل الإدارة</p>
+                {blockReason && <p className="mt-0.5 opacity-90">{blockReason}</p>}
+              </div>
             </div>
           )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                "flex",
-                msg.isOwn ? "justify-end" : "justify-start"
-              )}
-            >
-              <div
-                className={cn(
-                  "max-w-[75%] px-3 py-2 rounded-xl text-sm font-cairo break-words",
-                  msg.isOwn
-                    ? "bg-amber-500 text-white rounded-ee-sm"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-es-sm"
-                )}
-              >
-                {msg.content}
-                <p
+
+          {/* Messages List */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-muted/5">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
+                <Bot size={40} className="mb-3 opacity-30 text-primary" />
+                <p className="font-semibold text-sm text-foreground">مرحباً بك في خدمة العملاء 👋</p>
+                <p className="text-xs mt-1">كيف يمكننا مساعدتك اليوم؟ أرسل استفسارك وسيقوم أحد ممثلينا بالرد عليك فوراً.</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
                   className={cn(
-                    "text-[10px] mt-0.5",
-                    msg.isOwn ? "text-amber-100" : "text-slate-400"
+                    "flex flex-col max-w-[80%]",
+                    msg.isOwn ? "ms-auto items-end" : "me-auto items-start"
                   )}
                 >
-                  {new Date(msg.createdAt).toLocaleTimeString("ar-EG", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+                  <div
+                    className={cn(
+                      "px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm",
+                      msg.isOwn
+                        ? "bg-primary text-white rounded-br-none"
+                        : "bg-card border border-border text-foreground rounded-bl-none"
+                    )}
+                  >
+                    {msg.content}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-1 px-1">
+                    {new Date(msg.createdAt).toLocaleTimeString(isRtl ? "ar-EG" : "en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))
+            )}
+            {isPartnerTyping && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic px-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.2s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.4s]" />
+                <span>يكتب الآن...</span>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-        {/* Input / Block Status */}
-        {isBlocked ? (
-          <div className="px-4 py-3 bg-red-50 dark:bg-red-950/20 border-t border-slate-100 dark:border-slate-800 flex items-start gap-2 shrink-0">
-            <ShieldAlert className="text-red-500 shrink-0 mt-0.5" size={16} />
-            <p className="text-xs font-semibold text-red-600 dark:text-red-400 font-cairo">
-              {isRtl ? "تم حظر هذه المحادثة من قِبل الإدارة." : "This conversation has been blocked by administration."}
-              {blockReason && <span className="block mt-1 font-normal opacity-90">{isRtl ? `السبب: ${blockReason}` : `Reason: ${blockReason}`}</span>}
-            </p>
-          </div>
-        ) : (
-          <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isRtl ? "اكتب رسالتك..." : "Type a message..."}
-                className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                dir={isRtl ? "rtl" : "ltr"}
-                disabled={!conversationId}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isSending || !input.trim() || !conversationId}
-                className="w-9 h-9 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 dark:disabled:bg-slate-700 text-white disabled:text-slate-400 flex items-center justify-center transition-all shrink-0"
-                aria-label="Send"
+          {/* Footer Input */}
+          <div className="p-3 bg-card border-t border-border shrink-0">
+            {isBlocked ? (
+              <p className="text-center text-xs text-muted-foreground py-2 font-medium">
+                لا يمكنك إرسال رسائل في هذه المحادثة.
+              </p>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="flex items-center gap-2"
               >
-                {isSending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} className={cn(isRtl && "rotate-180")} />
-                )}
-              </button>
-            </div>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={handleInputChange}
+                  placeholder="أكتب رسالتك هنا..."
+                  disabled={isSending || !token}
+                  className="flex-1 bg-muted/20 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary disabled:opacity-50 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isSending || !token}
+                  className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shrink-0"
+                >
+                  {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                </button>
+              </form>
+            )}
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

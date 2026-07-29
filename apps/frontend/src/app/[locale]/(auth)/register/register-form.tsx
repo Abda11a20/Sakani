@@ -5,13 +5,12 @@ import React, { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User as UserIcon, Phone, CreditCard, Home, Key, Mail } from "lucide-react";
+import { User as UserIcon, Phone, CreditCard, Home, Key, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button, Input, PasswordInput, useToast } from "@/components/ui";
-import { useRegister, useVerifyEmail, useResendVerification } from "@/hooks/useAuth";
+import { useRegister, useVerifyEmail, useResendVerification, authRepository } from "@/features/auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { authApi } from "@/lib/api/auth.api";
 
 type RegisterValues = {
   role: "tenant" | "landlord";
@@ -155,7 +154,7 @@ export function RegisterForm() {
     setCheckingLink(true);
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await authApi.checkTelegramLinkStatus(code);
+        const res = await authRepository.checkTelegramLinkStatus(code);
         if (res.data?.linked) {
           setTelegramLinked(true);
           setCheckingLink(false);
@@ -205,7 +204,7 @@ export function RegisterForm() {
 
       try {
         setTelegramLinked(false);
-        const res = await authApi.generateTelegramLinkCode(identifier);
+        const res = await authRepository.generateTelegramLinkCode(identifier);
         const code = res.data?.linkCode;
         if (code) {
           setTelegramCode(code);
@@ -386,6 +385,16 @@ export function RegisterForm() {
     const isTelegram = selectedOtpChannel === "TELEGRAM";
     return (
       <form onSubmit={onOtpSubmit} className="space-y-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-2">
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all group shadow-sm"
+          >
+            <ArrowRight size={15} className="rtl:rotate-0 ltr:rotate-180 transition-transform group-hover:-translate-x-1" />
+            <span>{tCommon("back")}</span>
+          </button>
+        </div>
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold">{t("activateAccount")}</h2>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -435,7 +444,7 @@ export function RegisterForm() {
             {isResendPending ? "جاري الإرسال..." : t("resendCode")}
           </button>
           {timeLeft > 0 && (
-            <span className="text-muted-foreground font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs" dir="ltr">
+            <span className="text-muted-foreground font-mono bg-slate-100 px-2 py-0.5 rounded text-xs" dir="ltr">
               {`${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, "0")}`}
             </span>
           )}
@@ -451,14 +460,17 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-sm font-semibold text-primary">{t("stepOf", { step: 2, total: 2 })}</span>
         <button
           type="button"
           onClick={() => setStep(1)}
-          className="text-sm text-muted-foreground hover:text-foreground underline"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all group shadow-sm"
         >
-          {tCommon("back")}
+          <ArrowRight size={15} className="rtl:rotate-0 ltr:rotate-180 transition-transform group-hover:-translate-x-1" />
+          <span>{tCommon("back")}</span>
         </button>
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+          {t("stepOf", { step: 2, total: 2 })}
+        </span>
       </div>
 
       <div className="space-y-1">
@@ -516,6 +528,7 @@ export function RegisterForm() {
       <div className="space-y-1">
         <PasswordInput
           label={t("password")}
+          leftIcon={<Lock size={18} style={{ direction: "ltr" }} />}
           error={errors.password?.message}
           {...register("password")}
         />
@@ -524,6 +537,7 @@ export function RegisterForm() {
       <div className="space-y-1">
         <PasswordInput
           label={t("confirmPassword")}
+          leftIcon={<Lock size={18} style={{ direction: "ltr" }} />}
           error={errors.confirmPassword?.message}
           {...register("confirmPassword")}
         />

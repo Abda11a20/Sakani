@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import UnifiedDashboardLayout, { type DashboardMenuItem } from "./UnifiedDashboardLayout";
+import { useDashboardSummary } from "@/features/dashboard";
 
 interface LandlordLayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,10 @@ interface LandlordLayoutProps {
 
 export default function LandlordLayout({ children }: LandlordLayoutProps) {
   const locale = useLocale();
+
+  // Fetch summary for sidebar badge counts (cached — no extra request)
+  const { data: summary } = useDashboardSummary("landlord");
+  const pendingRequests = summary?.stats?.pendingRequests ?? 0;
 
   const menuItems: DashboardMenuItem[] = [
     {
@@ -52,6 +57,8 @@ export default function LandlordLayout({ children }: LandlordLayoutProps) {
       labelEn: "Viewing Requests",
       icon: GitPullRequest,
       href: `/${locale}/dashboard/landlord/requests`,
+      // 🔴 Live badge: shows pending requests count
+      badge: pendingRequests > 0 ? pendingRequests : undefined,
     },
     {
       label: "المجتمع",

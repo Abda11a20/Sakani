@@ -15,6 +15,8 @@ import { FinalizeUnitRentalDto } from './dto/finalize-unit-rental.dto';
 import { QuickRentDto } from './dto/quick-rent.dto';
 import {
   NotificationType,
+  NotificationEventKey,
+  NotificationPriority,
   RequestStatus,
   ListingStatus,
   UserRole,
@@ -200,17 +202,29 @@ export class RequestsService {
         },
       });
 
-      await this.notificationService.createUnique(
+      const notif = await this.notificationService.createUnique(
         {
           userId: listing.landlordId,
           type: NotificationType.REQUEST,
-          title: 'New viewing request',
-          body: `A tenant requested to view "${listing.title}".`,
+          eventKey: NotificationEventKey.REQUEST_CREATED,
+          priority: NotificationPriority.NORMAL,
+          payload: {
+            tenantId: createdRequest.tenant?.id || tenantId,
+            tenantName: createdRequest.tenant?.name || '',
+            listingId: listing.id,
+            listingTitle: listing.title,
+            requestId: createdRequest.id,
+          },
+          title: '📩 طلب معاينة جديد',
+          body: `قدم مستأجر طلب معاينة على عقارك "${listing.title}".`,
           entityType: `viewing_request.created.listing.${listing.id}`,
           entityId: createdRequest.id,
         },
         tx,
       );
+      if (notif) {
+        this.notificationService.sendRealtimeNotification(listing.landlordId, notif).catch(() => {});
+      }
 
       return createdRequest;
     });
@@ -379,10 +393,21 @@ export class RequestsService {
       ) {
         const isAccepted = dto.status === RequestStatus.accepted;
 
-        await this.notificationService.createUnique(
+        const notif = await this.notificationService.createUnique(
           {
             userId: request.tenantId,
             type: NotificationType.REQUEST,
+            eventKey: isAccepted
+              ? NotificationEventKey.REQUEST_ACCEPTED
+              : NotificationEventKey.REQUEST_REJECTED,
+            priority: isAccepted
+              ? NotificationPriority.HIGH
+              : NotificationPriority.NORMAL,
+            payload: {
+              listingId: request.listingId,
+              listingTitle: request.listing?.title || '',
+              requestId: request.id,
+            },
             title: isAccepted
               ? 'Viewing request accepted'
               : 'Viewing request rejected',

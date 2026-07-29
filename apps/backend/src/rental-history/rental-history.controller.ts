@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, UserRole } from '@prisma/client';
+import { User, UserRole, ContractStatus } from '@prisma/client';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -28,14 +28,6 @@ export class RentalHistoryController {
   /**
    * GET /rental-history/landlord
    * Returns paginated completed rentals for all listings owned by the landlord.
-   *
-   * Query params:
-   *   page    - page number (default: 1)
-   *   limit   - items per page (default: 10)
-   *   search  - filter by listing title or tenant name
-   *   from    - ISO date string (start of range, uses updatedAt as completedAt proxy)
-   *   to      - ISO date string (end of range)
-   *   sort    - 'asc' | 'desc' (default: 'desc' = newest first)
    */
   @Get('landlord')
   @Roles(UserRole.landlord)
@@ -46,6 +38,7 @@ export class RentalHistoryController {
     @Query('search') search?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('status') status?: ContractStatus,
     @Query('sort') sort?: 'asc' | 'desc',
   ) {
     return this.rentalHistoryService.getLandlordHistory(user.id, {
@@ -54,6 +47,7 @@ export class RentalHistoryController {
       search,
       from,
       to,
+      status,
       sort: sort === 'asc' ? 'asc' : 'desc',
     });
   }
@@ -61,8 +55,6 @@ export class RentalHistoryController {
   /**
    * GET /rental-history/tenant
    * Returns paginated completed rentals for the authenticated tenant.
-   *
-   * Query params: same as landlord endpoint.
    */
   @Get('tenant')
   @Roles(UserRole.tenant)
@@ -73,6 +65,7 @@ export class RentalHistoryController {
     @Query('search') search?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('status') status?: ContractStatus,
     @Query('sort') sort?: 'asc' | 'desc',
   ) {
     return this.rentalHistoryService.getTenantHistory(user.id, {
@@ -81,6 +74,7 @@ export class RentalHistoryController {
       search,
       from,
       to,
+      status,
       sort: sort === 'asc' ? 'asc' : 'desc',
     });
   }
@@ -97,6 +91,7 @@ export class RentalHistoryController {
     @Query('search') search?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('status') status?: ContractStatus,
     @Query('sort') sort?: 'asc' | 'desc',
   ) {
     return this.rentalHistoryService.getAdminHistory({
@@ -105,6 +100,7 @@ export class RentalHistoryController {
       search,
       from,
       to,
+      status,
       sort: sort === 'asc' ? 'asc' : 'desc',
     });
   }

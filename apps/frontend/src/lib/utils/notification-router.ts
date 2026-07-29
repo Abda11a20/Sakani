@@ -10,23 +10,21 @@ const DASHBOARD_ROUTES = {
   SUPPORT: "/dashboard/support",
   LANDLORD_REQUESTS: "/dashboard/landlord/requests",
   TENANT_REQUESTS: "/dashboard/tenant/viewing-requests",
+  LANDLORD_RENTAL_HISTORY: "/dashboard/landlord/rental-history",
+  TENANT_RENTAL_HISTORY: "/dashboard/tenant/rental-history",
+  LANDLORD_DASHBOARD: "/dashboard/landlord",
   TENANT_DASHBOARD: "/dashboard/tenant",
 };
 
 /**
  * Resolves a notification object to the corresponding application URL path.
- *
- * @param notification - The notification object containing type, entityType, and entityId.
- * @param userRole - The role of the logged-in user (e.g. "tenant", "landlord").
- * @returns The destination string path or null if no route matches.
+ * Covers both new eventKey notifications and legacy database notifications.
  */
 export function resolveNotificationRoute(
   notification: NotificationLike,
   userRole?: string
 ): string | null {
   const { type, entityType, entityId } = notification;
-  if (!entityType && type !== "CHAT") return null;
-
   const isLandlord = userRole === "landlord";
 
   // 1. Support chat messages
@@ -34,7 +32,19 @@ export function resolveNotificationRoute(
     return DASHBOARD_ROUTES.SUPPORT;
   }
 
-  // 1.5. Community notifications
+  // 2. Rental Contracts & Rental Completions
+  if (
+    (entityType && entityType.startsWith("contract")) ||
+    entityType === "rental_contract" ||
+    entityType === "bed_rental" ||
+    entityType === "unit_rental"
+  ) {
+    return isLandlord
+      ? DASHBOARD_ROUTES.LANDLORD_RENTAL_HISTORY
+      : DASHBOARD_ROUTES.TENANT_RENTAL_HISTORY;
+  }
+
+  // 3. Community notifications
   if (
     entityType === "community_post" ||
     entityType === "viewing_request.community" ||
@@ -43,25 +53,52 @@ export function resolveNotificationRoute(
     return entityId ? `/community/${entityId}` : null;
   }
 
-  // 2. Viewing requests
+  // 4. Viewing requests
   if (entityType && entityType.startsWith("viewing_request")) {
     return isLandlord
       ? DASHBOARD_ROUTES.LANDLORD_REQUESTS
       : DASHBOARD_ROUTES.TENANT_REQUESTS;
   }
 
-  // 3. Properties and Listings
+  // 5. Properties and Listings
   if (
     entityType === "listing" ||
     entityType === "listing.approved" ||
-    entityType === "listing.rejected"
+    entityType === "listing.rejected" ||
+    entityType === "listing.paused"
   ) {
     return entityId
       ? isLandlord
         ? `/dashboard/landlord/advertisements/${entityId}`
         : `/listings/${entityId}`
-      : null;
+      : isLandlord
+      ? "/dashboard/landlord/advertisements"
+      : "/listings";
   }
 
-  return null;
+  // 6. Reviews
+  if (type === "REVIEW" || (entityType && entityType.startsWith("review"))) {
+    return entityId
+      ? isLandlord
+        ? `/dashboard/landlord/advertisements/${entityId}`
+        : `/listings/${entityId}`
+      : isLandlord
+      ? DASHBOARD_ROUTES.LANDLORD_DASHBOARD
+      : DASHBOARD_ROUTES.TENANT_DASHBOARD;
+  }
+
+  // 7. Fallback based on type or role
+  if (type === "REQUEST") {
+    return isLandlord
+      ? DASHBOARD_ROUTES.LANDLORD_REQUESTS
+      : DASHBOARD_ROUTES.TENANT_REQUESTS;
+  }
+
+  if (type === "ALERT") {
+    return isLandlord
+      ? DASHBOARD_ROUTES.LANDLORD_RENTAL_HISTORY
+      : DASHBOARD_ROUTES.TENANT_RENTAL_HISTORY;
+  }
+
+  return isLandlord ? DASHBOARD_ROUTES.LANDLORD_DASHBOARD : DASHBOARD_ROUTES.TENANT_DASHBOARD;
 }

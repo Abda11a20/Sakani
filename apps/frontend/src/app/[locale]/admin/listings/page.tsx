@@ -1,4 +1,4 @@
-// apps/frontend/src/app/[locale]/admin/listings/page.tsx
+﻿// apps/frontend/src/app/[locale]/admin/listings/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -23,16 +23,16 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
             <IdCard size={20} className="text-amber-500" /> بطاقة الهوية
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-50 dark:bg-slate-900/50 relative">
+        <div className="p-4 flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-50 relative">
           {isLoading ? (
             <div className="flex flex-col items-center text-amber-500 gap-3">
               <Loader2 size={32} className="animate-spin" />
@@ -120,10 +120,10 @@ export default function AdminListingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-cairo">
+          <h1 className="text-2xl font-bold text-slate-900 font-cairo">
             إدارة الإعلانات
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-cairo">
+          <p className="text-sm text-slate-500 mt-0.5 font-cairo">
             إدارة وتصفية جميع الإعلانات في المنصة
           </p>
         </div>
@@ -138,8 +138,8 @@ export default function AdminListingsPage() {
             className={cn(
               "px-4 py-2 rounded-xl text-sm font-bold font-cairo transition-all whitespace-nowrap",
               statusTab === tab.id
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                ? "bg-[#0EA5E9] text-white shadow-sm"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
             )}
           >
             {tab.label}
@@ -155,7 +155,7 @@ export default function AdminListingsPage() {
       )}
 
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-cairo text-sm">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-cairo text-sm">
           <AlertCircle size={18} className="shrink-0" />
           <span>فشل في تحميل الإعلانات</span>
         </div>
@@ -163,10 +163,10 @@ export default function AdminListingsPage() {
 
       {!isLoading && !error && listings.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
             <Search size={28} className="text-slate-400" />
           </div>
-          <p className="text-lg font-semibold text-slate-900 dark:text-white font-cairo">
+          <p className="text-lg font-semibold text-slate-900 font-cairo">
             لا توجد إعلانات مطابقة
           </p>
         </div>
@@ -181,11 +181,11 @@ export default function AdminListingsPage() {
           return (
             <div
               key={listing.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
             >
               <div className="flex flex-col sm:flex-row">
                 {/* Image */}
-                <div className="w-full sm:w-44 h-40 sm:h-auto shrink-0 bg-slate-100 dark:bg-slate-800 relative">
+                <div className="w-full sm:w-44 h-40 sm:h-auto shrink-0 bg-slate-100 relative">
                   {firstImage ? (
                     <Image
                       src={typeof firstImage === "string" ? firstImage : firstImage}
@@ -195,13 +195,13 @@ export default function AdminListingsPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Building2 size={32} className="text-slate-300 dark:text-slate-600" />
+                      <Building2 size={32} className="text-slate-300" />
                     </div>
                   )}
                   <div className="absolute top-2 start-2">
                     <span className={cn(
                       "px-2 py-0.5 rounded-lg text-xs font-bold font-cairo text-white shadow",
-                      listing.status === "pending_review" ? "bg-amber-500" :
+                      listing.status === "pending_review" ? "bg-[#0EA5E9]" :
                       listing.status === "active" ? "bg-emerald-500" : "bg-red-500"
                     )}>
                       {listing.status === "pending_review" ? "قيد المراجعة" :
@@ -214,15 +214,15 @@ export default function AdminListingsPage() {
                 {/* Info */}
                 <div className="flex-1 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-base font-bold text-slate-900 dark:text-white font-cairo leading-snug">
+                    <h2 className="text-base font-bold text-slate-900 font-cairo leading-snug">
                       {listing.title}
                     </h2>
-                    <span className="shrink-0 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400 font-cairo font-medium">
+                    <span className="shrink-0 px-2 py-0.5 bg-slate-100 rounded-lg text-xs text-slate-600 font-cairo font-medium">
                       {listing.type === "apartment" ? "شقة" : "سرير"}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400 font-cairo">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 font-cairo">
                     <span className="flex items-center gap-1">
                       <MapPin size={13} /> {listing.address}، {listing.city}
                     </span>
@@ -232,13 +232,13 @@ export default function AdminListingsPage() {
                   </div>
 
                   {listing.landlord && (
-                    <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-xs font-cairo shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs font-cairo shrink-0">
                           {listing.landlord.name?.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-cairo">
+                          <p className="text-xs font-semibold text-slate-800 font-cairo">
                             {listing.landlord.name}
                           </p>
                           {listing.landlord.phone && (
@@ -250,7 +250,7 @@ export default function AdminListingsPage() {
                       </div>
                       <button
                         onClick={() => setIdCardViewer(listing.landlord!.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-cairo font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-500 transition-colors shadow-sm"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-cairo font-semibold text-slate-700 hover:text-amber-600 transition-colors shadow-sm"
                       >
                         <IdCard size={14} /> عرض البطاقة
                       </button>
@@ -289,7 +289,7 @@ export default function AdminListingsPage() {
                     <button
                       onClick={() => setDeleteModal({ id: listing.id, title: listing.title })}
                       disabled={isProcessing}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium font-cairo bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-all disabled:opacity-60"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium font-cairo bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all disabled:opacity-60"
                       title={isRtl ? "حذف نهائي" : "Delete permanently"}
                     >
                       <Trash2 size={15} />
@@ -308,17 +308,17 @@ export default function AdminListingsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+            className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             {isRtl ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <span className="text-sm font-cairo font-bold text-slate-600 dark:text-slate-300">
+          <span className="text-sm font-cairo font-bold text-slate-600">
             {page} / {meta.lastPage}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(meta.lastPage, p + 1))}
             disabled={page === meta.lastPage}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+            className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             {isRtl ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
           </button>
@@ -328,15 +328,15 @@ export default function AdminListingsPage() {
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900 font-cairo">
               رفض الإعلان
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
+            <p className="text-sm text-slate-500 font-cairo">
               {rejectModal.title}
             </p>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 font-cairo mb-1.5">
                 سبب الرفض (اختياري)
               </label>
               <textarea
@@ -344,7 +344,7 @@ export default function AdminListingsPage() {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="أدخل سبب الرفض ليظهر للمُعلِن..."
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
               />
             </div>
             <div className="flex gap-3">
@@ -357,7 +357,7 @@ export default function AdminListingsPage() {
               </button>
               <button
                 onClick={() => { setRejectModal(null); setRejectReason(""); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
               >
                 إلغاء
               </button>
@@ -369,11 +369,11 @@ export default function AdminListingsPage() {
       {/* Delete Modal */}
       {deleteModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 p-6 space-y-4">
             <h3 className="text-lg font-bold text-red-600 font-cairo flex items-center gap-2">
               <AlertCircle size={20} /> حذف الإعلان نهائياً
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 font-cairo">
+            <p className="text-sm text-slate-600 font-cairo">
               هل أنت متأكد من حذف هذا الإعلان <b>{deleteModal.title}</b> نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.
             </p>
             <div className="flex gap-3 pt-2">
@@ -386,7 +386,7 @@ export default function AdminListingsPage() {
               </button>
               <button
                 onClick={() => setDeleteModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
               >
                 إلغاء
               </button>

@@ -208,7 +208,7 @@ async function main() {
         price: prices[i],
         securityDeposit: securityDeposits[i],
         includesBills: faker.datatype.boolean(),
-        electricityType: faker.helpers.arrayElement([ElectricityType.modern_meter, ElectricityType.prepaid_card, ElectricityType.old_meter]),
+        electricityType: faker.helpers.arrayElement([ElectricityType.prepaid_card, ElectricityType.old_meter]),
         genderTarget: genderTargets[i],
         governorate: loc.governorate,
         district: loc.district,

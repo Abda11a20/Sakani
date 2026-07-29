@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Cairo, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
-import { ThemeProvider } from "next-themes";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import Providers from "@/components/providers";
@@ -29,11 +28,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app"
   ),
-  alternates: {
-    canonical: "./",
-  },
   title: {
     default: "سكني — ابحث بثقة، اسكن بأمان",
     template: "%s | سكني",
@@ -138,22 +134,15 @@ export default async function LocaleLayout({
         }
         suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          storageKey="sakani-theme"
-        >
-          <NextIntlClientProvider messages={messages} locale={locale}>
-            <Providers>
-              <Toaster>
-                <ConditionalLayout>
-                  {children}
-                </ConditionalLayout>
-              </Toaster>
-            </Providers>
-          </NextIntlClientProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          <Providers>
+            <Toaster>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </Toaster>
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

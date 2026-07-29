@@ -11,7 +11,7 @@ import {
   useForgotPassword,
   useVerifyOtp,
   useResetPassword,
-} from "@/hooks/useAuth";
+} from "@/features/auth";
 import { useTranslations } from "next-intl";
 
 export function ForgotPasswordForm() {
@@ -261,13 +261,13 @@ export function ForgotPasswordForm() {
           <React.Fragment key={s}>
             <div
               className={`w-3 h-3 rounded-full transition-colors ${
-                step >= s ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+                step >= s ? "bg-primary" : "bg-slate-200"
               }`}
             />
             {i < 2 && (
               <div
                 className={`h-0.5 w-12 transition-colors ${
-                  step > s ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+                  step > s ? "bg-primary" : "bg-slate-200"
                 }`}
               />
             )}
@@ -292,10 +292,10 @@ export function ForgotPasswordForm() {
               className={`p-5 border-2 rounded-2xl flex flex-col items-center justify-center transition-all ${
                 channel === "EMAIL"
                   ? "border-primary bg-primary/5 text-primary"
-                  : "border-slate-200 dark:border-slate-800 hover:border-primary/50 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900"
+                  : "border-slate-200 hover:border-primary/50 text-slate-600 bg-white"
               }`}
             >
-              <div className={`p-3 rounded-full mb-3 ${channel === "EMAIL" ? "bg-primary/10 text-primary" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
+              <div className={`p-3 rounded-full mb-3 ${channel === "EMAIL" ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"}`}>
                 <Mail className="w-6 h-6" />
               </div>
               <h4 className="font-bold text-sm font-cairo">البريد الإلكتروني</h4>
@@ -310,10 +310,10 @@ export function ForgotPasswordForm() {
               className={`p-5 border-2 rounded-2xl flex flex-col items-center justify-center transition-all ${
                 channel === "TELEGRAM"
                   ? "border-primary bg-primary/5 text-primary"
-                  : "border-slate-200 dark:border-slate-800 hover:border-primary/50 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900"
+                  : "border-slate-200 hover:border-primary/50 text-slate-600 bg-white"
               }`}
             >
-              <div className={`p-3 rounded-full mb-3 ${channel === "TELEGRAM" ? "bg-primary/10 text-primary" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
+              <div className={`p-3 rounded-full mb-3 ${channel === "TELEGRAM" ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"}`}>
                 <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.75-.8 3.51-1.13 4.96-.14.61-.36.81-.58.83-.48.04-.84-.32-1.31-.63-.73-.48-1.14-.78-1.85-1.25-.82-.54-.29-.84.18-1.33.12-.13 2.27-2.08 2.31-2.26.01-.02.01-.13-.05-.18-.07-.05-.17-.03-.24-.02-.1.02-1.74 1.1-4.91 3.24-.46.32-.88.48-1.26.47-.42-.01-1.24-.24-1.84-.43-.74-.24-1.33-.37-1.28-.79.03-.22.33-.45.9-.69 3.51-1.53 5.86-2.54 7.03-3.03 3.35-1.38 4.05-1.62 4.5-.12.01.07.03.25-.03.54z"/>
                 </svg>
@@ -399,7 +399,7 @@ export function ForgotPasswordForm() {
               {t("resendCode")}
             </button>
             {timeLeft > 0 && (
-              <span className="text-muted-foreground font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs" dir="ltr">
+              <span className="text-muted-foreground font-mono bg-slate-100 px-2 py-0.5 rounded text-xs" dir="ltr">
                 {`${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, "0")}`}
               </span>
             )}

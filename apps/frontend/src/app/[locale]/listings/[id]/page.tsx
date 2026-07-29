@@ -4,13 +4,16 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ListingDetailClient } from "./listing-detail-client";
 import type { Listing, Review } from "@/types";
-import { getImageUrl } from "@/lib/utils";
+import { getImageUrl, getCloudinaryUrl } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPageMetadata } from "@/lib/seo";
 
 interface ListingPageProps {
   params: Promise<{ locale: string; id: string }>;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+const APP_BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app";
 
 async function getListing(id: string): Promise<Listing | null> {
   try {
@@ -51,21 +54,25 @@ async function getSuggested(listingId: string): Promise<Listing[]> {
 }
 
 export async function generateMetadata({ params }: ListingPageProps): Promise<Metadata> {
-  const { id } = await params;
+  const { id, locale } = await params;
   const listing = await getListing(id);
-  if (!listing) return { title: "إعلان غير موجود" };
+  if (!listing) return { title: locale === "ar" ? "إعلان غير موجود" : "Listing Not Found" };
 
-  return {
+  const description = listing.description
+    ? listing.description.slice(0, 160)
+    : `إعلان ${listing.type === "apartment" ? "شقة" : "سرير"} في ${listing.district}، ${listing.governorate || listing.city}`;
+
+  const ogImage = listing.images?.[0]
+    ? getCloudinaryUrl(listing.images[0], { width: 1200, height: 630, crop: "fill" })
+    : `${APP_BASE}/og-image.png`;
+
+  return buildPageMetadata({
+    locale,
+    path: `/listings/${id}`,
     title: `${listing.title} — سكني`,
-    description: listing.description
-      ? listing.description.slice(0, 160)
-      : `إعلان ${listing.type === "apartment" ? "شقة" : listing.type === "bed" ? "سرير" : "غير متاح"} في ${listing.district}، ${listing.city}`,
-    openGraph: {
-      title: listing.title,
-      description: listing.description?.slice(0, 160),
-      images: listing.images?.[0] ? [getImageUrl(listing.images[0])] : [],
-    },
-  };
+    description,
+    ogImage,
+  });
 }
 
 export default async function ListingPage({ params }: ListingPageProps) {
@@ -79,6 +86,50 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   if (!listing) notFound();
 
+  // ── JSON-LD Structured Data ────────────────────────────────────────────────
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": listing.title,
+    "description": listing.description || `${listing.type === "apartment" ? "شقة" : "سرير"} للإيجار في ${listing.district || ""}`,
+    "image": (listing.images || []).map((img) =>
+      getCloudinaryUrl(img, { quality: "auto", format: "auto" })
+    ),
+    "offers": {
+      "@type": "Offer",
+      "price": listing.price,
+      "priceCurrency": "EGP",
+      "availability":
+        listing.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "url": `${APP_BASE}/${locale}/listings/${listing.id}`,
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": locale === "ar" ? "الرئيسية" : "Home",
+        "item": `${APP_BASE}/${locale}`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": locale === "ar" ? "البحث" : "Search",
+        "item": `${APP_BASE}/${locale}/search`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": listing.title,
+        "item": `${APP_BASE}/${locale}/listings/${listing.id}`,
+      },
+    ],
+  };
+
   return (
     <Suspense
       fallback={
@@ -87,6 +138,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         </div>
       }
     >
+      <JsonLd data={[productSchema, breadcrumbSchema]} />
       <ListingDetailClient
         listing={listing}
         reviews={reviews}

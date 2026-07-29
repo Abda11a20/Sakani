@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const cardVariants = cva(
-  "rounded-xl bg-white text-gray-950 dark:bg-dark-bg dark:text-gray-50 overflow-hidden",
+  "rounded-xl bg-surface text-text overflow-hidden transition-all duration-200",
   {
     variants: {
       variant: {
-        default: "shadow-sm border border-gray-200 dark:border-gray-800",
-        elevated: "shadow-md hover:shadow-lg transition-shadow border border-transparent dark:border-gray-800",
-        bordered: "border-2 border-gray-200 dark:border-gray-800",
+        default: "border border-border shadow-xs hover:shadow-sm",
+        elevated: "shadow-md hover:shadow-lg border border-border/50",
+        bordered: "border-2 border-border",
       },
     },
     defaultVariants: {
@@ -23,12 +23,12 @@ export interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {}
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, ...props }, ref) => (
     <div ref={ref} className={cn(cardVariants({ variant, className }))} {...props} />
   )
 );
-Card.displayName = "Card";
+CardRoot.displayName = "Card";
 
 const cardSectionVariants = cva("", {
   variants: {
@@ -52,7 +52,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, CardSectionProps>(
   ({ className, padding, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex flex-col space-y-1.5", cardSectionVariants({ padding, className }))}
+      className={cn("flex flex-col space-y-1.5 border-b border-divider", cardSectionVariants({ padding, className }))}
       {...props}
     />
   )
@@ -70,9 +70,16 @@ export const CardFooter = React.forwardRef<HTMLDivElement, CardSectionProps>(
   ({ className, padding, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-center", cardSectionVariants({ padding, className }))}
+      className={cn("flex items-center border-t border-divider", cardSectionVariants({ padding, className }))}
       {...props}
     />
   )
 );
 CardFooter.displayName = "CardFooter";
+
+// Compound Component Pattern Attachment
+export const Card = Object.assign(CardRoot, {
+  Header: CardHeader,
+  Body: CardBody,
+  Footer: CardFooter,
+});

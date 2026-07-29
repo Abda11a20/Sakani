@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import {
   useMyAlerts,
   useCreateAlert,
@@ -185,7 +185,7 @@ export default function TenantAlerts() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold font-cairo">تنبيهاتي الذكية</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+            <p className="text-slate-500 mt-1 font-cairo text-sm">
               نبلغك ونرسل لك إشعاراً فور إدراج عقار جديد يطابق مواصفات البحث الخاصة بك.
             </p>
           </div>
@@ -220,15 +220,15 @@ export default function TenantAlerts() {
                   key={alert.id}
                   className={`border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between transition-all duration-300 ${
                     active
-                      ? "border-blue-100 dark:border-blue-900/40 bg-white dark:bg-slate-900"
-                      : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 opacity-75"
+                      ? "border-blue-100 bg-white"
+                      : "border-slate-200 bg-slate-50/50 opacity-75"
                   }`}
                 >
                   <CardBody className="p-6 space-y-4">
                     {/* Top Row: Icon + Switch */}
                     <div className="flex items-center justify-between">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        active ? "bg-blue-500/10 text-blue-500" : "bg-slate-200 dark:bg-slate-800 text-slate-400"
+                        active ? "bg-blue-500/10 text-blue-500" : "bg-slate-200 text-slate-400"
                       }`}>
                         {active ? <Bell size={18} /> : <BellOff size={18} />}
                       </div>
@@ -241,16 +241,16 @@ export default function TenantAlerts() {
                           onChange={() => handleToggle(alert.id)}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/30 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                        <div className="w-10 h-5 bg-slate-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/30 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
                       </label>
                     </div>
 
                     {/* Summary */}
                     <div>
-                      <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm font-cairo line-clamp-1 leading-snug">
+                      <h3 className="font-bold text-slate-800 text-sm font-cairo line-clamp-1 leading-snug">
                         {generateAlertSummary(alert)}
                       </h3>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-cairo">
+                      <p className="text-xs text-slate-400 mt-1 font-cairo">
                         {active ? "تنبيه نشط - يتم فحص المطابقات" : "موقوف مؤقتاً"}
                       </p>
                     </div>
@@ -269,12 +269,12 @@ export default function TenantAlerts() {
                         </Badge>
                       )}
                       {alert.unitType && (
-                        <Badge variant="default" className="text-[10px] font-cairo bg-blue-500/5 text-blue-600 dark:text-blue-400">
+                        <Badge variant="default" className="text-[10px] font-cairo bg-blue-500/5 text-blue-600">
                           <span>{UNIT_TYPE_CONFIG[alert.unitType as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? alert.unitType}</span>
                         </Badge>
                       )}
                       {alert.maxPrice && (
-                        <Badge variant="default" className="text-[10px] font-cairo flex items-center gap-1 text-green-600 dark:text-green-400">
+                        <Badge variant="default" className="text-[10px] font-cairo flex items-center gap-1 text-green-600">
                           <CircleDollarSign size={10} />
                           <span>حد أقصى: {alert.maxPrice} ج</span>
                         </Badge>
@@ -286,7 +286,7 @@ export default function TenantAlerts() {
                         </Badge>
                       )}
                       {alert.specialty && (
-                        <Badge variant="default" className="text-[10px] font-cairo flex items-center gap-1 bg-amber-500/5 text-amber-600">
+                        <Badge variant="default" className="text-[10px] font-cairo flex items-center gap-1 bg-[#0EA5E9]/5 text-amber-600">
                           <GraduationCap size={10} />
                           <span>{alert.specialty}</span>
                         </Badge>
@@ -294,7 +294,7 @@ export default function TenantAlerts() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                       {active && (
                         <Link
                           href={`/${locale}/search?alertId=${alert.id}`}
@@ -317,7 +317,7 @@ export default function TenantAlerts() {
                         size="sm"
                         variant="outline"
                         onClick={() => setDeleteAlertId(alert.id)}
-                        className="rounded-lg text-xs font-cairo p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20 border-red-500/20 flex items-center gap-1.5"
+                        className="rounded-lg text-xs font-cairo p-2 text-red-600 hover:bg-red-50 border-red-500/20 flex items-center gap-1.5"
                       >
                         <Trash2 size={12} />
                         <span>حذف</span>
@@ -339,11 +339,11 @@ export default function TenantAlerts() {
           >
             <form onSubmit={handleFormSubmit} className="p-6 space-y-4 font-cairo">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">المحافظة</label>
+                <label className="text-xs font-bold text-slate-700">المحافظة</label>
                 <select
                   value={gov}
                   onChange={(e) => setGov(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {EGYPTIAN_GOVERNORATES.map((g) => (
                     <option key={g} value={g}>
@@ -361,7 +361,7 @@ export default function TenantAlerts() {
               />
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">نوع الوحدة</label>
+                <label className="text-xs font-bold text-slate-700">نوع الوحدة</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(
                     [
@@ -376,7 +376,7 @@ export default function TenantAlerts() {
                       className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
                         unitType === opt.key
                           ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
                     >
                       {opt.label}
@@ -395,11 +395,11 @@ export default function TenantAlerts() {
               />
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">الفئة المستهدفة</label>
+                <label className="text-xs font-bold text-slate-700">الفئة المستهدفة</label>
                 <select
                   value={genderTarget}
                   onChange={(e) => setGenderTarget(e.target.value as any)}
-                  className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="mixed">الجميع</option>
                   <option value="male">شباب فقط</option>
@@ -416,12 +416,12 @@ export default function TenantAlerts() {
                 />
               )}
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex gap-3 pt-4 border-t border-slate-100">
                 <Button
                   type="button"
                   onClick={() => setIsFormModalOpen(false)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800"
+                  className="flex-1 rounded-xl py-3 border-slate-200"
                 >
                   إلغاء
                 </Button>
@@ -445,20 +445,20 @@ export default function TenantAlerts() {
             title="تأكيد حذف التنبيه"
           >
             <div className="p-6 text-center space-y-4 font-cairo">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
                 <AlertTriangle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">
                 هل أنت متأكد من حذف التنبيه الذكي؟
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 لن يتم إشعارك فور إدراج مطابقات بحث جديدة بعد الحذف.
               </p>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setDeleteAlertId(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800 font-semibold"
+                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold"
                 >
                   إلغاء
                 </Button>

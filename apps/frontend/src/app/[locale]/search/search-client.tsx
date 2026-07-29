@@ -1,534 +1,188 @@
 // apps/frontend/src/app/[locale]/search/search-client.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useMyAlerts } from "@/hooks/useAlerts";
-import { useMatchingAlert } from "@/hooks/useAlertMatching";
-import { useAuthStore } from "@/store/auth.store";
-import {
-  Search,
-  Filter,
-  X,
-  Building2,
-  BedDouble,
-  SlidersHorizontal,
-  ChevronLeft,
-  ChevronRight,
-  Wifi,
-  Wind,
-  Layers,
-  WashingMachine,
-  ShieldCheck,
-} from "lucide-react";
-import { api } from "@/lib/api";
-import { EGYPTIAN_GOVERNORATES, UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG } from "@/lib/constants";
-import { ListingCard, ListingCardSkeleton } from "@/components/listings/ListingCard";
-import type { Listing, SearchFilters, UnitType, GenderTarget } from "@/types";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
+import { searchRepository, SearchHeader } from "@/features/search";
+import { SearchFilterSidebar } from "@/features/search";
+import { SearchFilterDrawer } from "@/features/search";
+import { ActiveFilterChips } from "@/features/search";
+import { SearchResultsGrid } from "@/features/search";
+import { SearchPagination } from "@/features/search";
+import type { SearchFilters } from "@/types";
 
-
-const AMENITIES = [
-  { key: "wifi", label: "واي فاي", icon: Wifi },
-  { key: "ac", label: "تكييف", icon: Wind },
-  { key: "elevator", label: "أسانسير", icon: Layers },
-  { key: "washer", label: "غسالة", icon: WashingMachine },
-];
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "الأحدث" },
-  { value: "cheapest", label: "الأرخص" },
-  { value: "expensive", label: "الأغلى" },
-  { value: "popular", label: "الأكثر مشاهدة" },
-];
-
-// ── Types ─────────────────────────────────────────────────────
-interface SearchResult {
-  items: Listing[];
-  meta: { total: number; page: number; limit: number; lastPage: number };
+// Custom inline debounce hook
+function useDebounceValue<T>(value: T, delay = 400): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-function buildQueryString(filters: SearchFilters): string {
-  const params = new URLSearchParams();
-  if (filters.query) params.set("q", filters.query);
-  if (filters.unitType) params.set("unitType", filters.unitType);
-  if (filters.governorate) params.set("governorate", filters.governorate);
-  if (filters.district) params.set("district", filters.district);
-  if (filters.minPrice) params.set("minPrice", String(filters.minPrice));
-  if (filters.maxPrice) params.set("maxPrice", String(filters.maxPrice));
-  if (filters.genderTarget) params.set("genderTarget", filters.genderTarget);
-  if (filters.verifiedOnly) params.set("verifiedOnly", "true");
-  if (filters.sortBy) params.set("sortBy", filters.sortBy);
-  if (filters.amenities?.length) params.set("amenities", filters.amenities.join(","));
-  if (filters.page && filters.page > 1) params.set("page", String(filters.page));
-  return params.toString();
-}
-
-function parseInitialFilters(raw: Record<string, string>): SearchFilters {
-  return {
-    query: raw.q || raw.query || "",
-    unitType: (raw.unitType as UnitType) || undefined,
-    governorate: raw.governorate || "",
-    district: raw.district || "",
-    minPrice: raw.minPrice ? Number(raw.minPrice) : undefined,
-    maxPrice: raw.maxPrice ? Number(raw.maxPrice) : undefined,
-    genderTarget: (raw.genderTarget as GenderTarget) || undefined,
-    verifiedOnly: raw.verifiedOnly === "true",
-    sortBy: (raw.sortBy as SearchFilters["sortBy"]) || "newest",
-    amenities: raw.amenities ? raw.amenities.split(",") : [],
-    page: raw.page ? Number(raw.page) : 1,
-    limit: 12,
+export interface SearchResult {
+  items: any[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    lastPage: number;
   };
 }
 
-// ── Filter Sidebar ────────────────────────────────────────────
-function FilterSidebar({
-  filters,
-  onChange,
-  onReset,
-  onApply,
-  className = "",
-}: {
-  filters: SearchFilters;
-  onChange: (partial: Partial<SearchFilters>) => void;
-  onReset: () => void;
-  onApply: () => void;
-  className?: string;
-}) {
-  const toggleAmenity = (key: string) => {
-    const current = filters.amenities ?? [];
-    const next = current.includes(key)
-      ? current.filter((a) => a !== key)
-      : [...current, key];
-    onChange({ amenities: next });
-  };
-
-  return (
-    <aside className={`flex flex-col gap-6 ${className}`}>
-      {/* Unit Type */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">نوع الوحدة</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { value: "apartment", label: "شقة", icon: Building2 },
-            { value: "bed", label: "سرير", icon: BedDouble },
-          ].map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() =>
-                onChange({
-                  unitType: filters.unitType === value ? undefined : (value as UnitType),
-                  page: 1,
-                })
-              }
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-semibold transition-all
-                ${filters.unitType === value
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-card text-foreground hover:border-primary/50"
-                }`}
-            >
-              <Icon size={18} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">السعر (جنيه/شهر)</h3>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="من"
-            value={filters.minPrice ?? ""}
-            onChange={(e) => onChange({ minPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
-            className="input-field flex-1 text-sm py-2"
-            min={0}
-          />
-          <span className="text-muted-foreground text-sm">—</span>
-          <input
-            type="number"
-            placeholder="إلى"
-            value={filters.maxPrice ?? ""}
-            onChange={(e) => onChange({ maxPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
-            className="input-field flex-1 text-sm py-2"
-            min={0}
-          />
-        </div>
-      </div>
-
-      {/* Governorate */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">المحافظة</h3>
-        <select
-          value={filters.governorate ?? ""}
-          onChange={(e) => onChange({ governorate: e.target.value, district: "", page: 1 })}
-          className="input-field w-full text-sm py-2"
-        >
-          <option value="">كل المحافظات</option>
-          {EGYPTIAN_GOVERNORATES.map((gov) => (
-            <option key={gov} value={gov}>{gov}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* District */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">الحي / المنطقة</h3>
-        <input
-          type="text"
-          placeholder="مثال: المنصورة، الزقازيق..."
-          value={filters.district ?? ""}
-          onChange={(e) => onChange({ district: e.target.value, page: 1 })}
-          className="input-field w-full text-sm py-2"
-        />
-      </div>
-
-      {/* Gender Target */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">الفئة المستهدفة</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { value: undefined, label: "الجميع" },
-            { value: "male", label: GENDER_TARGET_CONFIG.male.labelAr },
-            { value: "female", label: GENDER_TARGET_CONFIG.female.labelAr },
-            { value: "family", label: GENDER_TARGET_CONFIG.family.labelAr },
-          ].map(({ value, label }) => (
-            <button
-              key={label}
-              onClick={() => onChange({ genderTarget: value as GenderTarget | undefined, page: 1 })}
-              className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all
-                ${filters.genderTarget === value
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-card text-foreground hover:border-primary/50"
-                }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Amenities */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">المميزات</h3>
-        <div className="space-y-2">
-          {AMENITIES.map(({ key, label, icon: Icon }) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={filters.amenities?.includes(key) ?? false}
-                onChange={() => toggleAmenity(key)}
-                className="w-4 h-4 rounded accent-primary"
-              />
-              <Icon size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="text-sm text-foreground">{label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Verified Only */}
-      <div>
-        <label className="flex items-center justify-between cursor-pointer">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-green-500" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">موثق فقط</p>
-              <p className="text-xs text-muted-foreground">عرض إعلانات المؤجرين الموثقين فقط</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={filters.verifiedOnly}
-            onClick={() => onChange({ verifiedOnly: !filters.verifiedOnly, page: 1 })}
-            className={`relative w-11 h-6 rounded-full transition-colors ${
-              filters.verifiedOnly ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 start-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                filters.verifiedOnly ? "translate-x-5 rtl:-translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </label>
-      </div>
-
-      {/* Sort */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3">ترتيب النتائج</h3>
-        <select
-          value={filters.sortBy ?? "newest"}
-          onChange={(e) => onChange({ sortBy: e.target.value as SearchFilters["sortBy"], page: 1 })}
-          className="input-field w-full text-sm py-2"
-        >
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 pt-2">
-        <button
-          onClick={onApply}
-          className="flex-1 btn-primary py-2.5 text-sm font-bold rounded-xl"
-        >
-          تطبيق الفلاتر
-        </button>
-        <button
-          onClick={onReset}
-          className="px-4 py-2.5 rounded-xl border border-border text-sm text-foreground hover:bg-muted/10 transition-colors"
-        >
-          مسح الكل
-        </button>
-      </div>
-    </aside>
-  );
+function buildSearchKey(filters: SearchFilters) {
+  return [
+    "search",
+    "listings",
+    filters.query ?? "",
+    filters.governorate ?? "",
+    filters.district ?? "",
+    filters.unitType ?? "",
+    filters.isFurnished ?? "",
+    filters.genderTarget ?? "",
+    filters.minPrice ?? "",
+    filters.maxPrice ?? "",
+    (filters.amenities ?? []).join(","),
+    filters.sortBy ?? "newest",
+    filters.page ?? 1,
+    filters.limit ?? 12,
+  ];
 }
 
-// ── Active Filter Chips ───────────────────────────────────────
-function ActiveFilterChips({
-  filters,
-  onChange,
-}: {
-  filters: SearchFilters;
-  onChange: (partial: Partial<SearchFilters>) => void;
-}) {
-  const chips: { label: string; onRemove: () => void }[] = [];
-
-  if (filters.unitType) {
-    const label = UNIT_TYPE_CONFIG[filters.unitType as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? filters.unitType;
-    chips.push({ label, onRemove: () => onChange({ unitType: undefined, page: 1 }) });
+function normalizeSearchResult(raw: any): SearchResult {
+  if (!raw) return { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
+  if (Array.isArray(raw.items)) {
+    return {
+      items: raw.items,
+      meta: {
+        total: raw.meta?.total ?? raw.total ?? raw.items.length,
+        page: raw.meta?.page ?? raw.page ?? 1,
+        limit: raw.meta?.limit ?? raw.limit ?? 12,
+        lastPage: raw.meta?.lastPage ?? raw.lastPage ?? 1,
+      },
+    };
   }
-  if (filters.governorate) chips.push({ label: filters.governorate, onRemove: () => onChange({ governorate: "", page: 1 }) });
-  if (filters.district) chips.push({ label: filters.district, onRemove: () => onChange({ district: "", page: 1 }) });
-  if (filters.minPrice) chips.push({ label: `من ${filters.minPrice} جنيه`, onRemove: () => onChange({ minPrice: undefined, page: 1 }) });
-  if (filters.maxPrice) chips.push({ label: `حتى ${filters.maxPrice} جنيه`, onRemove: () => onChange({ maxPrice: undefined, page: 1 }) });
-  if (filters.verifiedOnly) chips.push({ label: "موثق فقط", onRemove: () => onChange({ verifiedOnly: false, page: 1 }) });
-  if (filters.genderTarget) {
-    const label = GENDER_TARGET_CONFIG[filters.genderTarget as keyof typeof GENDER_TARGET_CONFIG]?.labelAr ?? filters.genderTarget;
-    chips.push({ label, onRemove: () => onChange({ genderTarget: undefined, page: 1 }) });
+  if (Array.isArray(raw.data)) {
+    return {
+      items: raw.data,
+      meta: {
+        total: raw.meta?.total ?? raw.total ?? raw.data.length,
+        page: raw.meta?.page ?? raw.page ?? 1,
+        limit: raw.meta?.limit ?? raw.limit ?? 12,
+        lastPage: raw.meta?.lastPage ?? raw.lastPage ?? 1,
+      },
+    };
   }
-  filters.amenities?.forEach((a) => {
-    const found = AMENITIES.find((am) => am.key === a);
-    if (found) {
-      chips.push({
-        label: found.label,
-        onRemove: () => onChange({ amenities: filters.amenities?.filter((x) => x !== a), page: 1 }),
-      });
-    }
-  });
-
-  if (!chips.length) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {chips.map((chip, i) => (
-        <span
-          key={i}
-          className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20"
-        >
-          {chip.label}
-          <button onClick={chip.onRemove} className="hover:text-red-500 transition-colors">
-            <X size={12} />
-          </button>
-        </span>
-      ))}
-    </div>
-  );
+  if (Array.isArray(raw)) {
+    return { items: raw, meta: { total: raw.length, page: 1, limit: raw.length || 12, lastPage: 1 } };
+  }
+  return { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
 }
 
-// ── Pagination ────────────────────────────────────────────────
-function Pagination({
-  page,
-  lastPage,
-  onPageChange,
-}: {
-  page: number;
-  lastPage: number;
-  onPageChange: (p: number) => void;
-}) {
-  if (lastPage <= 1) return null;
-
-  return (
-    <div className="flex items-center justify-center gap-2 mt-10">
-      <button
-        disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
-        className="p-2 rounded-xl border border-border disabled:opacity-40 hover:bg-muted/10 transition-colors"
-      >
-        <ChevronRight size={18} />
-      </button>
-
-      {Array.from({ length: Math.min(lastPage, 7) }, (_, i) => {
-        let pageNum = i + 1;
-        if (lastPage > 7) {
-          if (page <= 4) pageNum = i + 1;
-          else if (page >= lastPage - 3) pageNum = lastPage - 6 + i;
-          else pageNum = page - 3 + i;
-        }
-        return (
-          <button
-            key={pageNum}
-            onClick={() => onPageChange(pageNum)}
-            className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
-              page === pageNum
-                ? "bg-primary text-white"
-                : "border border-border hover:bg-muted/10 text-foreground"
-            }`}
-          >
-            {pageNum}
-          </button>
-        );
-      })}
-
-      <button
-        disabled={page >= lastPage}
-        onClick={() => onPageChange(page + 1)}
-        className="p-2 rounded-xl border border-border disabled:opacity-40 hover:bg-muted/10 transition-colors"
-      >
-        <ChevronLeft size={18} />
-      </button>
-    </div>
-  );
+interface SearchPageClientProps {
+  locale?: string;
+  initialFilters?: Record<string, string>;
+  isAuthenticated?: boolean;
 }
 
-// Wrapper card — استدعاء useMatchingAlert فقط للمستخدمين المسجّلين
-// لمنع 401 على صفحة البحث للزوار العامين
-function SearchListingCard({ listing, isAuthenticated }: { listing: Listing; isAuthenticated: boolean }) {
-  const matchingAlert = useMatchingAlert(listing);
-  return <ListingCard listing={listing} matchingAlert={isAuthenticated ? matchingAlert : undefined} />;
-}
-
-// ── Main Search Client Component ──────────────────────────────
 export function SearchPageClient({
-  locale,
-  initialFilters,
-}: {
-  locale: string;
-  initialFilters: Record<string, string>;
-}) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
+  initialFilters = {},
+  isAuthenticated = false,
+}: SearchPageClientProps) {
+  const parseFilters = (): SearchFilters => {
+    const minP = initialFilters.minPrice;
+    const maxP = initialFilters.maxPrice;
+    const furn = initialFilters.isFurnished;
+    const page = initialFilters.page;
+    const limit = initialFilters.limit;
 
-  // التحقق من المصادقة — صفحة البحث عامة للزوار
-  const token = useAuthStore((state) => state.token);
-  const isAuthenticated = !!token;
+    return {
+      query: initialFilters.query || initialFilters.q || undefined,
+      governorate: initialFilters.governorate || undefined,
+      district: initialFilters.district || undefined,
+      unitType: (initialFilters.unitType as any) || undefined,
+      genderTarget: (initialFilters.genderTarget as any) || undefined,
+      minPrice: minP ? Number(minP) : undefined,
+      maxPrice: maxP ? Number(maxP) : undefined,
+      isFurnished: furn !== undefined ? furn === "true" : undefined,
+      verifiedOnly: initialFilters.verifiedOnly === "true",
+      amenities: initialFilters.amenities?.split(",").filter(Boolean) || undefined,
+      sortBy: (initialFilters.sortBy as any) || "newest",
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 12,
+    };
+  };
 
-  // useMyAlerts مشروط بـ enabled: !!token داخل الـ hook نفسه
-  const { data: alerts } = useMyAlerts();
-
-  const [filters, setFilters] = useState<SearchFilters>(() =>
-    parseInitialFilters(initialFilters)
-  );
-  const [pendingFilters, setPendingFilters] = useState<SearchFilters>(() =>
-    parseInitialFilters(initialFilters)
-  );
-  const [result, setResult] = useState<SearchResult>({ items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } });
-  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<SearchFilters>(parseFilters);
+  const [pendingFilters, setPendingFilters] = useState<SearchFilters>(parseFilters);
+  const [debouncedFilters, setDebouncedFilters] = useState<SearchFilters>(parseFilters);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Sync filters from alertId if present
+  const debouncedQuery = useDebounceValue(filters.query, 400);
+
   useEffect(() => {
-    const alertId = initialFilters.alertId;
-    if (alertId && alerts && alerts.length > 0) {
-      const activeAlert = alerts.find((a) => a.id === alertId);
-      if (activeAlert) {
-        const nextFilters: SearchFilters = {
-          query: "",
-          unitType: activeAlert.unitType || undefined,
-          governorate: activeAlert.governorate || "",
-          district: activeAlert.district || "",
-          maxPrice: activeAlert.maxPrice || undefined,
-          genderTarget: activeAlert.genderTarget || undefined,
-          page: 1,
+    setDebouncedFilters((prev) => ({ ...prev, query: debouncedQuery }));
+  }, [debouncedQuery]);
+
+  const { data: queryResult, isFetching } = useQuery<SearchResult>({
+    queryKey: buildSearchKey(debouncedFilters),
+    queryFn: async () => {
+      const data = await searchRepository.searchListings(
+        {
+          governorate: debouncedFilters.governorate,
+          district: debouncedFilters.district,
+          unitType: debouncedFilters.unitType,
+          isFurnished: debouncedFilters.isFurnished,
+          genderTarget: debouncedFilters.genderTarget,
+          minPrice: debouncedFilters.minPrice,
+          maxPrice: debouncedFilters.maxPrice,
+          sort: debouncedFilters.sortBy,
+          query: debouncedFilters.query,
+        },
+        debouncedFilters.page || 1,
+        12
+      );
+      return {
+        items: data.listings.map((l) => l.toJSON()),
+        meta: {
+          total: data.total,
+          page: debouncedFilters.page || 1,
           limit: 12,
-        };
-        setFilters(nextFilters);
-        setPendingFilters(nextFilters);
-      }
-    }
-  }, [initialFilters.alertId, alerts]);
-
-  // Sync URL
-  const syncUrl = useCallback(
-    (f: SearchFilters) => {
-      const qs = buildQueryString(f);
-      startTransition(() => {
-        router.push(`/${locale}/search${qs ? `?${qs}` : ""}`, { scroll: false });
-      });
+          lastPage: Math.ceil(data.total / 12) || 1,
+        },
+      };
     },
-    [locale, router]
-  );
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
 
-  // Fetch results
-  const fetchResults = useCallback(async (f: SearchFilters) => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (f.query) params.q = f.query;
-      if (f.unitType) params.unitType = f.unitType;
-      if (f.governorate) params.governorate = f.governorate;
-      if (f.district) params.district = f.district;
-      if (f.minPrice) params.minPrice = String(f.minPrice);
-      if (f.maxPrice) params.maxPrice = String(f.maxPrice);
-      if (f.genderTarget) params.genderTarget = f.genderTarget;
-      if (f.verifiedOnly) params.verifiedOnly = "true";
-      if (f.sortBy) params.sortBy = f.sortBy;
-      if (f.amenities?.length) params.amenities = f.amenities.join(",");
-      params.page = String(f.page ?? 1);
-      params.limit = String(f.limit ?? 12);
+  const result = queryResult ?? { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
 
-      const response = await api.get("/search", { params });
-      const data = response.data;
-
-      // Handle various response shapes
-      if (data?.items && data?.meta) {
-        setResult(data);
-      } else if (data?.data && Array.isArray(data.data)) {
-        setResult({
-          items: data.data,
-          meta: {
-            total: data.total ?? data.data.length,
-            page: data.page ?? 1,
-            limit: data.limit ?? 12,
-            lastPage: data.totalPages ?? 1
-          }
-        });
-      } else if (Array.isArray(data)) {
-        setResult({ items: data, meta: { total: data.length, page: 1, limit: 12, lastPage: 1 } });
-      } else {
-        setResult({ items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } });
-      }
-    } catch {
-      setResult({ items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchResults(filters);
-      syncUrl(filters);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [filters, fetchResults, syncUrl]);
+  // Calculate count of active extra filters (excluding basic query & defaults)
+  const activeExtraFiltersCount = [
+    Boolean(filters.governorate),
+    Boolean(filters.district),
+    Boolean(filters.unitType),
+    Boolean(filters.genderTarget),
+    Boolean(filters.minPrice),
+    Boolean(filters.maxPrice),
+    filters.isFurnished !== undefined,
+    Boolean(filters.verifiedOnly),
+    (filters.amenities ?? []).length > 0,
+  ].filter(Boolean).length;
 
   const handleFilterChange = (partial: Partial<SearchFilters>) => {
     const next = { ...filters, ...partial };
     setFilters(next);
     setPendingFilters(next);
+    setDebouncedFilters(next);
   };
 
   const handleApply = () => {
     setFilters(pendingFilters);
+    setDebouncedFilters(pendingFilters);
     setSidebarOpen(false);
   };
 
@@ -536,157 +190,68 @@ export function SearchPageClient({
     const empty: SearchFilters = { sortBy: "newest", page: 1, limit: 12 };
     setFilters(empty);
     setPendingFilters(empty);
+    setDebouncedFilters(empty);
     setSidebarOpen(false);
   };
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Top Search Bar */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex-1 relative">
-            <Search size={18} className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="ابحث بالمنطقة، المدينة، أو وصف..."
-              value={filters.query ?? ""}
-              onChange={(e) => handleFilterChange({ query: e.target.value, page: 1 })}
-              className="input-field w-full ps-10 py-2.5 text-sm"
-            />
-          </div>
-          {/* Mobile filter button */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden flex items-center gap-2 btn-primary px-4 py-2.5 text-sm font-semibold rounded-xl"
-          >
-            <SlidersHorizontal size={16} />
-            <span className="hidden sm:inline">فلاتر</span>
-          </button>
-        </div>
-      </div>
+    <main className="min-h-screen bg-[#FDFBF7]">
+      {/* 1. Top Search Header with Quick Filters Strip */}
+      <SearchHeader
+        query={filters.query ?? ""}
+        onQueryChange={(query) => handleFilterChange({ query, page: 1 })}
+        onOpenMobileFilters={() => setSidebarOpen(true)}
+        isFilterOpen={sidebarOpen}
+        filters={filters}
+        onChange={handleFilterChange}
+        activeExtraFiltersCount={activeExtraFiltersCount}
+      />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         <div className="flex gap-8">
-          {/* Desktop Sidebar */}
-          <div className="hidden lg:block w-72 shrink-0">
-            <div className="sticky top-20 bg-card border border-border rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-bold text-foreground flex items-center gap-2">
-                  <Filter size={16} />
-                  الفلاتر
-                </h2>
-              </div>
-              <FilterSidebar
-                filters={filters}
-                onChange={handleFilterChange}
-                onReset={handleReset}
-                onApply={handleApply}
-              />
-            </div>
-          </div>
+          {/* 2. Desktop Sidebar */}
+          <SearchFilterSidebar
+            filters={filters}
+            onChange={handleFilterChange}
+            onReset={handleReset}
+            onApply={handleApply}
+          />
 
-          {/* Results Area */}
+          {/* 3. Results Area */}
           <div className="flex-1 min-w-0">
-            {/* Result count & sort */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-lg font-bold text-foreground">
-                  {loading ? (
-                    <span className="text-muted-foreground">جارٍ البحث...</span>
-                  ) : (
-                    <>
-                      عُثر على{" "}
-                      <span className="text-primary">{result.meta.total}</span>{" "}
-                      نتيجة
-                    </>
-                  )}
-                </h1>
-              </div>
-              <select
-                value={filters.sortBy ?? "newest"}
-                onChange={(e) => handleFilterChange({ sortBy: e.target.value as SearchFilters["sortBy"], page: 1 })}
-                className="input-field py-2 px-3 text-sm min-w-36"
-              >
-                {SORT_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Active Chips */}
             <ActiveFilterChips filters={filters} onChange={handleFilterChange} />
 
-            {/* Grid */}
-            {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <ListingCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : result.items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-20 h-20 rounded-full bg-muted/10 flex items-center justify-center mb-5">
-                  <Search size={32} className="text-muted-foreground" />
-                </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">لا توجد نتائج</h2>
-                <p className="text-muted-foreground mb-6">
-                  جرب تعديل الفلاتر أو تغيير كلمة البحث
-                </p>
-                <button
-                  onClick={handleReset}
-                  className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-xl"
-                >
-                  مسح الفلاتر
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
-                {result.items.map((listing) => (
-                  <SearchListingCard key={listing.id} listing={listing} isAuthenticated={isAuthenticated} />
-                ))}
-              </div>
-            )}
+            <SearchResultsGrid
+              items={result.items}
+              total={result.meta.total}
+              loading={isFetching}
+              sortBy={filters.sortBy ?? "newest"}
+              isAuthenticated={isAuthenticated}
+              onSortChange={(sortBy) => handleFilterChange({ sortBy, page: 1 })}
+              onResetFilters={handleReset}
+            />
 
-            {/* Pagination */}
-            {!loading && (
-              <Pagination
+            {!isFetching && (
+              <SearchPagination
                 page={result.meta.page}
                 lastPage={result.meta.lastPage}
-                onPageChange={(p) => handleFilterChange({ page: p })}
+                onPageChange={(page) => handleFilterChange({ page })}
               />
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Filter Drawer */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="absolute bottom-0 start-0 end-0 bg-background rounded-t-2xl max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-background flex items-center justify-between px-5 pt-5 pb-3 border-b border-border">
-              <h2 className="font-bold text-foreground">الفلاتر</h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 rounded-xl hover:bg-muted/10"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-5">
-              <FilterSidebar
-                filters={pendingFilters}
-                onChange={(p) => setPendingFilters((prev) => ({ ...prev, ...p }))}
-                onReset={handleReset}
-                onApply={handleApply}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 4. Mobile 75vh Filter Drawer */}
+      <SearchFilterDrawer
+        open={sidebarOpen}
+        draftFilters={pendingFilters}
+        onChange={(p) => setPendingFilters((prev) => ({ ...prev, ...p }))}
+        onReset={handleReset}
+        onApply={handleApply}
+        onClose={() => setSidebarOpen(false)}
+        totalCount={result.meta.total}
+      />
     </main>
   );
 }

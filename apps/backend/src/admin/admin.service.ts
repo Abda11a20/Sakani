@@ -13,6 +13,8 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import {
   ListingStatus,
   NotificationType,
+  NotificationEventKey,
+  NotificationPriority,
   UserRole,
   IdentityStatus,
 } from '@prisma/client';
@@ -100,7 +102,7 @@ export class AdminService {
 
     const where = { AND: andConditions };
 
-    const [listings, total] = await Promise.all([
+    const [rawListings, total] = await Promise.all([
       this.prisma.listing.findMany({
         where,
         skip,
@@ -119,6 +121,29 @@ export class AdminService {
       }),
       this.prisma.listing.count({ where }),
     ]);
+
+    // Extract unique deletedByIds
+    const deletedByIds = Array.from(
+      new Set(
+        rawListings
+          .map((l) => l.deletedById)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
+    const deletedByUsers = deletedByIds.length > 0
+      ? await this.prisma.user.findMany({
+          where: { id: { in: deletedByIds } },
+          select: { id: true, name: true, role: true },
+        })
+      : [];
+
+    const deletedByMap = new Map(deletedByUsers.map((u) => [u.id, u]));
+
+    const listings = rawListings.map((l) => ({
+      ...l,
+      deletedBy: l.deletedById ? deletedByMap.get(l.deletedById) ?? null : null,
+    }));
 
     return {
       listings,
@@ -168,6 +193,20 @@ export class AdminService {
       });
     });
 
+    try {
+      const notif = await this.prisma.notification.create({
+        data: {
+          userId: listing.landlordId,
+          type: NotificationType.SYSTEM,
+          title: '⚠️ تم نقل إعلانك إلى الأرشيف',
+          body: `تم نقل إعلانك "${listing.title}" إلى الأرشيف من قِبل الإدارة.${reason ? ` السبب: ${reason}` : ''}`,
+          entityType: 'listing',
+          entityId: listingId,
+        },
+      });
+      await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
+    } catch {}
+
     return { message: 'تم حذف الإعلان بنجاح' };
   }
 
@@ -216,6 +255,20 @@ export class AdminService {
         },
       });
     });
+
+    try {
+      const notif = await this.prisma.notification.create({
+        data: {
+          userId: listing.landlordId,
+          type: NotificationType.SYSTEM,
+          title: '✅ تم استرجاع إعلانك',
+          body: `تمت إعادة إعلانك "${listing.title}" إلى المنصة بنجاح.`,
+          entityType: 'listing',
+          entityId: listingId,
+        },
+      });
+      await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
+    } catch {}
 
     return { message: 'تم استرجاع الإعلان بنجاح', restoredStatus };
   }
@@ -311,6 +364,17 @@ export class AdminService {
           {
             userId: listing.landlordId,
             type: NotificationType.SYSTEM,
+            eventKey: isApproved
+              ? NotificationEventKey.LISTING_APPROVED
+              : NotificationEventKey.LISTING_REJECTED,
+            priority: isApproved
+              ? NotificationPriority.NORMAL
+              : NotificationPriority.HIGH,
+            payload: {
+              listingId: listing.id,
+              listingTitle: listing.title,
+              rejectionReason: dto.rejectionReason || null,
+            },
             title: isApproved ? 'Listing approved' : 'Listing rejected',
             body: isApproved
               ? `Your listing "${listing.title}" has been approved and is now visible.`
@@ -439,7 +503,19 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         include: {
           tenant: { select: { id: true, name: true, phone: true } },
-          listing: { select: { id: true, title: true, landlordId: true } },
+          listing: {
+            select: {
+              id: true,
+              title: true,
+              governorate: true,
+              district: true,
+              price: true,
+              landlordId: true,
+              landlord: {
+                select: { id: true, name: true, phone: true },
+              },
+            },
+          },
         },
       }),
       this.prisma.viewingRequest.count({ where }),
@@ -712,6 +788,25 @@ export class AdminService {
         where: { OR: orConditions },
         data: { isActive: true },
       });
+
+      if (blacklisted.phone) {
+        const user = await this.prisma.user.findFirst({ where: { phone: blacklisted.phone } });
+        if (user) {
+          try {
+            const notif = await this.prisma.notification.create({
+              data: {
+                userId: user.id,
+                type: NotificationType.SYSTEM,
+                title: '✅ تم رفع الحظر عن حسابك',
+                body: 'أهلاً بك مجدداً! تم رفع الحظر عن حسابك بنجاح ويمكنك الآن استخدام المنصة بشكل طبيعي.',
+                entityType: 'user_unban',
+                entityId: user.id,
+              },
+            });
+            await this.notificationService.sendRealtimeNotification(user.id, notif);
+          } catch {}
+        }
+      }
     }
 
     return { message: 'تم إلغاء الحظر وإعادة التفعيل بنجاح' };

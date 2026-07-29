@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 import { cn, getAvatarUrl } from '@/lib/utils';
 
 const avatarVariants = cva(
-  "relative flex shrink-0 overflow-hidden rounded-full border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800",
+  "relative flex shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100",
   {
     variants: {
       size: {
@@ -50,20 +50,21 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
               fill
               sizes="(max-width: 80px) 80px, 56px"
               className="object-cover"
+              unoptimized
               onError={(e) => {
                 // Fallback to initials on image load error
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center font-semibold text-gray-600 dark:text-gray-300">
+            <div className="flex h-full w-full items-center justify-center font-semibold text-gray-600">
               {getInitials(name)}
             </div>
           )}
         </div>
         {verified && (
           <div
-            className="absolute bottom-0 end-0 flex h-1/3 w-1/3 items-center justify-center rounded-full bg-gold ring-2 ring-white dark:ring-dark-bg"
+            className="absolute bottom-0 end-0 flex h-1/3 w-1/3 items-center justify-center rounded-full bg-gold ring-2 ring-white"
             title="Verified"
           >
             <Check className="h-2/3 w-2/3 text-white" />

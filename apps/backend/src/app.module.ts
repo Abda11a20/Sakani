@@ -7,8 +7,6 @@ import { LoggerModule } from './common/logger/logger.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { validateEnv } from './env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -29,10 +27,12 @@ import { RentalHistoryModule } from './rental-history/rental-history.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RentalContractsModule } from './rental-contracts/rental-contracts.module';
 import { CommunityModule } from './community/community.module';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
     LoggerModule,
+    LocationModule,
     // إعداد متغيرات البيئة — متاحة في كل التطبيق
     ConfigModule.forRoot({
       isGlobal: true,
@@ -81,8 +81,8 @@ import { CommunityModule } from './community/community.module';
     RentalContractsModule,
     CommunityModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

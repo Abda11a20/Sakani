@@ -94,9 +94,9 @@ export class CommunityRepository {
       isDeleted: false,
     };
 
-    if (params.status) {
+    if (params.status && (params.status as string) !== 'ALL') {
       where.status = params.status;
-    } else {
+    } else if (!params.status) {
       where.status = CommunityPostStatus.ACTIVE;
     }
 
@@ -353,6 +353,88 @@ export class CommunityRepository {
         status: CommunityPostStatus.ACTIVE,
         eventDate: { lt: new Date() },
         isDeleted: false,
+      },
+    });
+  }
+
+  async findDeletedPosts(params: {
+    search?: string;
+    type?: 'all' | 'deleted' | 'expired';
+    skip: number;
+    take: number;
+  }) {
+    const filterType = params.type || 'all';
+    const conditions: Prisma.CommunityPostWhereInput[] = [];
+
+    if (filterType === 'deleted') {
+      conditions.push({ isDeleted: true });
+    } else if (filterType === 'expired') {
+      conditions.push({
+        isDeleted: false,
+        OR: [
+          { status: CommunityPostStatus.ARCHIVED },
+          { eventDate: { lt: new Date() } },
+        ],
+      });
+    } else {
+      // 'all': either deleted OR expired/archived
+      conditions.push({
+        OR: [
+          { isDeleted: true },
+          { status: CommunityPostStatus.ARCHIVED },
+          { eventDate: { lt: new Date() } },
+        ],
+      });
+    }
+
+    if (params.search) {
+      conditions.push({
+        OR: [
+          { title: { contains: params.search, mode: 'insensitive' } },
+          { description: { contains: params.search, mode: 'insensitive' } },
+          { user: { name: { contains: params.search, mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    const where: Prisma.CommunityPostWhereInput = {
+      AND: conditions,
+    };
+
+    const [posts, total] = await Promise.all([
+      this.prisma.communityPost.findMany({
+        where,
+        skip: params.skip,
+        take: params.take,
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          category: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+              role: true,
+            },
+          },
+          _count: {
+            select: { participants: true, reports: true },
+          },
+        },
+      }),
+      this.prisma.communityPost.count({ where }),
+    ]);
+
+    return { posts, total };
+  }
+
+  async restorePost(id: string) {
+    return this.prisma.communityPost.update({
+      where: { id },
+      data: {
+        isDeleted: false,
+        status: CommunityPostStatus.ARCHIVED, // Restore as ARCHIVED for admin review
       },
     });
   }

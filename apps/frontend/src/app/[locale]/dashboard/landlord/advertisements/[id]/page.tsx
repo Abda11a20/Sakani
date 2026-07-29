@@ -9,7 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useListing, useDeleteListing } from "@/hooks/useListings";
 import { Spinner, Modal, useToast } from "@/components/ui";
 import { getImageUrl } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { reviewsApi } from "@/features/reviews";
 import type { Review } from "@/types";
 import {
   ChevronLeft,
@@ -58,11 +58,11 @@ const AMENITY_CONFIG: Record<string, { icon: React.ReactNode; label: string }> =
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "نشط", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
-    pending_review: { label: "قيد المراجعة", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
-    rented: { label: "مؤجر", cls: "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
-    paused: { label: "متوقف", cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" },
-    rejected: { label: "مرفوض", cls: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
+    active: { label: "نشط", cls: "bg-emerald-100 text-emerald-800" },
+    pending_review: { label: "قيد المراجعة", cls: "bg-amber-100 text-amber-800" },
+    rented: { label: "مؤجر", cls: "bg-slate-200 text-slate-700" },
+    paused: { label: "متوقف", cls: "bg-orange-100 text-orange-700" },
+    rejected: { label: "مرفوض", cls: "bg-red-100 text-red-700" },
   };
   const cfg = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600" };
   return (
@@ -106,7 +106,7 @@ export default function AdvertisementDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    api.get<Review[]>(`/reviews/listing/${id}`)
+    reviewsApi.getByListing(id)
       .then((res) => {
         const data = res.data;
         setReviews(Array.isArray(data) ? data : []);
@@ -183,11 +183,11 @@ export default function AdvertisementDetailPage() {
             {isRtl ? "الإعلانات" : "Advertisements"}
           </Link>
           <ChevronLeft size={12} className={isRtl ? "rotate-180" : ""} />
-          <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{listing.title}</span>
+          <span className="text-slate-800 truncate max-w-[200px]">{listing.title}</span>
         </div>
 
         {/* ── Management Actions Bar ── */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap gap-2.5 items-center justify-between shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-2.5 items-center justify-between shadow-sm">
           <div className="flex items-center gap-2.5 flex-wrap">
             <StatusBadge status={listing.status} />
             <span className="text-xs text-slate-400 hidden sm:block">
@@ -198,7 +198,7 @@ export default function AdvertisementDetailPage() {
             <Link
               href={`/${locale}/listings/${id}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors"
             >
               <ExternalLink size={13} />
               {isRtl ? "عرض للعامة" : "Public View"}
@@ -213,7 +213,7 @@ export default function AdvertisementDetailPage() {
             {listing.type === "bed" ? (
               <Link
                 href={`/${locale}/dashboard/landlord/beds?listingId=${id}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors"
               >
                 <BedDouble size={13} />
                 {isRtl ? "إدارة الأسرة" : "Manage Beds"}
@@ -221,7 +221,7 @@ export default function AdvertisementDetailPage() {
             ) : (
               <Link
                 href={`/${locale}/dashboard/landlord/rentals?listingId=${id}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors"
               >
                 <LayoutGrid size={13} />
                 {isRtl ? "إدارة الإيجار" : "Manage Rental"}
@@ -229,7 +229,7 @@ export default function AdvertisementDetailPage() {
             )}
             <button
               onClick={() => setDeleteModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
             >
               <Trash2 size={13} />
               {isRtl ? "حذف" : "Delete"}
@@ -296,16 +296,16 @@ export default function AdvertisementDetailPage() {
         )}
 
         {/* ── Title + Price + Location ── */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row justify-between gap-4 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between gap-4 shadow-sm">
           <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">{listing.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">{listing.title}</h1>
             <div className="flex items-center gap-1.5 text-slate-500 text-xs">
               <MapPin size={14} className="text-[#D4A847] shrink-0" />
               <span>{listing.district}، {listing.city}{listing.governorate ? `، ${listing.governorate}` : ""}</span>
             </div>
           </div>
-          <div className="flex flex-col items-start sm:items-end shrink-0 border-t sm:border-t-0 sm:border-s border-slate-100 dark:border-slate-800 pt-3 sm:pt-0 sm:ps-5">
-            <span className="text-2xl font-extrabold text-[#D4A847] dark:text-[#E8C06A] font-sans">
+          <div className="flex flex-col items-start sm:items-end shrink-0 border-t sm:border-t-0 sm:border-s border-slate-100 pt-3 sm:pt-0 sm:ps-5">
+            <span className="text-2xl font-extrabold text-[#D4A847] font-sans">
               {new Intl.NumberFormat(isRtl ? "ar-EG" : "en-US").format(listing.price)}
             </span>
             <span className="text-[10px] text-slate-400 mt-0.5">{isRtl ? "جنيه مصري / شهرياً" : "EGP / monthly"}</span>
@@ -315,54 +315,54 @@ export default function AdvertisementDetailPage() {
         {/* ── Feature Cards Grid ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Type */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-[#1B4F8A] dark:text-[#7BAEE8] flex items-center justify-center">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-[#1B4F8A] flex items-center justify-center">
               <Building2 size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "نوع العقار" : "Type"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{TYPE_LABELS[listing.unitType || listing.type] || (listing.unitType || listing.type)}</span>
+            <span className="text-xs font-bold text-slate-800">{TYPE_LABELS[listing.unitType || listing.type] || (listing.unitType || listing.type)}</span>
           </div>
 
           {/* Gender Target */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
             <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
               <UserCheck size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "الفئة" : "Target"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-bold text-slate-800">
               {listing.genderTarget === "male" ? "شباب" : listing.genderTarget === "female" ? "بنات" : listing.genderTarget === "family" ? "عائلات" : "مشترك"}
             </span>
           </div>
 
           {/* Electricity */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
               <Zap size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "العداد" : "Meter"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-bold text-slate-800">
               {listing.electricityType === "prepaid_card" ? "عداد كارت" : listing.electricityType === "old_meter" ? "قديم" : "حديث"}
             </span>
           </div>
 
           {/* Bills */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm">
             <div className="w-9 h-9 rounded-xl bg-green-500/10 text-green-500 flex items-center justify-center">
               <Receipt size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "الفواتير" : "Bills"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-bold text-slate-800">
               {listing.includesBills ? (isRtl ? "شاملة" : "Included") : (isRtl ? "منفصلة" : "Excluded")}
             </span>
           </div>
 
           {/* Deposit */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm col-span-2 sm:col-span-1">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col items-center text-center gap-2 shadow-sm col-span-2 sm:col-span-1">
             <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
               <ShieldCheck size={18} />
             </div>
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{isRtl ? "التأمين" : "Deposit"}</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-bold text-slate-800">
               {listing.securityDeposit ? `${new Intl.NumberFormat("ar-EG").format(listing.securityDeposit)} ج.م` : (isRtl ? "بدون تأمين" : "No Deposit")}
             </span>
           </div>
@@ -374,32 +374,32 @@ export default function AdvertisementDetailPage() {
           <div className="lg:col-span-2 space-y-5">
             {/* Description */}
             {listing.description && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-[#1B4F8A] rounded-full" />
                   {isRtl ? "وصف العقار" : "Property Description"}
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{listing.description}</p>
+                <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-line">{listing.description}</p>
               </div>
             )}
 
             {/* House Rules */}
             {listing.rules && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-amber-500 rounded-full" />
                   {isRtl ? "قواعد السكن" : "House Rules"}
                 </h2>
-                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4">
-                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed whitespace-pre-line">{listing.rules}</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-xs text-amber-800 leading-relaxed whitespace-pre-line">{listing.rules}</p>
                 </div>
               </div>
             )}
 
             {/* Beds (if type=bed) */}
             {listing.type === "bed" && listing.beds && listing.beds.length > 0 && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-purple-500 rounded-full" />
                   {isRtl ? "الأسرة المتاحة" : "Available Beds"}
                 </h2>
@@ -407,8 +407,8 @@ export default function AdvertisementDetailPage() {
                   {listing.beds.map((bed) => (
                     <span key={bed.id} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
                       bed.isAvailable
-                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-                        : "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20 text-red-500 line-through opacity-60"
+                        ? "bg-green-50 border-green-200 text-green-700"
+                        : "bg-red-50 border-red-100 text-red-500 line-through opacity-60"
                     }`}>
                       <BedDouble size={13} />
                       {isRtl ? `سرير ${bed.bedNumber}` : `Bed ${bed.bedNumber}`}
@@ -420,8 +420,8 @@ export default function AdvertisementDetailPage() {
 
             {/* Amenities */}
             {listing.amenities && listing.amenities.length > 0 && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-[#1B4F8A] rounded-full" />
                   {isRtl ? "مميزات العقار" : "Amenities"}
                 </h2>
@@ -429,8 +429,8 @@ export default function AdvertisementDetailPage() {
                   {listing.amenities.map((key) => {
                     const cfg = AMENITY_CONFIG[key] ?? { icon: <CheckCircle size={14} />, label: key };
                     return (
-                      <div key={key} className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-medium text-slate-800 dark:text-slate-200">
-                        <span className="text-[#1B4F8A] dark:text-[#7BAEE8] shrink-0">{cfg.icon}</span>
+                      <div key={key} className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs font-medium text-slate-800">
+                        <span className="text-[#1B4F8A] shrink-0">{cfg.icon}</span>
                         {cfg.label}
                       </div>
                     );
@@ -440,35 +440,35 @@ export default function AdvertisementDetailPage() {
             )}
 
             {/* Reviews */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-amber-500 rounded-full" />
                   {isRtl ? "تقييمات المستأجرين" : "Tenant Reviews"}
                 </h2>
                 {reviews.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={Math.round(avgRating)} />
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans">{avgRating.toFixed(1)}</span>
+                    <span className="text-xs font-bold text-slate-700 font-sans">{avgRating.toFixed(1)}</span>
                     <span className="text-[10px] text-slate-400">({reviews.length})</span>
                   </div>
                 )}
               </div>
               {reviews.length === 0 ? (
-                <div className="text-center py-8 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
                   <Star size={24} className="mx-auto mb-2 text-slate-300" />
                   <p className="text-xs text-slate-400">{isRtl ? "لا توجد تقييمات بعد" : "No reviews yet"}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {reviews.map((review) => (
-                    <div key={review.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
+                    <div key={review.id} className="border border-slate-100 rounded-xl p-4 space-y-2 bg-slate-50/40">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-[#1B4F8A]/10 text-[#1B4F8A] flex items-center justify-center text-xs font-bold shrink-0">
                           {review.tenant?.name?.[0] ?? "T"}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{review.tenant?.name ?? "مستأجر"}</p>
+                          <p className="text-xs font-bold text-slate-800">{review.tenant?.name ?? "مستأجر"}</p>
                           <StarRating rating={review.rating} />
                         </div>
                         <span className="ms-auto text-[10px] text-slate-400 font-sans">
@@ -476,7 +476,7 @@ export default function AdvertisementDetailPage() {
                         </span>
                       </div>
                       {review.comment && (
-                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{review.comment}</p>
+                        <p className="text-xs text-slate-600 leading-relaxed">{review.comment}</p>
                       )}
                     </div>
                   ))}
@@ -488,37 +488,37 @@ export default function AdvertisementDetailPage() {
           {/* Right/Sidebar: Stats & Additional Info */}
           <div className="space-y-4">
             {/* Ad Statistics */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Eye size={15} className="text-[#1B4F8A]" />
                 {isRtl ? "إحصائيات الإعلان" : "Ad Statistics"}
               </h3>
               <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-850">
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
                   <span className="text-slate-400">{isRtl ? "رقم الإعلان" : "Ad ID"}</span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">#{id.slice(-6).toUpperCase()}</span>
+                  <span className="font-mono font-bold text-slate-700">#{id.slice(-6).toUpperCase()}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-850">
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
                   <span className="text-slate-400">{isRtl ? "المشاهدات" : "Views"}</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 font-sans flex items-center gap-1">
+                  <span className="font-bold text-slate-700 font-sans flex items-center gap-1">
                     <Eye size={12} className="text-[#1B4F8A]" />
                     {listing.viewCount ?? listing.views ?? 0}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-850">
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
                   <span className="text-slate-400">{isRtl ? "الحالة" : "Status"}</span>
                   <StatusBadge status={listing.status} />
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-850">
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
                   <span className="text-slate-400">{isRtl ? "تاريخ النشر" : "Published"}</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <span className="font-semibold text-slate-700 flex items-center gap-1">
                     <Calendar size={11} className="text-[#1B4F8A]" />
                     {new Date(listing.createdAt).toLocaleDateString(isRtl ? "ar-EG" : "en-US")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-slate-400">{isRtl ? "آخر تحديث" : "Last Updated"}</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <span className="font-semibold text-slate-700 flex items-center gap-1">
                     <RefreshCw size={11} className="text-[#1B4F8A]" />
                     {new Date(listing.updatedAt).toLocaleDateString(isRtl ? "ar-EG" : "en-US")}
                   </span>
@@ -528,19 +528,19 @@ export default function AdvertisementDetailPage() {
 
             {/* Current Tenant (if rented) */}
             {listing.status === "rented" && listing.currentTenant && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <UserCheck size={15} className="text-emerald-500" />
                   {isRtl ? "المستأجر الحالي" : "Current Tenant"}
                 </h3>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
                     {listing.currentTenant.name?.[0] ?? "T"}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">{listing.currentTenant.name}</p>
+                    <p className="text-sm font-bold text-slate-900">{listing.currentTenant.name}</p>
                     {listing.currentTenant.phone && (
-                      <a href={`tel:${listing.currentTenant.phone}`} className="text-xs text-[#1B4F8A] dark:text-[#7BAEE8] hover:underline font-medium">
+                      <a href={`tel:${listing.currentTenant.phone}`} className="text-xs text-[#1B4F8A] hover:underline font-medium">
                         {listing.currentTenant.phone}
                       </a>
                     )}
@@ -583,17 +583,17 @@ export default function AdvertisementDetailPage() {
       {deleteModalOpen && (
         <Modal isOpen={true} onClose={() => setDeleteModalOpen(false)} title={isRtl ? "تأكيد حذف الإعلان" : "Confirm Deletion"}>
           <div className="p-6 text-center space-y-4 font-cairo">
-            <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle size={28} />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-slate-900">
               {isRtl ? "هل أنت متأكد من حذف هذا الإعلان؟" : "Are you sure you want to delete?"}
             </h3>
             <p className="text-slate-500 text-xs max-w-xs mx-auto">
               {isRtl ? "هذا الإجراء نهائي وسيتم إزالة الإعلان من المنصة بالكامل." : "This action is permanent and cannot be undone."}
             </p>
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setDeleteModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <button onClick={() => setDeleteModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
                 {isRtl ? "إلغاء" : "Cancel"}
               </button>
               <button onClick={handleDelete} disabled={isDeleting} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">

@@ -13,7 +13,7 @@ import {
   useUpdateUserRole, useAdminDeleteUser, useBanUser, useIdCardUrl, useRegisterAdmin,
   type RegisterAdminPayload,
 } from "@/hooks/useAdmin";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
@@ -21,10 +21,10 @@ import Image from "next/image";
 
 // ── Brand color role badges ───────────────────────────────────────────────────
 const roleBadge: Record<string, { label: string; className: string }> = {
-  tenant: { label: "مستأجر", className: "bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#2E6BC4]/20 dark:text-[#7BAEE8]" },
-  landlord: { label: "مُعلِن", className: "bg-[#D4A847]/15 text-[#C49535] dark:bg-[#D4A847]/20 dark:text-[#E8C06A]" },
-  admin: { label: "أدمن", className: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" },
-  super_admin: { label: "سوبر أدمن", className: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400" },
+  tenant: { label: "مستأجر", className: "bg-[#0EA5E9]/10 text-[#0EA5E9]" },
+  landlord: { label: "مُعلِن", className: "bg-[#0EA5E9]/15 text-[#0284C7]" },
+  admin: { label: "أدمن", className: "bg-slate-100 text-slate-700" },
+  super_admin: { label: "سوبر أدمن", className: "bg-red-50 text-red-600" },
 };
 
 // ── ID Card Viewer ────────────────────────────────────────────────────────────
@@ -32,18 +32,18 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
   const { data, isLoading, error } = useIdCardUrl(userId, true);
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
-            <IdCard size={20} className="text-[#D4A847]" /> بطاقة الهوية
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
+            <IdCard size={20} className="text-[#0EA5E9]" /> بطاقة الهوية
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-50 dark:bg-slate-900/50 relative">
+        <div className="p-4 flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-50 relative">
           {isLoading ? (
-            <div className="flex flex-col items-center text-[#D4A847] gap-3">
+            <div className="flex flex-col items-center text-[#0EA5E9] gap-3">
               <Loader2 size={32} className="animate-spin" />
               <p className="text-sm font-cairo font-medium text-slate-600">جاري جلب الرابط الآمن...</p>
             </div>
@@ -99,12 +99,12 @@ function CreateAdminModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#D4A847]/20 flex items-center justify-center">
-              <UserPlus size={18} className="text-[#D4A847]" />
+            <div className="w-9 h-9 rounded-xl bg-[#0EA5E9]/20 flex items-center justify-center">
+              <UserPlus size={18} className="text-[#0EA5E9]" />
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-cairo">إضافة مسؤول جديد</h3>
@@ -119,32 +119,32 @@ function CreateAdminModal({ onClose }: { onClose: () => void }) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">الاسم</label>
+            <label className="block text-xs font-semibold text-slate-500 font-cairo uppercase">الاسم</label>
             <input name="name" value={form.name} onChange={handleChange} placeholder="محمد أحمد"
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" />
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]" />
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">البريد الإلكتروني</label>
+            <label className="block text-xs font-semibold text-slate-500 font-cairo uppercase">البريد الإلكتروني</label>
             <div className="relative">
               <Mail size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
               <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="admin@sakany.com"
-                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" dir="ltr" />
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]" dir="ltr" />
             </div>
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">رقم الهاتف</label>
+            <label className="block text-xs font-semibold text-slate-500 font-cairo uppercase">رقم الهاتف</label>
             <div className="relative">
               <Phone size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
               <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="01xxxxxxxxx"
-                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" dir="ltr" />
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]" dir="ltr" />
             </div>
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo uppercase">كلمة المرور</label>
+            <label className="block text-xs font-semibold text-slate-500 font-cairo uppercase">كلمة المرور</label>
             <div className="relative">
               <Lock size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
               <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="8 أحرف على الأقل"
-                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]" />
+                className="w-full ps-9 pe-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]" />
             </div>
           </div>
 
@@ -153,14 +153,14 @@ function CreateAdminModal({ onClose }: { onClose: () => void }) {
               type="submit"
               disabled={isPending}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold font-cairo text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}
+              style={{ background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)" }}
             >
               {isPending ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</> : <><UserPlus size={16} /> إنشاء الحساب</>}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
             >
               إلغاء
             </button>
@@ -283,10 +283,10 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-cairo">
+          <h1 className="text-2xl font-bold text-slate-900 font-cairo">
             إدارة المستخدمين
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-cairo">
+          <p className="text-sm text-slate-500 mt-0.5 font-cairo">
             {meta ? `${meta.total} مستخدم` : "جاري التحميل..."}
           </p>
         </div>
@@ -299,7 +299,7 @@ export default function AdminUsersPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-cairo text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
               style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}
             >
-              <UserPlus size={16} className="text-[#D4A847]" />
+              <UserPlus size={16} className="text-[#0EA5E9]" />
               إضافة مسؤول
             </button>
           )}
@@ -312,7 +312,7 @@ export default function AdminUsersPage() {
               placeholder="بحث بالاسم أو الهاتف أو البريد..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="ps-9 pe-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A] min-w-[250px]"
+              className="ps-9 pe-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] min-w-[250px]"
             />
           </div>
 
@@ -320,7 +320,7 @@ export default function AdminUsersPage() {
           <select
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
           >
             <option value="all">جميع الأدوار</option>
             <option value="tenant">مستأجر</option>
@@ -330,7 +330,7 @@ export default function AdminUsersPage() {
           <select
             value={isActiveFilter}
             onChange={(e) => { setIsActiveFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
           >
             <option value="all">الحالة: الكل</option>
             <option value="true">نشط</option>
@@ -339,7 +339,7 @@ export default function AdminUsersPage() {
           <select
             value={isVerifiedFilter}
             onChange={(e) => { setIsVerifiedFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
+            className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
           >
             <option value="all">التحقق: الكل</option>
             <option value="true">محقق</option>
@@ -351,12 +351,12 @@ export default function AdminUsersPage() {
       {/* States */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={28} className="animate-spin text-[#1B4F8A]" />
+          <Loader2 size={28} className="animate-spin text-[#0EA5E9]" />
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-cairo text-sm">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-cairo text-sm">
           <AlertCircle size={18} className="shrink-0" />
           <span>فشل في تحميل المستخدمين</span>
         </div>
@@ -364,40 +364,40 @@ export default function AdminUsersPage() {
 
       {/* Users Table */}
       {!isLoading && !error && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
           {users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Users size={32} className="text-slate-300 dark:text-slate-600 mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 font-cairo">لا يوجد مستخدمون مطابقون</p>
+              <Users size={32} className="text-slate-300 mb-3" />
+              <p className="text-slate-500 font-cairo">لا يوجد مستخدمون مطابقون</p>
             </div>
           ) : (
             <div className="min-w-[800px]">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">المستخدم</th>
-                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">الدور</th>
-                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">الحالة</th>
-                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 font-cairo">الإجراءات السريعة</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 font-cairo">المستخدم</th>
+                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 font-cairo">الدور</th>
+                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 font-cairo">الحالة</th>
+                    <th className="text-start px-4 py-3 text-xs font-semibold text-slate-500 font-cairo">الإجراءات السريعة</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                <tbody className="divide-y divide-slate-50">
                   {users.map((user) => {
                     const badge = roleBadge[user.role] ?? roleBadge.tenant;
                     const isActive = (user as Record<string, unknown>).isActive !== false;
                     const isVerified = user.emailVerifiedAt !== null;
 
                     return (
-                      <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm font-cairo shrink-0"
-                              style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}>
+                              style={{ background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)" }}>
                               {user.name?.charAt(0)}
                             </div>
                             <div>
                               <p
-                                className="text-sm font-semibold text-slate-900 dark:text-white font-cairo hover:text-[#1B4F8A] dark:hover:text-[#7BAEE8] cursor-pointer transition-colors"
+                                className="text-sm font-semibold text-slate-900 font-cairo hover:text-[#0EA5E9] cursor-pointer transition-colors"
                                 onClick={() => setSelectedUser(user)}
                               >
                                 {user.name}
@@ -414,16 +414,16 @@ export default function AdminUsersPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {isActive ? (
-                              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-cairo font-medium" title="حساب نشط">
+                              <span className="flex items-center gap-1 text-xs text-emerald-600 font-cairo font-medium" title="حساب نشط">
                                 <CheckCircle2 size={13} /> نشط
                               </span>
                             ) : (
-                              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-cairo font-medium" title="حساب موقوف">
+                              <span className="flex items-center gap-1 text-xs text-slate-500 font-cairo font-medium" title="حساب موقوف">
                                 <XCircle size={13} /> موقوف
                               </span>
                             )}
                             {isVerified ? (
-                              <span className="flex items-center gap-1 text-xs text-[#1B4F8A] dark:text-[#7BAEE8] font-cairo font-medium" title="البريد محقق">
+                              <span className="flex items-center gap-1 text-xs text-[#0EA5E9] font-cairo font-medium" title="البريد محقق">
                                 <Shield size={13} /> محقق
                               </span>
                             ) : (
@@ -437,14 +437,14 @@ export default function AdminUsersPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedUser(user)}
-                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#1B4F8A] hover:text-white dark:hover:bg-[#1B4F8A] transition-all flex items-center gap-1"
+                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-slate-100 text-slate-600 hover:bg-[#0EA5E9] hover:text-white transition-all flex items-center gap-1"
                             >
                               <Eye size={13} /> التفاصيل
                             </button>
                             <button
                               onClick={() => setBanModal({ id: user.id, name: user.name, phone: user.phone, nationalId: (user as any).nationalId })}
                               disabled={banMutation.isPending || user.role === "super_admin"}
-                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center gap-1 disabled:opacity-50"
+                              className="px-2 py-1.5 rounded-lg text-xs font-bold font-cairo bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-all flex items-center gap-1 disabled:opacity-50"
                             >
                               <Ban size={13} /> حظر
                             </button>
@@ -466,17 +466,17 @@ export default function AdminUsersPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 disabled:opacity-40 transition-all"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-all"
           >
             {isRtl ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <span className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium font-cairo text-slate-700 dark:text-slate-300">
+          <span className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium font-cairo text-slate-700">
             {page} / {meta.lastPage}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(meta.lastPage, p + 1))}
             disabled={page === meta.lastPage}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 disabled:opacity-40 transition-all"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-all"
           >
             {isRtl ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
           </button>
@@ -488,14 +488,14 @@ export default function AdminUsersPage() {
         <>
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setSelectedUser(null)} />
           <div className={cn(
-            "fixed top-0 bottom-0 z-50 w-full max-w-md bg-white dark:bg-slate-900 border-s border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col transition-transform duration-300 transform",
+            "fixed top-0 bottom-0 z-50 w-full max-w-md bg-white border-s border-slate-200 shadow-2xl flex flex-col transition-transform duration-300 transform",
             isRtl ? "left-0 translate-x-0" : "right-0 translate-x-0"
           )}>
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo flex items-center gap-2">
-                <UserCheck size={20} className="text-[#1B4F8A]" /> تفاصيل المستخدم
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 font-cairo flex items-center gap-2">
+                <UserCheck size={20} className="text-[#0EA5E9]" /> تفاصيل المستخدم
               </h3>
-              <button onClick={() => setSelectedUser(null)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+              <button onClick={() => setSelectedUser(null)} className="p-2 bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700">
                 <X size={16} />
               </button>
             </div>
@@ -504,11 +504,11 @@ export default function AdminUsersPage() {
               {/* Profile Header */}
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-3xl font-cairo shadow-md"
-                  style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}>
+                  style={{ background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)" }}>
                   {selectedUser.name?.charAt(0)}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white font-cairo">{selectedUser.name}</h2>
+                  <h2 className="text-xl font-bold text-slate-900 font-cairo">{selectedUser.name}</h2>
                   <span className={cn("inline-block mt-1 px-2.5 py-0.5 rounded-lg text-xs font-bold font-cairo", roleBadge[selectedUser.role]?.className || roleBadge.tenant.className)}>
                     {roleBadge[selectedUser.role]?.label}
                   </span>
@@ -516,33 +516,33 @@ export default function AdminUsersPage() {
               </div>
 
               {/* Contact Info */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 space-y-3 border border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 font-cairo uppercase mb-2">معلومات الاتصال</h4>
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-100">
+                <h4 className="text-xs font-bold text-slate-500 font-cairo uppercase mb-2">معلومات الاتصال</h4>
                 <div className="flex items-center gap-3">
                   <Mail size={16} className="text-slate-400" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo">{selectedUser.email || "غير متوفر"}</span>
-                  {selectedUser.emailVerifiedAt && <Shield size={14} className="text-[#1B4F8A] ms-auto" />}
+                  <span className="text-sm font-medium text-slate-700 font-cairo">{selectedUser.email || "غير متوفر"}</span>
+                  {selectedUser.emailVerifiedAt && <Shield size={14} className="text-[#0EA5E9] ms-auto" />}
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone size={16} className="text-slate-400" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo" dir="ltr">{selectedUser.phone || "غير متوفر"}</span>
+                  <span className="text-sm font-medium text-slate-700 font-cairo" dir="ltr">{selectedUser.phone || "غير متوفر"}</span>
                 </div>
                 {(selectedUser as any).nationalId && (
                   <div className="flex items-center gap-3">
                     <IdCard size={16} className="text-slate-400" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo" dir="ltr">{(selectedUser as any).nationalId}</span>
+                    <span className="text-sm font-medium text-slate-700 font-cairo" dir="ltr">{(selectedUser as any).nationalId}</span>
                   </div>
                 )}
               </div>
 
               {/* Actions */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 font-cairo uppercase mb-2">إجراءات الإدارة</h4>
+                <h4 className="text-xs font-bold text-slate-500 font-cairo uppercase mb-2">إجراءات الإدارة</h4>
 
                 {selectedUser.role === 'landlord' && (
                   <button
                     onClick={() => setIdCardViewer(selectedUser.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold font-cairo bg-[#D4A847]/10 dark:bg-[#D4A847]/20 text-[#C49535] dark:text-[#E8C06A] hover:bg-[#D4A847]/20 transition-colors border border-[#D4A847]/30 mb-2"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold font-cairo bg-[#0EA5E9]/10 text-[#0284C7] hover:bg-[#0EA5E9]/20 transition-colors border border-[#0EA5E9]/30 mb-2"
                   >
                     <IdCard size={16} /> عرض بطاقة الهوية
                   </button>
@@ -554,7 +554,7 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleVerify(selectedUser.id)}
                         disabled={verifyMutation.isPending}
-                        className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/20 dark:text-green-400 transition-colors border border-green-200 dark:border-green-800"
+                        className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200"
                       >
                         <UserCheck size={14} /> توثيق الهوية
                       </button>
@@ -563,7 +563,7 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => handleReject(selectedUser.id)}
                           disabled={rejectMutation.isPending}
-                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 transition-colors border border-red-200 dark:border-red-800"
+                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-red-50 text-red-700 hover:bg-red-100 transition-colors border border-red-200"
                         >
                           <UserX size={14} /> رفض الهوية
                         </button>
@@ -573,7 +573,7 @@ export default function AdminUsersPage() {
                   <button
                     onClick={() => handleToggle(selectedUser.id, selectedUser.name)}
                     disabled={toggleMutation.isPending}
-                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                   >
                     {(selectedUser as any).isActive !== false ? <><UserX size={14} /> إيقاف مؤقت</> : <><UserCheck size={14} /> تفعيل</>}
                   </button>
@@ -583,7 +583,7 @@ export default function AdminUsersPage() {
                         setRoleModal({ id: selectedUser.id, name: selectedUser.name, currentRole: selectedUser.role });
                         setNewRole(selectedUser.role);
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-[#D4A847]/10 text-[#C49535] hover:bg-[#D4A847]/20 dark:text-[#E8C06A] transition-colors"
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold font-cairo bg-[#0EA5E9]/10 text-[#0284C7] hover:bg-[#0EA5E9]/20 transition-colors"
                     >
                       <Crown size={14} /> تغيير الدور
                     </button>
@@ -614,13 +614,13 @@ export default function AdminUsersPage() {
       {/* Role Change Modal */}
       {roleModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-cairo">تغيير دور المستخدم</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-cairo">{roleModal.name}</p>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900 font-cairo">تغيير دور المستخدم</h3>
+            <p className="text-sm text-slate-500 font-cairo">{roleModal.name}</p>
             <select
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-cairo focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
             >
               <option value="tenant">مستأجر</option>
               <option value="landlord">مُعلِن</option>
@@ -631,13 +631,13 @@ export default function AdminUsersPage() {
                 onClick={handleRoleUpdate}
                 disabled={roleMutation.isPending}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo text-white transition-all disabled:opacity-60"
-                style={{ background: "linear-gradient(135deg, #1B4F8A 0%, #2E6BC4 100%)" }}
+                style={{ background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)" }}
               >
                 {roleMutation.isPending ? "جاري الحفظ..." : "حفظ"}
               </button>
               <button
                 onClick={() => setRoleModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-all"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
               >
                 إلغاء
               </button>
@@ -649,31 +649,31 @@ export default function AdminUsersPage() {
       {/* Ban Modal */}
       {banModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 p-6 space-y-4">
             <h3 className="text-lg font-bold text-red-600 font-cairo flex items-center gap-2">
               <Ban size={20} /> حظر المستخدم
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 font-cairo">
+            <p className="text-sm text-slate-600 font-cairo">
               سيتم حظر المستخدم <b>{banModal.name}</b> وإضافته إلى القائمة السوداء.
             </p>
 
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
               {banModal.nationalId && (
                 <div className="flex items-center justify-between text-sm font-cairo">
                   <span className="text-slate-500">الرقم القومي:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{banModal.nationalId}</span>
+                  <span className="font-bold text-slate-800">{banModal.nationalId}</span>
                 </div>
               )}
               {banModal.phone && (
                 <div className="flex items-center justify-between text-sm font-cairo">
                   <span className="text-slate-500">رقم الهاتف:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200" dir="ltr">{banModal.phone}</span>
+                  <span className="font-bold text-slate-800" dir="ltr">{banModal.phone}</span>
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 font-cairo mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 font-cairo mb-1.5">
                 سبب الحظر (إجباري) <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -681,7 +681,7 @@ export default function AdminUsersPage() {
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
                 placeholder="أدخل سبب الحظر بوضوح..."
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white font-cairo placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 font-cairo placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
               />
             </div>
 
@@ -695,7 +695,7 @@ export default function AdminUsersPage() {
               </button>
               <button
                 onClick={() => { setBanModal(null); setBanReason(""); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium font-cairo bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
               >
                 إلغاء
               </button>

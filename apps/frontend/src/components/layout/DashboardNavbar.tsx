@@ -8,12 +8,13 @@ import { useLocale } from "next-intl";
 import { Menu, LogOut, User, LayoutDashboard } from "lucide-react";
 import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/features/auth";
 import { isUserVerified } from "@/types";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { Avatar } from "@/components/ui/avatar";
 import { useUiStore } from "@/store/ui.store";
+
+import { Button } from "@/components/ui";
 
 export const DashboardNavbar: React.FC = () => {
   const locale = useLocale();
@@ -34,73 +35,65 @@ export const DashboardNavbar: React.FC = () => {
   const isRtl = locale === "ar";
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/90 backdrop-blur-md shadow-sm h-16">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/80 backdrop-blur-md shadow-xs h-16">
       <div className="mx-auto flex h-full items-center justify-between px-3 sm:px-6 lg:px-8">
 
-        {/* Logo — Start (Right in RTL, Left in LTR) */}
+        {/* Logo — Start */}
         <Link
           href={`/${locale}`}
           className="flex items-center gap-2 flex-shrink-0"
         >
-          {/* App icon */}
           <img
             src="/icon-192.png"
             alt="سكني"
-            className="h-9 w-9 object-contain rounded-xl shadow-sm"
+            className="h-9 w-9 object-contain rounded-xl shadow-xs"
           />
-          {/* Brand name */}
-          <span className="hidden sm:block text-base font-black text-slate-800 dark:text-white tracking-tight">
+          <span className="hidden sm:block text-base font-extrabold text-text tracking-tight">
             {isRtl ? "سكني" : "Sakany"}
           </span>
         </Link>
 
-        {/* Actions — End (Left in RTL, Right in LTR) */}
+        {/* Actions — End */}
         <div className="flex items-center gap-1.5">
-          {/* Language & Theme — HIDDEN on mobile (shown in sidebar instead) */}
           <div className="hidden xl:flex items-center gap-1">
             <LanguageSwitcher />
-            <ThemeToggle />
           </div>
 
-          {/* Notification Bell */}
           {mounted && user && (
             <NotificationDropdown />
           )}
 
-          {/* User Avatar / Dropdown */}
           {mounted && user && (
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <button className="ms-1 flex items-center gap-2 rounded-xl p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+                <Button variant="ghost" size="sm" className="ms-1 flex items-center gap-2 rounded-xl p-1 h-auto hover:bg-surface-tertiary">
                   <Avatar
                     src={user?.avatarUrl || null}
                     name={user?.name || ""}
                     size="sm"
                     verified={isUserVerified(user)}
                   />
-                  {/* Name — only on large desktop */}
-                  <span className="hidden lg:block text-sm font-medium text-slate-700 dark:text-slate-200 max-w-[100px] truncate">
+                  <span className="hidden lg:block text-sm font-medium text-text max-w-[100px] truncate">
                     {user?.name || ""}
                   </span>
-                </button>
+                </Button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content
-                  className="z-50 min-w-[210px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+                  className="z-50 min-w-[210px] overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
                   align="end"
                   sideOffset={8}
                 >
-                  {/* User info header */}
-                  <div className="px-3 py-2 mb-1 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{user?.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email || user?.phone}</p>
+                  <div className="px-3 py-2 mb-1 border-b border-divider">
+                    <p className="text-sm font-bold text-text truncate">{user?.name}</p>
+                    <p className="text-xs text-text-secondary truncate">{user?.email || user?.phone}</p>
                   </div>
 
                   {user.role !== "admin" && user.role !== "super_admin" && (
                     <DropdownMenu.Item asChild>
                       <Link
                         href={`/${locale}/dashboard/profile`}
-                        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 outline-none"
+                        className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-text hover:bg-surface-tertiary outline-none"
                       >
                         <User size={16} />
                         {locale === "ar" ? "الملف الشخصي" : "Profile"}
@@ -114,7 +107,7 @@ export const DashboardNavbar: React.FC = () => {
                           ? `/${locale}/admin`
                           : `/${locale}/dashboard/${user.role}`
                       }
-                      className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 outline-none"
+                      className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-text hover:bg-surface-tertiary outline-none"
                     >
                       <LayoutDashboard size={16} />
                       {user.role === "admin" || user.role === "super_admin"
@@ -122,29 +115,32 @@ export const DashboardNavbar: React.FC = () => {
                         : locale === "ar" ? "لوحة التحكم" : "Dashboard"}
                     </Link>
                   </DropdownMenu.Item>
-                  <DropdownMenu.Separator className="my-1 h-px bg-slate-100 dark:bg-slate-800" />
+                  <DropdownMenu.Separator className="my-1 h-px bg-divider" />
                   <DropdownMenu.Item asChild>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={handleLogout}
-                      className="flex w-full cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 outline-none"
+                      className="w-full justify-start text-status-danger hover:bg-red-50 dark:hover:bg-red-950/20"
+                      leftIcon={<LogOut size={16} />}
                     >
-                      <LogOut size={16} />
                       {locale === "ar" ? "تسجيل الخروج" : "Sign out"}
-                    </button>
+                    </Button>
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
           )}
 
-          {/* Hamburger — ALWAYS LAST CHILD in actions container, so it goes to the far edge */}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={toggleSidebar}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors xl:hidden focus:outline-none focus:ring-2 focus:ring-primary shrink-0 ms-1"
+            className="h-9 w-9 p-0 rounded-lg text-text-secondary hover:bg-surface-tertiary xl:hidden shrink-0 ms-1"
             aria-label="Toggle Sidebar"
           >
             <Menu size={22} />
-          </button>
+          </Button>
         </div>
       </div>
     </header>

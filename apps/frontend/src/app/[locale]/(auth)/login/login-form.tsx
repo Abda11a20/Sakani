@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Phone, Mail, Eye, EyeOff, Lock } from "lucide-react";
-import { useLogin } from "@/hooks/useAuth";
+import { useLogin } from "@/features/auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -66,18 +66,21 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md">
       {/* Server error */}
       {serverError && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div
+          role="alert"
+          className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600"
+        >
           {serverError}
         </div>
       )}
 
       {/* Identifier Field */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-foreground/80">
+        <label htmlFor="login-identifier" className="block text-sm font-medium text-foreground/80">
           {t("phoneOrEmail")}
         </label>
         <div className="relative" dir="ltr">
-          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true">
             <IdentifierIcon size={18} />
           </span>
           <input
@@ -85,22 +88,26 @@ export function LoginForm() {
             type="text"
             placeholder={t("phoneOrEmailPlaceholder")}
             dir="ltr"
+            aria-invalid={Boolean(errors.identifier)}
+            aria-describedby={errors.identifier ? "login-identifier-error" : undefined}
             className={`input-field w-full ps-10 pe-4 ${errors.identifier ? "border-red-500" : ""}`}
             {...register("identifier")}
           />
         </div>
         {errors.identifier && (
-          <p className="text-xs text-red-500 mt-1">{errors.identifier.message}</p>
+          <p id="login-identifier-error" className="text-xs text-red-500 mt-1">
+            {errors.identifier.message}
+          </p>
         )}
       </div>
 
       {/* Password Field */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-foreground/80">
+        <label htmlFor="login-password" className="block text-sm font-medium text-foreground/80">
           {t("password")}
         </label>
         <div className="relative" dir="ltr">
-          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true">
             <Lock size={18} />
           </span>
           <input
@@ -108,19 +115,25 @@ export function LoginForm() {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             dir="ltr"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "login-password-error" : undefined}
             className={`input-field w-full ps-10 pe-10 ${errors.password ? "border-red-500" : ""}`}
             {...register("password")}
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+            aria-pressed={showPassword}
             className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
           </button>
         </div>
         {errors.password && (
-          <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+          <p id="login-password-error" className="text-xs text-red-500 mt-1">
+            {errors.password.message}
+          </p>
         )}
         <div className="flex justify-end mt-1">
           <Link
@@ -140,7 +153,7 @@ export function LoginForm() {
       >
         {isPending ? (
           <>
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>

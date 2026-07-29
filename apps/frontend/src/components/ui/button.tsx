@@ -6,21 +6,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { Spinner } from "./spinner";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50",
+export const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
-        primary: "bg-primary text-white hover:bg-primary/90",
-        secondary: "bg-gold text-white hover:bg-gold/90",
-        outline: "border-2 border-primary text-primary hover:bg-primary/10",
-        ghost: "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200",
-        danger: "bg-red-600 text-white hover:bg-red-700",
+        primary: "bg-primary text-white hover:bg-primary-hover active:bg-primary-active shadow-sm",
+        secondary: "bg-surface-tertiary text-text hover:bg-border active:bg-border-divider",
+        accent: "bg-accent text-text hover:bg-accent-hover active:bg-accent-active shadow-sm",
+        outline: "border border-border bg-surface text-text hover:bg-surface-secondary hover:border-primary/50",
+        ghost: "hover:bg-surface-secondary text-text-secondary hover:text-text",
+        danger: "bg-status-danger text-white hover:bg-red-700 active:bg-red-800 shadow-sm",
+        success: "bg-status-success text-white hover:bg-green-700 active:bg-green-800 shadow-sm",
       },
       size: {
-        sm: "h-9 px-3 text-sm",
-        md: "h-11 px-6 text-base",
-        lg: "h-14 px-8 text-lg",
+        sm: "h-9 px-3 text-xs gap-1.5",
+        md: "h-11 px-5 text-sm gap-2",
+        lg: "h-13 px-7 text-base gap-2.5",
       },
       fullWidth: {
         true: "w-full",
@@ -55,21 +57,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && (
-          <span className="me-2" style={{ direction: "ltr" }}>
+          <span className="shrink-0">
             <Spinner size="sm" color={variant === "outline" || variant === "ghost" ? "primary" : "white"} />
           </span>
         )}
-        {!loading && leftIcon && (
-          <span className="me-2 inline-flex items-center" style={{ direction: "ltr" }}>
-            {leftIcon}
-          </span>
-        )}
-        {children}
-        {!loading && rightIcon && (
-          <span className="ms-2 inline-flex items-center" style={{ direction: "ltr" }}>
-            {rightIcon}
-          </span>
-        )}
+        {!loading && leftIcon && <span className="inline-flex shrink-0 items-center">{leftIcon}</span>}
+        <span>{children}</span>
+        {!loading && rightIcon && <span className="inline-flex shrink-0 items-center">{rightIcon}</span>}
       </button>
     );
   }

@@ -5,9 +5,10 @@ import { ListingsService } from './listings.service';
 import { ListingsController } from './listings.controller';
 import { AuthModule } from '../auth/auth.module';
 import { AlertsModule } from '../alerts/alerts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [AuthModule, AlertsModule],
+  imports: [AuthModule, AlertsModule, NotificationsModule],
   controllers: [ListingsController],
   providers: [ListingsService],
   exports: [ListingsService],

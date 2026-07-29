@@ -280,12 +280,38 @@ export class CommunityService {
       BadWordsFilter.validate(details, 'تفاصيل البلاغ');
     }
 
-    return this.repo.createReport({
+    const report = await this.repo.createReport({
       postId,
       reporterId,
       reason,
       details,
     });
+
+    // Notify all admins & super_admins
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: ['admin', 'super_admin'] } },
+        select: { id: true },
+      });
+
+      for (const admin of admins) {
+        const notification = await this.prisma.notification.create({
+          data: {
+            userId: admin.id,
+            type: NotificationType.SYSTEM,
+            title: '🚩 بلاغ جديد ضد محتوى في المجتمع',
+            body: `تم تقديم بلاغ جديد ضد منشور "${post.title}". يُرجى المراجعة في لوحة الإدارة.`,
+            entityType: 'community_report',
+            entityId: report.id,
+          },
+        });
+        this.dispatcher.dispatch(notification);
+      }
+    } catch {
+      // silent notification error to protect report creation flow
+    }
+
+    return report;
   }
 
   async rateHost(postId: string, authorId: string, rating: number) {
@@ -498,7 +524,35 @@ export class CommunityService {
   }
 
   async adminResolveReport(reportId: string, status: ReportStatus) {
-    return this.repo.updateReportStatus(reportId, status);
+    const report = await this.prisma.communityReport.findUnique({
+      where: { id: reportId },
+      include: { post: true },
+    });
+
+    const updated = await this.repo.updateReportStatus(reportId, status);
+
+    if (report) {
+      try {
+        const isResolved = status === ReportStatus.RESOLVED;
+        const notification = await this.prisma.notification.create({
+          data: {
+            userId: report.reporterId,
+            type: NotificationType.SYSTEM,
+            title: isResolved ? '✅ تم اتخاذ إجراء بشأن بلاغك' : 'ℹ️ مراجعة بلاغك',
+            body: isResolved
+              ? `قامت الإدارة بالتعامل مع بلاغك بشأن "${report.post?.title || 'المنشور'}". شكراً لمساعدتك في الحفاظ على أمان المجتمع!`
+              : `تمت مراجعة بلاغك بشأن "${report.post?.title || 'المنشور'}". لم تجد الإدارة مخالفة صريحة وسيتم متابعة المحتوى.`,
+            entityType: 'community_report_result',
+            entityId: reportId,
+          },
+        });
+        this.dispatcher.dispatch(notification);
+      } catch {
+        // silent
+      }
+    }
+
+    return updated;
   }
 
   async adminGetStats() {
@@ -537,5 +591,33 @@ export class CommunityService {
       archivedActivities,
       averageRating: avgRatingData._avg.communityRatingAvg || 0,
     };
+  }
+
+  async adminGetArchivedPosts(
+    page: number,
+    limit: number,
+    search?: string,
+    type?: 'all' | 'deleted' | 'expired',
+  ) {
+    const skip = (page - 1) * limit;
+    return this.repo.findDeletedPosts({ search, type, skip, take: limit });
+  }
+
+  async adminRestorePost(postId: string) {
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+    });
+    if (!post) {
+      throw new NotFoundException('الفعالية غير موجودة.');
+    }
+    
+    // Restore deleted post or reactivate archived post
+    return this.prisma.communityPost.update({
+      where: { id: postId },
+      data: {
+        isDeleted: false,
+        status: CommunityPostStatus.ACTIVE,
+      },
+    });
   }
 }

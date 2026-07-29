@@ -2,13 +2,13 @@
 "use client";
 
 import React from "react";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useQueries } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+
+import { listingRepository, ListingCard, ListingCardSkeleton } from "@/features/listings";
 import type { Listing } from "@/types";
 import TenantLayout from "@/components/layout/TenantLayout";
-import { ListingCard, ListingCardSkeleton } from "@/components/listings/ListingCard";
 import { EmptyState, Spinner, Button } from "@/components/ui";
 import { Heart, Search, Archive, Trash2 } from "lucide-react";
 import { useLocale } from "next-intl";
@@ -25,17 +25,17 @@ function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRem
   };
 
   return (
-    <div className="relative rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 flex flex-col items-center justify-center text-center gap-3 min-h-[180px]">
-      <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-        <Archive size={18} className="text-slate-500 dark:text-slate-400" />
+    <div className="relative rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 flex flex-col items-center justify-center text-center gap-3 min-h-[180px]">
+      <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center">
+        <Archive size={18} className="text-slate-500" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-cairo">هذا العقار لم يعد متاحاً</p>
-        <p className="text-xs text-slate-400 dark:text-slate-600 font-cairo mt-0.5">تمت أرشفته أو حذفه</p>
+        <p className="text-sm font-semibold text-slate-600 font-cairo">هذا العقار لم يعد متاحاً</p>
+        <p className="text-xs text-slate-400 font-cairo mt-0.5">تمت أرشفته أو حذفه</p>
       </div>
       <button
         onClick={handleRemove}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-cairo text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-cairo text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
       >
         <Trash2 size={12} />
         إزالة من المفضلة
@@ -51,7 +51,7 @@ export default function TenantWishlist() {
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Get client-side wishlist IDs
-  const { wishlistIds } = useWishlist();
+  const { wishlistIds, removeFromWishlist } = useWishlist();
   const [removed, setRemoved] = React.useState<string[]>([]);
 
   const activeIds = wishlistIds.filter((id) => !removed.includes(id));
@@ -62,8 +62,8 @@ export default function TenantWishlist() {
       queryKey: ["listings", id],
       queryFn: async (): Promise<Listing | null> => {
         try {
-          const response = await api.get<Listing>(`/listings/${id}`);
-          return response.data;
+          const entity = await listingRepository.getOne(id);
+          return entity ? (entity.toJSON() as Listing) : null;
         } catch {
           // 404 = deleted/archived listing — return null instead of throwing
           return null;
@@ -108,7 +108,7 @@ export default function TenantWishlist() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold font-cairo">عقاراتي المفضلة</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             الشقق والأسرة التي قمت بحفظها للمقارنة والرجوع إليها لاحقاً.
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function TenantWishlist() {
         ) : totalCount === 0 ? (
           <EmptyState
             icon={
-              <div className="w-16 h-16 bg-red-50 dark:bg-red-950/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Heart size={32} className="fill-red-500/20" />
               </div>
             }

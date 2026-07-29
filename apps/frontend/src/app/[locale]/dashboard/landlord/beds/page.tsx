@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuthGuard } from "@/features/auth";
 import { useMyListings } from "@/hooks/useListings";
 import { useListingBeds, useListingBedStats, useVacateBed } from "@/hooks/useBeds";
 import { useFinalizeBedRental, useRequestDetails, useQuickRent } from "@/hooks/useRequests";
@@ -205,15 +205,15 @@ export default function LandlordBeds() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold font-cairo">إدارة الأسرة والشواغر</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 font-cairo text-sm">
+          <p className="text-slate-500 mt-1 font-cairo text-sm">
             قم بتسجيل عقود إيجار الأسرة وإخلاءها لتحديث شواغر الأسرة تلقائياً.
           </p>
         </div>
 
         {/* Dropdown Selector */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm max-w-xl">
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm max-w-xl">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 font-cairo">اختر الإعلان المشترك</label>
+            <label className="text-sm font-bold text-slate-700 font-cairo">اختر الإعلان المشترك</label>
             {bedListings.length === 0 ? (
               <p className="text-sm text-red-500 font-cairo">
                 {`ليس لديك أي عقارات من نوع "سرير" (Bed) لتتمكن من إدارتها هنا.`}
@@ -222,7 +222,7 @@ export default function LandlordBeds() {
               <select
                 value={selectedId}
                 onChange={(e) => handleSelectChange(e.target.value)}
-                className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-cairo font-semibold text-slate-800 dark:text-slate-100"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] font-cairo font-semibold text-slate-800"
               >
                 {bedListings.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -239,11 +239,11 @@ export default function LandlordBeds() {
             {/* Stats strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {[
-                { label: "إجمالي الأسرة", value: stats?.total ?? beds.length, color: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300" },
-                { label: "الأسرة المتاحة", value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-green-500/10 text-green-600 dark:text-green-400" },
-                { label: "الأسرة المؤجرة", value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-red-500/10 text-red-600 dark:text-red-400" },
+                { label: "إجمالي الأسرة", value: stats?.total ?? beds.length, color: "bg-slate-100 text-slate-700" },
+                { label: "الأسرة المتاحة", value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-green-500/10 text-green-600" },
+                { label: "الأسرة المؤجرة", value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-red-500/10 text-red-600" },
               ].map((stat, idx) => (
-                <div key={idx} className={`p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center justify-between ${stat.color}`}>
+                <div key={idx} className={`p-5 rounded-2xl border border-slate-200/50 flex items-center justify-between ${stat.color}`}>
                   <div className="space-y-1">
                     <span className="text-xs font-semibold font-cairo opacity-80">{stat.label}</span>
                     <h3 className="text-3xl font-bold font-sans">{stat.value}</h3>
@@ -257,10 +257,10 @@ export default function LandlordBeds() {
 
             {/* Beds occupancy Grid */}
             <div className="space-y-4">
-              <h2 className="text-xl font-bold font-cairo text-slate-800 dark:text-slate-100">تفاصيل إشغال الأسرة</h2>
+              <h2 className="text-xl font-bold font-cairo text-slate-800">تفاصيل إشغال الأسرة</h2>
               
               {beds.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl font-cairo text-slate-400">
+                <div className="text-center py-12 border border-dashed border-slate-200 rounded-3xl font-cairo text-slate-400">
                   <BedIcon size={40} className="mx-auto mb-3 opacity-20" />
                   <p>لا توجد أسرة معرفة لهذا الإعلان بعد.</p>
                 </div>
@@ -274,8 +274,8 @@ export default function LandlordBeds() {
                       key={bed.id}
                       className={`border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between ${
                         bed.isAvailable
-                          ? "border-green-100 bg-green-50/5 dark:bg-green-950/5 dark:border-green-900/50"
-                          : "border-red-100 bg-red-50/5 dark:bg-red-950/5 dark:border-red-900/50"
+                          ? "border-green-100 bg-green-50/5"
+                          : "border-red-100 bg-red-50/5"
                       }`}
                     >
                       <CardBody className="p-5 space-y-4 flex-1 flex flex-col justify-between">
@@ -285,8 +285,8 @@ export default function LandlordBeds() {
                             <Badge
                               className={
                                 bed.isAvailable
-                                  ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400 font-bold"
-                                  : "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold"
+                                  ? "bg-green-100 text-green-800 font-bold"
+                                  : "bg-red-100 text-red-800 font-bold"
                               }
                             >
                               {bed.isAvailable ? "متاح" : "مؤجر"}
@@ -295,10 +295,10 @@ export default function LandlordBeds() {
 
                           {/* Occupant details */}
                           {!bed.isAvailable && (
-                            <div className="mt-4 space-y-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 font-cairo">
+                            <div className="mt-4 space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 font-cairo">
                               <div className="flex items-center gap-2">
                                 <User size={13} className="text-amber-500" />
-                                <span>المستأجر: <span className="font-bold text-slate-800 dark:text-slate-200">{currentTenant?.name || "غير مسجل"}</span></span>
+                                <span>المستأجر: <span className="font-bold text-slate-800">{currentTenant?.name || "غير مسجل"}</span></span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Calendar size={13} className="text-amber-500" />
@@ -309,7 +309,7 @@ export default function LandlordBeds() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                        <div className="pt-4 border-t border-slate-100">
                           {bed.isAvailable ? (
                             <Button
                               onClick={() => setRentModalBed({ id: bed.id, bedNumber: bed.bedNumber })}
@@ -322,7 +322,7 @@ export default function LandlordBeds() {
                             <Button
                               onClick={() => setVacateModalBed({ id: bed.id, bedNumber: bed.bedNumber })}
                               variant="outline"
-                              className="w-full text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/10 font-bold font-cairo py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                              className="w-full text-red-600 border-red-500/20 hover:bg-red-500/10 font-bold font-cairo py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5"
                             >
                               <AlertTriangle size={14} />
                               <span>إخلاء السرير</span>
@@ -352,14 +352,14 @@ export default function LandlordBeds() {
           >
             <form onSubmit={handleRentSubmit} className="p-6 space-y-4 font-cairo">
               {formError && (
-                <div className="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900">
+                <div className="bg-red-50 text-red-600 text-xs px-4 py-3 rounded-xl border border-red-200">
                   {formError}
                 </div>
               )}
 
               {requestId ? (
                 rentalRequest?.tenant && (
-                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                     <p className="text-xs text-slate-400">المستأجر</p>
                     <p className="font-bold mt-1">{rentalRequest.tenant.name}</p>
                   </div>
@@ -367,7 +367,7 @@ export default function LandlordBeds() {
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 font-cairo">رقم هاتف المستأجر</label>
+                    <label className="text-xs font-medium text-slate-700 font-cairo">رقم هاتف المستأجر</label>
                     <div className="relative">
                       <input
                         type="tel"
@@ -375,7 +375,7 @@ export default function LandlordBeds() {
                         placeholder="01XXXXXXXXX"
                         value={quickPhone}
                         onChange={(e) => setQuickPhone(e.target.value)}
-                        className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 font-sans"
+                        className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] text-slate-800 font-sans"
                         style={{ direction: "ltr", textAlign: "right" }}
                       />
                       {isLookingUp && (
@@ -389,16 +389,16 @@ export default function LandlordBeds() {
                   {quickPhone.replace(/[^0-9]/g, "").length >= 11 && (
                     <>
                       {lookedUpTenant ? (
-                        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 px-4 py-3 rounded-xl">
+                        <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-3 rounded-xl">
                           <CheckCircle size={18} className="text-green-500 shrink-0" />
                           <div className="text-xs">
-                            <p className="font-bold text-green-800 dark:text-green-300 font-cairo">مستأجر موثق بالمنصة</p>
+                            <p className="font-bold text-green-800 font-cairo">مستأجر موثق بالمنصة</p>
                             <p className="text-slate-500 mt-0.5 font-cairo">{lookedUpTenant.name}</p>
                           </div>
                         </div>
                       ) : !isLookingUp ? (
-                        <div className="space-y-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 px-4 py-3 rounded-xl">
-                          <p className="text-xs text-amber-800 dark:text-amber-300 font-bold font-cairo">
+                        <div className="space-y-2.5 bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
+                          <p className="text-xs text-amber-800 font-bold font-cairo">
                             هذا الرقم غير مسجل بالمنصة كـ مستأجر حالياً.
                           </p>
                           <a
@@ -423,33 +423,33 @@ export default function LandlordBeds() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">تاريخ البداية</label>
+                  <label className="text-xs font-medium text-slate-700">تاريخ البداية</label>
                   <input
                     type="date"
                     required
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                    className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">تاريخ النهاية</label>
+                  <label className="text-xs font-medium text-slate-700">تاريخ النهاية</label>
                   <input
                     type="date"
                     required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
+                    className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="flex gap-3 pt-4 border-t border-slate-100">
                 <Button
                   type="button"
                   onClick={() => setRentModalBed(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800"
+                  className="flex-1 rounded-xl py-3 border-slate-200"
                 >
                   إلغاء
                 </Button>
@@ -473,20 +473,20 @@ export default function LandlordBeds() {
             title={`إخلاء سرير رقم ${vacateModalBed.bedNumber}`}
           >
             <div className="p-6 text-center space-y-4 font-cairo">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
                 <HelpCircle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">
                 هل أنت متأكد من إخلاء السرير رقم {vacateModalBed.bedNumber}؟
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 سيتم إزالة عقد الإيجار الحالي وتغيير حالة السرير إلى متاح للحجز فوراً.
               </p>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setVacateModalBed(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 dark:border-slate-800 font-semibold"
+                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold"
                 >
                   إلغاء
                 </Button>

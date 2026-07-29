@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, ContractStatus } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 
 export interface RentalHistoryQuery {
@@ -11,6 +11,7 @@ export interface RentalHistoryQuery {
   search?: string;
   from?: string;
   to?: string;
+  status?: ContractStatus;
   sort?: 'asc' | 'desc';
 }
 
@@ -20,7 +21,7 @@ export class RentalHistoryService {
 
   // ── Landlord Rental History ──────────────────────────────────────────────────
   async getLandlordHistory(landlordId: string, query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, sort = 'desc' } = query;
+    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
 
     const skip = (page - 1) * limit;
 
@@ -30,6 +31,10 @@ export class RentalHistoryService {
         landlordId,
       },
     };
+
+    if (status) {
+      where.status = status;
+    }
 
     // Date range filter (on createdAt)
     if (from || to) {
@@ -126,13 +131,17 @@ export class RentalHistoryService {
 
   // ── Tenant Rental History ────────────────────────────────────────────────────
   async getTenantHistory(tenantId: string, query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, sort = 'desc' } = query;
+    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
 
     const skip = (page - 1) * limit;
 
     const where: Prisma.RentalContractWhereInput = {
       tenantId,
     };
+
+    if (status) {
+      where.status = status;
+    }
 
     // Date range filter
     if (from || to) {
@@ -230,11 +239,15 @@ export class RentalHistoryService {
 
   // ── Admin Rental History (All Completed Rentals) ──────────────────────────────
   async getAdminHistory(query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, sort = 'desc' } = query;
+    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
 
     const skip = (page - 1) * limit;
 
     const where: Prisma.RentalContractWhereInput = {};
+
+    if (status) {
+      where.status = status;
+    }
 
     // Date range filter
     if (from || to) {

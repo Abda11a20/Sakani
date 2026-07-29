@@ -67,6 +67,10 @@ export class SearchService {
         (where.price as Prisma.IntFilter).lte = maxPrice;
     }
 
+    if (query.isFurnished !== undefined) {
+      where.isFurnished = query.isFurnished;
+    }
+
     if (genderTarget) where.genderTarget = genderTarget;
 
     if (amenities) {
@@ -80,7 +84,12 @@ export class SearchService {
     }
 
     if (verifiedOnly === true) {
-      where.landlord = { emailVerifiedAt: { not: null } };
+      where.landlord = {
+        OR: [
+          { emailVerifiedAt: { not: null } },
+          { phoneVerifiedAt: { not: null } },
+        ],
+      };
     }
 
     if (specialty) {

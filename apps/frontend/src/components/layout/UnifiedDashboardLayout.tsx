@@ -8,13 +8,12 @@ import { useLocale } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { Home, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLogout } from "@/hooks/useAuth";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useLogout, useAuthGuard } from "@/features/auth";
 import { useUnreadChatCount } from "@/hooks/useChat";
 import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui";
 import { DashboardNavbar } from "./DashboardNavbar";
 import { useUiStore } from "@/store/ui.store";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import type { LucideIcon } from "lucide-react";
 
@@ -26,6 +25,8 @@ export interface DashboardMenuItem {
   icon: LucideIcon;
   href: string;
   exact?: boolean;
+  /** Live badge count shown on sidebar item (e.g. pending requests) */
+  badge?: number;
 }
 
 type AccentTheme = "blue" | "gold" | "admin";
@@ -43,20 +44,20 @@ interface UnifiedDashboardLayoutProps {
 // ── Accent style helpers ────────────────────────────────────────────────────────
 
 const ACCENT_ACTIVE: Record<AccentTheme, string> = {
-  blue:  "bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/20 dark:text-[#7BAEE8] font-bold border-s-4 border-[#1B4F8A]",
-  gold:  "bg-[#D4A847]/10 text-[#C49535] dark:text-[#E8C06A] font-bold border-s-4 border-[#D4A847]",
+  blue: "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border-s-4 border-[#1B4F8A]",
+  gold: "bg-[#D4A847]/10 text-[#C49535] font-bold border-s-4 border-[#D4A847]",
   admin: "bg-[#1B4F8A] text-white shadow-lg shadow-[#1B4F8A]/20",
 };
 
 const ACCENT_ICON: Record<AccentTheme, string> = {
-  blue:  "text-[#1B4F8A] dark:text-[#7BAEE8]",
-  gold:  "text-[#D4A847]",
+  blue: "text-[#1B4F8A]",
+  gold: "text-[#D4A847]",
   admin: "text-[#D4A847]",
 };
 
 const SIDEBAR_BG: Record<AccentTheme, string> = {
-  blue:  "bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-800",
-  gold:  "bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-800",
+  blue: "bg-white border-e border-slate-200",
+  gold: "bg-white border-e border-slate-200",
   admin: "bg-slate-900 border-e border-slate-800 text-slate-400",
 };
 
@@ -75,7 +76,7 @@ export default function UnifiedDashboardLayout({
 
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
-  
+
   const { data: chatUnreadData } = useUnreadChatCount(!!user);
   const chatUnreadCount = chatUnreadData?.unreadCount ?? 0;
 
@@ -116,8 +117,11 @@ export default function UnifiedDashboardLayout({
 
   if (isAuthLoading || !user) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
-        <Spinner size="lg" />
+      <div className="min-h-screen flex flex-col bg-slate-50" dir={isRtl ? "rtl" : "ltr"}>
+        <DashboardNavbar />
+        <div className="flex-1 flex items-center justify-center">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
@@ -134,6 +138,7 @@ export default function UnifiedDashboardLayout({
           const isActive = checkActive(item);
           const labelText = isRtl ? item.label : item.labelEn;
           const isSupportLink = item.href.endsWith("/support") || item.href.endsWith("/chat");
+          const showBadge = item.badge && item.badge > 0;
 
           return (
             <Link
@@ -146,7 +151,7 @@ export default function UnifiedDashboardLayout({
                   ? ACCENT_ACTIVE[accentTheme]
                   : isAdmin
                     ? "text-slate-400 hover:bg-white/5 hover:text-white"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
               <Icon
@@ -162,20 +167,28 @@ export default function UnifiedDashboardLayout({
                 {labelText}
               </span>
 
+              {/* Custom badge from menuItem.badge prop */}
+              {showBadge && (
+                <span className="ms-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white transition-all shrink-0"
+                  style={{ background: "#D4A847" }}>
+                  {(item.badge ?? 0) > 9 ? "9+" : item.badge}
+                </span>
+              )}
+
               {/* Support Unread badge */}
-              {isSupportLink && chatUnreadCount > 0 && (
+              {isSupportLink && chatUnreadCount > 0 && !showBadge && (
                 <span className="ms-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white transition-all shrink-0">
                   {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
                 </span>
               )}
 
-              {/* Tooltip on tablet hover */}
+              {/* Tooltip on tablet hover (hidden on desktop where text is visible) */}
               <span
                 className={cn(
-                  "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+                  "absolute hidden md:group-hover/tooltip:block xl:group-hover/tooltip:hidden px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
                   isAdmin
-                    ? "bg-slate-850 border border-slate-700 md:group-hover/tooltip:block xl:group-hover/tooltip:hidden"
-                    : "bg-slate-800 dark:bg-slate-950",
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-slate-800 border border-slate-700",
                   isRtl ? "right-full mr-3" : "left-full ml-3"
                 )}
               >
@@ -187,13 +200,12 @@ export default function UnifiedDashboardLayout({
       </nav>
 
       {/* Footer Settings */}
-      <div className={cn("p-3 border-t space-y-1", isAdmin ? "border-slate-800" : "border-slate-200 dark:border-slate-800")}>
+      <div className={cn("p-3 border-t space-y-1", isAdmin ? "border-slate-800" : "border-slate-200")}>
 
         {/* Language & Theme — only on mobile/tablet (navbar shows them on desktop) */}
         {!isAdmin && (
           <div className="flex items-center gap-2 px-3 py-2 xl:hidden">
             <LanguageSwitcher />
-            <ThemeToggle />
           </div>
         )}
 
@@ -204,15 +216,15 @@ export default function UnifiedDashboardLayout({
             "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium font-cairo relative group/tooltip transition-all",
             isAdmin
               ? "text-slate-400 hover:bg-white/5 hover:text-white"
-              : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              : "text-slate-600 hover:bg-slate-50"
           )}
         >
           <Home size={18} className={cn("shrink-0", isAdmin ? "text-slate-500" : "text-slate-400")} />
           <span className="inline md:hidden xl:inline">{isRtl ? "الرئيسية" : "Home"}</span>
           <span
             className={cn(
-              "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
-              isAdmin ? "bg-slate-850 border border-slate-700" : "bg-slate-800 dark:bg-slate-950",
+              "absolute hidden md:group-hover/tooltip:block xl:group-hover/tooltip:hidden px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+              isAdmin ? "bg-slate-900 border border-slate-700" : "bg-slate-800 border border-slate-700",
               isRtl ? "right-full mr-3" : "left-full ml-3"
             )}
           >
@@ -221,27 +233,29 @@ export default function UnifiedDashboardLayout({
         </Link>
 
         {/* Logout */}
-        <button
+        <Button
+          variant="ghost"
+          size="md"
           onClick={() => logout.mutate()}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all font-cairo relative group/tooltip",
+            "w-full flex items-center justify-start gap-3 px-3 py-3 rounded-xl text-sm transition-all font-cairo relative group/tooltip",
             isAdmin
               ? "text-red-400 hover:bg-red-500/10 hover:text-red-300"
-              : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+              : "text-status-danger hover:bg-red-50"
           )}
+          leftIcon={<LogOut size={18} className="shrink-0" />}
         >
-          <LogOut size={18} className="shrink-0" />
           <span className="inline md:hidden xl:inline">{isRtl ? "تسجيل الخروج" : "Logout"}</span>
           <span
             className={cn(
-              "absolute hidden xl:hidden group-hover/tooltip:block px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
-              isAdmin ? "bg-slate-850 border border-slate-700" : "bg-slate-800 dark:bg-slate-950",
+              "absolute hidden md:group-hover/tooltip:block xl:group-hover/tooltip:hidden px-2.5 py-1.5 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 font-cairo font-normal pointer-events-none",
+              isAdmin ? "bg-slate-900 border border-slate-700" : "bg-slate-800 border border-slate-700",
               isRtl ? "right-full mr-3" : "left-full ml-3"
             )}
           >
             {isRtl ? "تسجيل الخروج" : "Logout"}
           </span>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -251,7 +265,7 @@ export default function UnifiedDashboardLayout({
     <div
       className={cn(
         "min-h-screen flex flex-col",
-        isAdmin ? "bg-slate-100 dark:bg-slate-950" : "bg-slate-50 dark:bg-slate-950"
+        isAdmin ? "bg-slate-100" : "bg-slate-50"
       )}
       dir={isRtl ? "rtl" : "ltr"}
     >
@@ -281,7 +295,7 @@ export default function UnifiedDashboardLayout({
         <aside
           className={cn(
             "fixed top-16 bottom-0 z-50 w-64 transition-transform duration-300 ease-in-out md:hidden",
-            isAdmin ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800",
+            isAdmin ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200",
             isRtl
               ? sidebarOpen ? "translate-x-0 left-0 border-r" : "-translate-x-full left-0 border-r"
               : sidebarOpen ? "translate-x-0 right-0 border-l" : "translate-x-full right-0 border-l"

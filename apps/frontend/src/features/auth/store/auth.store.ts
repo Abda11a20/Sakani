@@ -1,0 +1,78 @@
+// apps/frontend/src/features/auth/store/auth.store.ts
+import { create } from "zustand";
+import type { User } from "@/types";
+import { TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from "@/lib/constants";
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isHydrated: boolean;
+  // Actions
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  logout: () => void;
+  clearAuth: () => void;
+  hydrate: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  isLoading: false,
+  isHydrated: false,
+
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_KEY);
+    }
+    set({ user });
+  },
+
+  setToken: (token) => {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    set({ token });
+  },
+
+  logout: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    set({ user: null, token: null });
+  },
+
+  clearAuth: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
+    set({ user: null, token: null });
+  },
+
+  hydrate: () => {
+    if (typeof window === "undefined") return;
+
+    set({ isLoading: true });
+
+    try {
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      const savedUser = localStorage.getItem(USER_KEY);
+
+      if (savedToken && savedUser) {
+        const parsedUser: User = JSON.parse(savedUser) as User;
+        set({ token: savedToken, user: parsedUser });
+      }
+    } catch {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    } finally {
+      set({ isLoading: false, isHydrated: true });
+    }
+  },
+}));

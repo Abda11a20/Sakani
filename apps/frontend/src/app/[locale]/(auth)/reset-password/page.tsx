@@ -1,6 +1,7 @@
 // apps/frontend/src/app/[locale]/(auth)/reset-password/page.tsx
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 
 interface ResetPasswordPageProps {
   params: Promise<{ locale: string }>;
@@ -11,7 +12,14 @@ export async function generateMetadata({
 }: ResetPasswordPageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "auth" });
-  return { title: t("resetPassword") };
+
+  return buildPageMetadata({
+    locale,
+    path: "/reset-password",
+    title: `${t("resetPassword")} | Sakany`,
+    description: locale === "ar" ? "تعيين كلمة مرور جديدة" : "Reset your password",
+    noindex: true,
+  });
 }
 
 export default async function ResetPasswordPage({

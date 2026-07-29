@@ -1,7 +1,7 @@
 // apps/frontend/src/hooks/useReviews.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { reviewsApi } from "@/lib/api/reviews.api";
+import { reviewsApi } from "@/features/reviews";
 import type { Review } from "@/types";
 
 export interface CreateReviewPayload {

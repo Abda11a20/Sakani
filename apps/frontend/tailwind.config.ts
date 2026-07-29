@@ -1,16 +1,14 @@
 // apps/frontend/tailwind.config.ts
 import type { Config } from "tailwindcss";
+import { colors, spacing, radius, shadows, zIndex, breakpoints } from "./src/lib/design/tokens";
 
 const config: Config = {
   darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/features/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    // legacy (قبل النقل لـ src/)
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -19,31 +17,68 @@ const config: Config = {
         inter: ["Inter", "sans-serif"],
       },
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // CSS Variable mapped base tokens
+        background: "var(--color-surface-secondary)",
+        foreground: "var(--color-text)",
+        card: "var(--color-surface)",
+        border: "var(--color-border)",
+        muted: "var(--color-text-secondary)",
+
+        // Semantic Token Palette (Backward compatible & Forward facing)
         primary: {
-          DEFAULT: "#1B4F8A",
-          dark: "#1A3A6B",
-          light: "#2E6BC4",
+          DEFAULT: colors.primary.DEFAULT,
+          dark: colors.primary.hover,
+          light: colors.primary.light,
+          hover: colors.primary.hover,
+          active: colors.primary.active,
         },
         gold: {
-          DEFAULT: "#D4A847",
-          dark: "#C49535",
-          light: "#E8C06A",
+          DEFAULT: colors.accent.DEFAULT,
+          dark: colors.accent.hover,
+          light: colors.accent.light,
         },
-        "sakani-dark": "#0F1A2E",
-        "sakani-light": "#F8F9FC",
-        card: "var(--card)",
-        border: "var(--border)",
-        muted: "var(--muted)",
+        accent: {
+          DEFAULT: colors.accent.DEFAULT,
+          hover: colors.accent.hover,
+          active: colors.accent.active,
+          light: colors.accent.light,
+        },
+        surface: {
+          DEFAULT: colors.surface.DEFAULT,
+          secondary: colors.surface.secondary,
+          tertiary: colors.surface.tertiary,
+          elevated: colors.surface.elevated,
+        },
+        text: {
+          DEFAULT: colors.text.DEFAULT,
+          secondary: colors.text.secondary,
+          tertiary: colors.text.tertiary,
+          inverse: colors.text.inverse,
+        },
+        divider: colors.border.divider,
+        status: {
+          success: colors.status.success,
+          warning: colors.status.warning,
+          danger: colors.status.danger,
+          info: colors.status.info,
+        },
+        "sakani-dark": colors.text.DEFAULT,
+        "sakani-light": colors.surface.secondary,
+      },
+      spacing: {
+        ...spacing,
+      },
+      borderRadius: {
+        ...radius,
+      },
+      boxShadow: {
+        ...shadows,
+      },
+      zIndex: {
+        ...zIndex,
       },
       screens: {
-        xs: "480px",
-        sm: "640px",
-        md: "768px",
-        lg: "1024px",
-        xl: "1280px",
-        "2xl": "1536px",
+        ...breakpoints,
       },
     },
   },

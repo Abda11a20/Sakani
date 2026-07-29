@@ -1,7 +1,7 @@
 // apps/frontend/src/hooks/useAdmin.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { adminApi } from "@/lib/api/admin.api";
+import { adminRepository } from "@/features/admin";
 import type { 
   Listing, 
   User, 
@@ -34,7 +34,10 @@ export interface BannedUsersResponse {
 export interface AllRequestsResponse {
   requests: (ViewingRequest & {
     tenant?: Pick<User, "id" | "name" | "phone">;
-    listing?: Pick<Listing, "id" | "title"> & { landlordId: string };
+    listing?: Pick<Listing, "id" | "title" | "governorate" | "district" | "price"> & {
+      landlordId: string;
+      landlord?: Pick<User, "id" | "name" | "phone">;
+    };
   })[];
   meta: PaginationMeta;
 }
@@ -67,7 +70,7 @@ export const useAdminStats = () => {
   return useQuery<DashboardStats>({
     queryKey: ["admin", "stats"],
     queryFn: async (): Promise<DashboardStats> => {
-      const res = await adminApi.getStats();
+      const res = await adminRepository.getStats();
       return res.data as DashboardStats;
     },
     staleTime: 60_000,
@@ -108,7 +111,7 @@ export const useReviewListing = () => {
 
   return useMutation<unknown, Error, { id: string; payload: ReviewListingPayload }>({
     mutationFn: async ({ id, payload }) => {
-      const res = await adminApi.reviewListing(id, payload);
+      const res = await adminRepository.reviewListing(id, payload);
       return res.data;
     },
     onSuccess: () => {
@@ -250,7 +253,7 @@ export const useVerifyUser = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (userId: string) => {
-      const res = await adminApi.verifyUser(userId);
+      const res = await adminRepository.verifyUser(userId);
       return res.data;
     },
     onSuccess: () => {
@@ -278,7 +281,7 @@ export const useToggleUserStatus = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (userId: string) => {
-      const res = await adminApi.toggleUserStatus(userId);
+      const res = await adminRepository.toggleUserStatus(userId);
       return res.data;
     },
     onSuccess: () => {
@@ -321,7 +324,7 @@ export const useIdCardUrl = (userId: string, enabled = false) => {
   return useQuery<{ url: string }>({
     queryKey: ["admin", "idCard", userId],
     queryFn: async () => {
-      const res = await adminApi.getIdCardUrl(userId);
+      const res = await adminRepository.getIdCardUrl(userId);
       return res.data as { url: string };
     },
     enabled: !!userId && enabled,
@@ -335,7 +338,7 @@ export const useBannedUsers = (page = 1, limit = 10, search?: string) => {
   return useQuery<BannedUsersResponse>({
     queryKey: ["admin", "banned", page, limit, search],
     queryFn: async (): Promise<BannedUsersResponse> => {
-      const res = await adminApi.getBanned(page, search);
+      const res = await adminRepository.getBanned(page, search);
       return res.data as BannedUsersResponse;
     },
     staleTime: 30_000,
@@ -347,7 +350,7 @@ export const useBanUser = () => {
 
   return useMutation<unknown, Error, BanUserPayload>({
     mutationFn: async (payload: BanUserPayload) => {
-      const res = await adminApi.banUser(payload);
+      const res = await adminRepository.banUser(payload);
       return res.data;
     },
     onSuccess: () => {
@@ -378,7 +381,7 @@ export const useUnbanUser = () => {
 
   return useMutation<unknown, Error, string>({
     mutationFn: async (blacklistId: string) => {
-      const res = await adminApi.unban(blacklistId);
+      const res = await adminRepository.unban(blacklistId);
       return res.data;
     },
     onSuccess: () => {
@@ -411,20 +414,26 @@ export interface SupportConversation {
   id: string;
   status?: string;
   blockedAt?: string | null;
+  blockedBy?: string | null;
+  blockedByUser?: { id: string; name: string; role?: string } | null;
   blockReason?: string | null;
+  blockCount?: number;
   createdAt?: string;
   updatedAt?: string;
   unreadCount?: number;
   clientUser?: {
     id: string;
     name: string;
+    phone?: string;
+    email?: string | null;
     role?: string;
     avatarUrl?: string | null;
   } | null;
-  participants?: Array<{ id: string; name: string; avatarUrl?: string | null }>;
+  participants?: Array<{ id: string; name: string; phone?: string; avatarUrl?: string | null }>;
   lastMessage?: {
     content: string;
     createdAt: string;
+    type?: string;
     sender: { id: string; name: string };
   } | null;
 }
@@ -434,12 +443,19 @@ export interface SupportConversationsResponse {
   meta: PaginationMeta;
 }
 
-export const useAdminSupport = (page = 1, limit = 30) => {
+export const useAdminSupport = (status?: string, reason?: string, search?: string, page = 1, limit = 30) => {
   return useQuery<SupportConversationsResponse>({
-    queryKey: ["admin", "support", page, limit],
+    queryKey: ["admin", "support", status, reason, search, page, limit],
     queryFn: async (): Promise<SupportConversationsResponse> => {
+      const pageNum = typeof page === "number" ? page : 1;
+      const limitNum = typeof limit === "number" ? limit : 30;
+      const params: Record<string, string | number | undefined> = { page: pageNum, limit: limitNum };
+      if (status) params.status = status;
+      if (reason) params.reason = reason;
+      if (search) params.search = search;
+
       const res = await api.get<SupportConversationsResponse>("/admin/chat/conversations", {
-        params: { page, limit },
+        params,
       });
       return res.data;
     },
@@ -450,8 +466,8 @@ export const useAdminSupport = (page = 1, limit = 30) => {
 export const useBlockConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ conversationId, reason }: { conversationId: string; reason: string }) => {
-      const res = await api.post(`/admin/chat/conversations/${conversationId}/block`, { reason });
+    mutationFn: async ({ conversationId, reason, note }: { conversationId: string; reason?: string; note?: string }) => {
+      const res = await api.post(`/admin/chat/conversations/${conversationId}/block`, { reason, note });
       return res.data;
     },
     onSuccess: () => {
@@ -469,6 +485,52 @@ export const useUnblockConversation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "support"] });
+    },
+  });
+};
+
+// ── Account Lifecycle Hooks ──────────────────────────────────────────────────
+
+export const useAdminAccountLifecycle = (status?: string, search?: string, page = 1, limit = 20) => {
+  return useQuery({
+    queryKey: ["admin", "account-lifecycle", status, search, page, limit],
+    queryFn: async () => {
+      const params: Record<string, string | number | undefined> = { page, limit };
+      if (status) params.status = status;
+      if (search) params.search = search;
+      const res = await api.get("/admin/account-lifecycle", { params });
+      return res.data;
+    },
+    staleTime: 10_000,
+  });
+};
+
+export const useRestoreAccount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, reason }: { userId: string; reason?: string }) => {
+      const res = await api.post(`/admin/account-lifecycle/${userId}/restore`, { reason });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "account-lifecycle"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+};
+
+export const usePurgeAccount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.post(`/admin/account-lifecycle/${userId}/purge`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "account-lifecycle"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 };
@@ -533,6 +595,63 @@ export const useAdminRentals = (page = 1, limit = 10, search?: string, from?: st
       return res.data;
     },
     staleTime: 30_000,
+  });
+};
+
+// ── Community Reports ──────────────────────────────────────────────────────────
+
+export interface CommunityReportItem {
+  id: string;
+  reason: "SPAM" | "HARASSMENT" | "INAPPROPRIATE" | "FAKE" | "OTHER";
+  details?: string | null;
+  status: "PENDING" | "RESOLVED" | "DISMISSED";
+  createdAt: string;
+  reporter?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+  };
+  post?: {
+    id: string;
+    title: string;
+    description: string;
+    user?: {
+      id: string;
+      name: string;
+      role?: string;
+    };
+  };
+}
+
+export interface AdminReportsResponse {
+  reports: CommunityReportItem[];
+  total: number;
+}
+
+export const useAdminReports = (page = 1, limit = 10) => {
+  return useQuery<AdminReportsResponse>({
+    queryKey: ["admin", "reports", page, limit],
+    queryFn: async (): Promise<AdminReportsResponse> => {
+      const res = await api.get<AdminReportsResponse>("/admin/community/reports", {
+        params: { page, limit },
+      });
+      return res.data;
+    },
+    staleTime: 15_000,
+  });
+};
+
+export const useResolveReport = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "RESOLVED" | "DISMISSED" }) => {
+      const res = await api.patch(`/admin/community/reports/${id}/resolve`, { status });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "reports"] });
+    },
   });
 };
 
