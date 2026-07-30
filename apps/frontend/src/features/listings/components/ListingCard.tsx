@@ -1,142 +1,135 @@
-// apps/frontend/src/components/listings/ListingCard.tsx
+// apps/frontend/src/features/listings/components/ListingCard.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useLocale } from "next-intl";
 import {
-  MapPin,
-  Star,
-  Wifi,
-  Wind,
   Building2,
-  BedDouble,
-  ArrowLeft,
-  ArrowRight,
-  Heart,
-  CheckCircle,
-  Sparkles,
-  Clock,
-  Calendar,
-  MessageSquare,
-  Phone,
-  Loader2,
-  WashingMachine,
-  Tv,
-  Flame,
-  Droplets,
-  Filter,
-  Shield,
-  Home,
-  Car,
-  ArrowUpDown,
-  Zap,
   Bed,
   Users,
+  MapPin,
+  Sparkles,
+  CheckCircle,
+  Clock,
+  Heart,
+  Calendar,
+  Phone,
+  MessageSquare,
+  Shield,
+  Star,
+  Loader2,
+  WashingMachine,
+  Wind,
+  Wifi,
+  ArrowUpDown,
+  Zap,
+  Droplets,
+  Flame,
+  BedDouble,
+  Home,
+  Car,
+  Tv,
+  Filter,
 } from "lucide-react";
-import type { Listing, Alert } from "@/types";
+
+import { Modal, Avatar, Badge } from "@/components/ui";
+import { getImageUrl, cn } from "@/lib/utils";
+import type { Listing } from "@/types";
 import { getIdentityVerificationStatus, isUserVerified } from "@/types";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { Modal } from "@/components/ui/modal";
-import Image from "next/image";
-import { cn, getImageUrl } from "@/lib/utils";
-import { getFurnishingLabel } from "@/lib/helpers";
 import { useWishlist } from "@/hooks/useWishlist";
-import { getWhatsAppLink } from "@/lib/whatsapp";
 import { useAuthStore } from "@/features/auth";
-// eslint-disable-next-line import/no-named-as-default-member
 import { useListingContactAccess } from "@/hooks/useRequests";
 
 interface ListingCardProps {
   listing: Listing;
   className?: string;
   rating?: number;
-  matchingAlert?: Alert | null;
+  matchingAlert?: any;
 }
 
-// ── Smart Amenity Resolver ──────────────────────────────────────────────────
-const AMENITY_MAP: Record<string, { icon: React.ReactNode; labelAr: string }> = {
-  wifi:            { icon: <Wifi size={13} />, labelAr: "واي فاي / إنترنت" },
-  ac:              { icon: <Wind size={13} />, labelAr: "تكييف" },
-  air_conditioner: { icon: <Wind size={13} />, labelAr: "تكييف" },
-  elevator:        { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير" },
-  lift:            { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير" },
-  washer:          { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس" },
-  washing_machine: { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس" },
-  tv:              { icon: <Tv size={13} />, labelAr: "شاشة تلفزيون" },
-  fan:             { icon: <Wind size={13} />, labelAr: "مراوح" },
-  stove:           { icon: <Flame size={13} />, labelAr: "بوتاجاز" },
-  fridge:          { icon: <Zap size={13} />, labelAr: "ثلاجة" },
-  refrigerator:    { icon: <Zap size={13} />, labelAr: "ثلاجة" },
-  water_heater:    { icon: <Droplets size={13} />, labelAr: "سخان مياه" },
-  heater:          { icon: <Droplets size={13} />, labelAr: "سخان مياه" },
-  water_filter:    { icon: <Filter size={13} />, labelAr: "فلتر مياه" },
-  natural_gas:     { icon: <Flame size={13} />, labelAr: "غاز طبيعي" },
-  gas:             { icon: <Flame size={13} />, labelAr: "غاز طبيعي" },
-  furnished:       { icon: <BedDouble size={13} />, labelAr: "مفروش" },
-  security:        { icon: <Shield size={13} />, labelAr: "أمن وحراسة" },
-  balcony:         { icon: <Home size={13} />, labelAr: "بلكونة" },
-  parking:         { icon: <Car size={13} />, labelAr: "جراج" },
+// ── Smart Amenity Resolver with Locale Support ─────────────────────────────────
+const AMENITY_MAP: Record<string, { icon: React.ReactNode; labelAr: string; labelEn: string }> = {
+  wifi:            { icon: <Wifi size={13} />, labelAr: "واي فاي / إنترنت", labelEn: "Wi-Fi / Internet" },
+  ac:              { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
+  air_conditioner: { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
+  elevator:        { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير", labelEn: "Elevator" },
+  lift:            { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير", labelEn: "Elevator" },
+  washer:          { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس", labelEn: "Washing Machine" },
+  washing_machine: { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس", labelEn: "Washing Machine" },
+  tv:              { icon: <Tv size={13} />, labelAr: "شاشة تلفزيون", labelEn: "TV" },
+  fan:             { icon: <Wind size={13} />, labelAr: "مراوح", labelEn: "Fan" },
+  stove:           { icon: <Flame size={13} />, labelAr: "بوتاجاز", labelEn: "Stove" },
+  fridge:          { icon: <Zap size={13} />, labelAr: "ثلاجة", labelEn: "Refrigerator" },
+  refrigerator:    { icon: <Zap size={13} />, labelAr: "ثلاجة", labelEn: "Refrigerator" },
+  water_heater:    { icon: <Droplets size={13} />, labelAr: "سخان مياه", labelEn: "Water Heater" },
+  heater:          { icon: <Droplets size={13} />, labelAr: "سخان مياه", labelEn: "Water Heater" },
+  water_filter:    { icon: <Filter size={13} />, labelAr: "فلتر مياه", labelEn: "Water Filter" },
+  natural_gas:     { icon: <Flame size={13} />, labelAr: "غاز طبيعي", labelEn: "Natural Gas" },
+  gas:             { icon: <Flame size={13} />, labelAr: "غاز طبيعي", labelEn: "Natural Gas" },
+  furnished:       { icon: <BedDouble size={13} />, labelAr: "مفروش", labelEn: "Furnished" },
+  security:        { icon: <Shield size={13} />, labelAr: "أمن وحراسة", labelEn: "Security" },
+  balcony:         { icon: <Home size={13} />, labelAr: "بلكونة", labelEn: "Balcony" },
+  parking:         { icon: <Car size={13} />, labelAr: "جراج", labelEn: "Parking" },
 
-  "واي فاي / إنترنت": { icon: <Wifi size={13} />, labelAr: "واي فاي / إنترنت" },
-  "واي فاي":          { icon: <Wifi size={13} />, labelAr: "واي فاي" },
-  "إنترنت":          { icon: <Wifi size={13} />, labelAr: "إنترنت" },
-  "تكييف":           { icon: <Wind size={13} />, labelAr: "تكييف" },
-  "أسانسير":         { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير" },
-  "غسالة ملابس":     { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس" },
-  "غسالة":           { icon: <WashingMachine size={13} />, labelAr: "غسالة" },
-  "شاشة تلفزيون":    { icon: <Tv size={13} />, labelAr: "شاشة تلفزيون" },
-  "تلفزيون":         { icon: <Tv size={13} />, labelAr: "تلفزيون" },
-  "ثلاجة":           { icon: <Zap size={13} />, labelAr: "ثلاجة" },
-  "سخان مياه":       { icon: <Droplets size={13} />, labelAr: "سخان مياه" },
-  "سخان":            { icon: <Droplets size={13} />, labelAr: "سخان" },
-  "غاز طبيعي":      { icon: <Flame size={13} />, labelAr: "غاز طبيعي" },
-  "أمن وحراسة":      { icon: <Shield size={13} />, labelAr: "أمن وحراسة" },
-  "أمن":             { icon: <Shield size={13} />, labelAr: "أمن" },
-  "بوتاجاز":         { icon: <Flame size={13} />, labelAr: "بوتاجاز" },
-  "مراوح":           { icon: <Wind size={13} />, labelAr: "مراوح" },
+  "واي فاي / إنترنت": { icon: <Wifi size={13} />, labelAr: "واي فاي / إنترنت", labelEn: "Wi-Fi / Internet" },
+  "واي فاي":          { icon: <Wifi size={13} />, labelAr: "واي فاي", labelEn: "Wi-Fi" },
+  "إنترنت":          { icon: <Wifi size={13} />, labelAr: "إنترنت", labelEn: "Internet" },
+  "تكييف":           { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
+  "أسانسير":         { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير", labelEn: "Elevator" },
+  "غسالة ملابس":     { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس", labelEn: "Washing Machine" },
+  "ثلاجة":           { icon: <Zap size={13} />, labelAr: "ثلاجة", labelEn: "Refrigerator" },
+  "سخان مياه":       { icon: <Droplets size={13} />, labelAr: "سخان مياه", labelEn: "Water Heater" },
+  "غاز طبيعي":      { icon: <Flame size={13} />, labelAr: "غاز طبيعي", labelEn: "Natural Gas" },
+  "أمن وحراسة":      { icon: <Shield size={13} />, labelAr: "أمن وحراسة", labelEn: "Security" },
 };
 
-function getAmenityDetails(rawKey: string): { icon: React.ReactNode; label: string } {
+function getAmenityDetails(rawKey: string, isEn: boolean): { icon: React.ReactNode; label: string } {
   if (!rawKey) return { icon: <CheckCircle size={13} />, label: "" };
   const trimmed = rawKey.trim();
   const lower = trimmed.toLowerCase();
 
-  if (AMENITY_MAP[trimmed]) return { icon: AMENITY_MAP[trimmed].icon, label: AMENITY_MAP[trimmed].labelAr };
-  if (AMENITY_MAP[lower]) return { icon: AMENITY_MAP[lower].icon, label: AMENITY_MAP[lower].labelAr };
-
-  if (lower.includes("غسالة") || lower.includes("غساله")) return { icon: <WashingMachine size={13} />, label: trimmed };
-  if (lower.includes("تكييف") || lower.includes("مكيف")) return { icon: <Wind size={13} />, label: trimmed };
-  if (lower.includes("واي") || lower.includes("انترنت") || lower.includes("إنترنت") || lower.includes("wifi")) return { icon: <Wifi size={13} />, label: trimmed };
-  if (lower.includes("اسانسير") || lower.includes("أسانسير") || lower.includes("مصعد")) return { icon: <ArrowUpDown size={13} />, label: trimmed };
-  if (lower.includes("ثلاجة") || lower.includes("ثلاجه")) return { icon: <Zap size={13} />, label: trimmed };
-  if (lower.includes("سخان")) return { icon: <Droplets size={13} />, label: trimmed };
-  if (lower.includes("غاز")) return { icon: <Flame size={13} />, label: trimmed };
-  if (lower.includes("بوتاجاز") || lower.includes("بوطاجاز")) return { icon: <Flame size={13} />, label: trimmed };
-  if (lower.includes("تلفزيون") || lower.includes("شاشة") || lower.includes("شاشه")) return { icon: <Tv size={13} />, label: trimmed };
-  if (lower.includes("امن") || lower.includes("أمن") || lower.includes("حراسة")) return { icon: <Shield size={13} />, label: trimmed };
+  const mapped = AMENITY_MAP[trimmed] || AMENITY_MAP[lower];
+  if (mapped) return { icon: mapped.icon, label: isEn ? mapped.labelEn : mapped.labelAr };
 
   return { icon: <CheckCircle size={13} />, label: trimmed };
 }
 
-const GENDER_TARGET_LABELS: Record<string, string> = {
-  male: "شباب فقط",
-  female: "بنات فقط",
-  mixed: "شباب أو بنات",
-  family: "عائلات فقط",
-  any: "الجميع",
-};
+function getUnitTypeLabel(type: string | undefined, isFurnished: boolean | undefined, isEn: boolean): string {
+  const t = (type || "").toLowerCase();
+  if (isEn) {
+    if (t === "apartment") return isFurnished ? "Furnished Apartment" : "Full Apartment";
+    if (t === "room") return "Private Room";
+    if (t === "bed") return "Shared Bed";
+    return "Apartment";
+  }
+  if (t === "apartment") return isFurnished ? "شقة مفروشة" : "شقة كاملة";
+  if (t === "room") return "غرفة خاصة";
+  if (t === "bed") return "سرير مشترك";
+  return "شقة";
+}
 
-const UNIT_TYPE_LABELS: Record<string, string> = {
-  apartment: "شقة كاملة",
-  bed: "سرير مشترك",
-};
+function getGenderTargetLabel(target: string | undefined, isEn: boolean): string {
+  const g = (target || "").toLowerCase();
+  if (isEn) {
+    if (g === "males_only" || g === "male" || g === "males") return "Males Only";
+    if (g === "females_only" || g === "female" || g === "females") return "Females Only";
+    if (g === "families" || g === "family") return "Families Only";
+    if (g === "mixed") return "Mixed";
+    return "All";
+  }
+  if (g === "males_only" || g === "male" || g === "males") return "شباب فقط";
+  if (g === "females_only" || g === "female" || g === "females") return "بنات فقط";
+  if (g === "families" || g === "family") return "عائلات فقط";
+  if (g === "mixed") return "شباب أو بنات";
+  return "الجميع";
+}
 
 export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating, matchingAlert }) => {
   const locale = useLocale();
-  const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
-  const [showPreview, setShowPreview] = React.useState(false);
+  const isEn = locale === "en";
+  const [showPreview, setShowPreview] = useState(false);
 
   // Bed stats
   const totalBeds = listing.totalBeds ?? (listing.beds ? listing.beds.length : 0);
@@ -145,7 +138,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
   );
   const bookedBedsCount = Math.max(0, totalBeds - availableBedsCount);
 
-  const formattedPrice = new Intl.NumberFormat("ar-EG").format(listing.price);
+  const formattedPrice = new Intl.NumberFormat(isEn ? "en-US" : "ar-EG").format(listing.price);
   const isBedListing = listing.unitType === "bed" || listing.type === "bed";
 
   // Favorite / Wishlist
@@ -196,27 +189,27 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
             </div>
           )}
 
-          {/* Dark Overlay gradient for crisp text overlay */}
+          {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
           {/* Top Badges Overlay — Start Side */}
           <div className="absolute start-2.5 top-2.5 flex flex-col gap-1.5 items-start z-10">
             <Badge className="bg-[#1B4F8A]/90 backdrop-blur-md text-white border-none font-bold text-[11px] px-2.5 py-0.5 shadow-md flex items-center gap-1">
               {isBedListing ? <Bed size={12} /> : <Building2 size={12} />}
-              <span>{UNIT_TYPE_LABELS[listing.unitType || listing.type] || getFurnishingLabel(listing.unitType || listing.type, listing.isFurnished)}</span>
+              <span>{getUnitTypeLabel(listing.unitType || listing.type, listing.isFurnished, isEn)}</span>
             </Badge>
 
             {listing.genderTarget && (
               <Badge className="bg-slate-900/80 backdrop-blur-md text-white border border-slate-700/50 font-bold text-[11px] px-2 py-0.5 shadow-md flex items-center gap-1">
                 <Users size={11} />
-                <span>{GENDER_TARGET_LABELS[listing.genderTarget] || listing.genderTarget}</span>
+                <span>{getGenderTargetLabel(listing.genderTarget, isEn)}</span>
               </Badge>
             )}
 
             {matchingAlert && (
               <Badge className="bg-amber-500 text-white gap-1 shadow-md border-none font-bold animate-pulse text-[10px] px-2 py-0.5">
                 <Sparkles size={10} className="animate-spin text-white" style={{ animationDuration: "3s" }} />
-                تطابق ذكي
+                {isEn ? "Smart Match" : "تطابق ذكي"}
               </Badge>
             )}
           </div>
@@ -229,7 +222,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                 return (
                   <Badge variant="success" className="gap-1 backdrop-blur-md bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 shadow-md">
                     <CheckCircle size={11} />
-                    موثق
+                    {isEn ? "Verified" : "موثق"}
                   </Badge>
                 );
               }
@@ -237,7 +230,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                 return (
                   <Badge className="bg-amber-500 backdrop-blur-md text-white gap-1 font-bold text-[10px] px-2 py-0.5 shadow-md">
                     <Clock size={11} />
-                    قيد المراجعة
+                    {isEn ? "Pending" : "قيد المراجعة"}
                   </Badge>
                 );
               }
@@ -247,7 +240,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
             {listing.isFeatured && (
               <Badge variant="gold" className="gap-1 backdrop-blur-md font-bold text-[10px] px-2 py-0.5 shadow-md">
                 <Sparkles size={11} />
-                مميز
+                {isEn ? "Featured" : "مميز"}
               </Badge>
             )}
           </div>
@@ -259,7 +252,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               "absolute bottom-2.5 end-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md transition-all duration-200 shadow-md hover:scale-110 z-10",
               isFavorite ? "text-rose-500" : "text-slate-500 hover:text-rose-500"
             )}
-            aria-label="إضافة للمفضلة"
+            aria-label={isEn ? "Add to wishlist" : "إضافة للمفضلة"}
           >
             <Heart size={17} className={isFavorite ? "fill-rose-500 text-rose-500" : ""} />
           </button>
@@ -274,7 +267,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                 {formattedPrice}
               </span>
               <span className="text-xs font-bold text-slate-500">
-                ج.م / شهري
+                {isEn ? "EGP / mo" : "ج.م / شهري"}
               </span>
             </div>
 
@@ -291,38 +284,37 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
             {listing.title}
           </h3>
 
-          {/* ── Clean Compact Beds Stats Box (No extra sub-labels) ── */}
+          {/* Beds Stats Box */}
           <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200/80">
-            {/* Total Beds */}
             <div className="flex items-center justify-center gap-1.5 text-center">
               <BedDouble size={14} className="text-[#1B4F8A] shrink-0" />
               <span className="text-xs font-bold text-slate-800">
-                {totalBeds > 0 ? `${totalBeds} أسِرّة` : (isBedListing ? "1 سرير" : "شقة")}
+                {totalBeds > 0
+                  ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
+                  : isBedListing ? (isEn ? "1 Bed" : "1 سرير") : (isEn ? "Apartment" : "شقة")}
               </span>
             </div>
 
-            {/* Available Beds */}
             <div className="flex items-center justify-center gap-1 text-center border-r border-l border-slate-200">
               <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-xs font-bold text-emerald-700">
-                {availableBedsCount} متاح
+                {availableBedsCount} {isEn ? "Avail" : "متاح"}
               </span>
             </div>
 
-            {/* Booked Beds */}
             <div className="flex items-center justify-center gap-1 text-center">
               <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
               <span className="text-xs font-bold text-rose-700">
-                {bookedBedsCount} محجوز
+                {bookedBedsCount} {isEn ? "Booked" : "محجوز"}
               </span>
             </div>
           </div>
 
-          {/* ── Direct Amenities Chips (Directly shown without toggle title) ── */}
+          {/* Amenities Chips */}
           {listing.amenities && listing.amenities.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {listing.amenities.slice(0, 3).map((rawKey) => {
-                const { icon, label } = getAmenityDetails(rawKey);
+                const { icon, label } = getAmenityDetails(rawKey, isEn);
                 return (
                   <span
                     key={rawKey}
@@ -335,7 +327,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               })}
               {listing.amenities.length > 3 && (
                 <span className="text-[11px] font-bold text-[#1B4F8A] bg-[#1B4F8A]/5 border border-[#1B4F8A]/20 rounded-lg px-2 py-0.5">
-                  +{listing.amenities.length - 3} المزيد
+                  +{listing.amenities.length - 3} {isEn ? "more" : "المزيد"}
                 </span>
               )}
             </div>
@@ -343,14 +335,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
 
           <div className="flex-1" />
 
-          {/* ── Landlord & Rating Row ── */}
+          {/* Landlord Row */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100 min-h-[40px]">
             {listing.landlord ? (
               <button
                 type="button"
                 onClick={handleLandlordClick}
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0"
-                title="عرض معلومات المعلن"
+                title={isEn ? "View landlord info" : "عرض معلومات المعلن"}
               >
                 <Avatar
                   src={listing.landlord.avatarUrl || null}
@@ -381,22 +373,19 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
         </div>
 
         {/* ── Unified Sakani Primary CTA Button ── */}
-        <div className="px-4 pb-4">
-          <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1B4F8A] hover:bg-[#153e6d] text-white font-bold px-4 py-2.5 text-sm transition-all duration-200 shadow-md">
-            <span>عرض التفاصيل</span>
-            <span style={{ direction: "ltr" }}>
-              <ArrowIcon size={16} className="transition-transform group-hover:translate-x-1" />
-            </span>
+        <div className="px-3 pb-3">
+          <div className="flex w-full items-center justify-center rounded-xl bg-primary hover:bg-primary-dark text-white font-bold px-3 py-2 text-xs sm:text-sm transition-all shadow-sm">
+            <span>{isEn ? "View Details" : "عرض التفاصيل"}</span>
           </div>
         </div>
       </Link>
 
-      {/* ── Landlord Profile Preview Modal ── */}
+      {/* Preview Modal */}
       {listing.landlord && (
         <Modal
           isOpen={showPreview}
           onClose={() => setShowPreview(false)}
-          title="معاينة الحساب الشخصي للمعلن"
+          title={isEn ? "Landlord Profile Preview" : "معاينة الحساب الشخصي للمعلن"}
         >
           <div className="flex flex-col items-center text-center p-4 space-y-6 font-cairo">
             <Avatar
@@ -421,7 +410,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                     return (
                       <Badge className="bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 rounded-full px-2.5 py-0.5">
                         <CheckCircle size={12} />
-                        <span>موثق الهوية</span>
+                        <span>{isEn ? "Identity Verified" : "موثق الهوية"}</span>
                       </Badge>
                     );
                   }
@@ -429,13 +418,13 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                     return (
                       <Badge className="bg-amber-500 text-white font-bold text-xs flex items-center gap-1 rounded-full px-2.5 py-0.5">
                         <Clock size={12} />
-                        <span>قيد مراجعة الهوية</span>
+                        <span>{isEn ? "Pending Review" : "قيد مراجعة الهوية"}</span>
                       </Badge>
                     );
                   }
                   return (
                     <Badge className="bg-slate-100 text-slate-500 font-bold text-xs rounded-full px-2.5 py-0.5">
-                      لم يوثق الهوية
+                      {isEn ? "Not Verified" : "لم يوثق الهوية"}
                     </Badge>
                   );
                 })()}
@@ -444,17 +433,17 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
 
             <div className="w-full border-t border-slate-100 pt-4 grid grid-cols-2 gap-4 text-start">
               <div className="space-y-1">
-                <span className="text-xs text-slate-400 block">عضو منذ</span>
+                <span className="text-xs text-slate-400 block">{isEn ? "Member Since" : "عضو منذ"}</span>
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
                   <Calendar size={14} className="text-slate-400" />
-                  {new Date(listing.landlord.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "long" })}
+                  {new Date(listing.landlord.createdAt).toLocaleDateString(isEn ? "en-US" : "ar-EG", { year: "numeric", month: "long" })}
                 </span>
               </div>
               <div className="space-y-1">
-                <span className="text-xs text-slate-400 block">عدد الإعلانات</span>
+                <span className="text-xs text-slate-400 block">{isEn ? "Listings Count" : "عدد الإعلانات"}</span>
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
                   <Building2 size={14} className="text-slate-400" />
-                  {listing.landlord._count?.listings ?? 1} إعلان
+                  {listing.landlord._count?.listings ?? 1} {isEn ? "Listings" : "إعلان"}
                 </span>
               </div>
             </div>
@@ -465,11 +454,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               </div>
             ) : !currentUser ? (
               <div className="w-full border-t border-slate-100 pt-4 text-xs text-rose-500 font-bold leading-relaxed px-4 py-2 bg-rose-50 rounded-xl border border-rose-200">
-                لا يمكن التواصل مع المعلن إلا بعد تسجيل الدخول كـ (مستأجر) وتقديم طلب معاينة ويقوم المؤجر بقبوله.
+                {isEn
+                  ? "You must log in as a Tenant and request a viewing to contact the landlord."
+                  : "لا يمكن التواصل مع المعلن إلا بعد تسجيل الدخول كـ (مستأجر) وتقديم طلب معاينة ويقوم المؤجر بقبوله."}
               </div>
             ) : currentUser.role !== "tenant" ? (
               <div className="w-full border-t border-slate-100 pt-4 text-xs text-rose-500 font-bold leading-relaxed px-4 py-2 bg-rose-50 rounded-xl border border-rose-200">
-                يجب أن تسجل دخولك بصفة (مستأجر) لتتمكن من تقديم طلبات المعاينة والتواصل مع المعلنين.
+                {isEn
+                  ? "Log in as a tenant to request viewings and contact landlords."
+                  : "يجب أن تسجل دخولك بصفة (مستأجر) لتتمكن من تقديم طلبات المعاينة والتواصل مع المعلنين."}
               </div>
             ) : contactAccess?.canViewPhone && contactAccess.phone ? (
               <div className="w-full border-t border-slate-100 pt-4 flex flex-col gap-2">
@@ -477,20 +470,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
                   href={`tel:${contactAccess.phone}`}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-[#1B4F8A] text-white hover:bg-[#153e6d] transition-all shadow-md"
                 >
-                  <Phone size={16} /> اتصل بالمعلن
-                </a>
-                <a
-                  href={getWhatsAppLink(contactAccess.phone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md"
-                >
-                  <MessageSquare size={16} /> مراسلة عبر واتساب
+                  <Phone size={16} /> {isEn ? "Call Landlord" : "اتصل بالمعلن"}
                 </a>
               </div>
             ) : (
               <div className="w-full border-t border-slate-100 pt-4 text-xs text-amber-600 font-bold leading-relaxed px-4 py-3 bg-amber-50 rounded-xl border border-amber-200/50">
-                لا يمكن التواصل مع المعلن إلا بعد قبول طلب المعاينة الخاص بك من قبل المؤجر.
+                {isEn
+                  ? "Contact details will be unlocked once your viewing request is accepted by the landlord."
+                  : "لا يمكن التواصل مع المعلن إلا بعد قبول طلب المعاينة الخاص بك من قبل المؤجر."}
               </div>
             )}
           </div>
@@ -500,7 +487,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
   );
 };
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
 export const ListingCardSkeleton: React.FC = () => (
   <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white animate-pulse">
     <div className="h-[200px] bg-slate-200 shrink-0" />
@@ -518,5 +504,3 @@ export const ListingCardSkeleton: React.FC = () => (
     </div>
   </div>
 );
-
-

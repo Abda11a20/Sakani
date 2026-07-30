@@ -14,69 +14,85 @@ export interface FormattedNotification {
 }
 
 /**
- * Translates legacy database text strings stored in English into Arabic when in Arabic mode.
+ * Translates legacy database text strings dynamically between English and Arabic.
  */
 function translateLegacyText(title: string = "", body: string = "", isAr: boolean) {
-  if (!isAr) return { title, body };
-
   let translatedTitle = title;
-  const lowerTitle = title.toLowerCase();
-
-  if (lowerTitle.includes("bed rental completed")) {
-    translatedTitle = "تم تأجير السرير بنجاح";
-  } else if (lowerTitle.includes("rental completed")) {
-    translatedTitle = "تم تأجير الوحدة بنجاح";
-  } else if (lowerTitle.includes("new viewing request")) {
-    translatedTitle = "طلب معاينة جديد";
-  } else if (lowerTitle.includes("viewing request accepted")) {
-    translatedTitle = "تم قبول طلب المعاينة";
-  } else if (lowerTitle.includes("viewing request rejected")) {
-    translatedTitle = "تم رفض طلب المعاينة";
-  } else if (lowerTitle.includes("listing approved")) {
-    translatedTitle = "تمت الموافقة على الإعلان";
-  } else if (lowerTitle.includes("listing rejected")) {
-    translatedTitle = "تم رفض الإعلان";
-  } else if (lowerTitle.includes("new review")) {
-    translatedTitle = "تقييم جديد";
-  } else if (lowerTitle.includes("new message")) {
-    translatedTitle = "رسالة جديدة";
-  }
-
   let translatedBody = body;
-  const quoteMatch = body.match(/"([^"]+)"/);
-  const propertyName = quoteMatch ? quoteMatch[1] : "";
+  const lowerTitle = title.toLowerCase();
   const lowerBody = body.toLowerCase();
 
-  if (lowerBody.includes("bed rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName
-      ? `تم إتمام عملية تأجير سرير بنجاح في العقار "${propertyName}".`
-      : "تم إتمام عملية تأجير سرير بنجاح.";
-  } else if (lowerBody.includes("your bed rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName
-      ? `تم إتمام عملية تأجير سرير لك بنجاح في العقار "${propertyName}".`
-      : "تم إتمام عملية تأجير السرير لك بنجاح.";
-  } else if (lowerBody.includes("rental for") && lowerBody.includes("completed")) {
-    translatedBody = propertyName
-      ? `تم إتمام تأجير العقار "${propertyName}" بنجاح.`
-      : "تم إتمام تأجير العقار بنجاح.";
-  } else if (lowerBody.includes("you received a new review on")) {
-    translatedBody = propertyName
-      ? `تلقيت تقييماً جديداً على عقارك "${propertyName}".`
-      : "تلقيت تقييماً جديداً على عقارك.";
-  } else if (lowerBody.includes("requested to view")) {
-    translatedBody = propertyName
-      ? `قدم مستأجر طلب معاينة للعقار "${propertyName}".`
-      : "قدم مستأجر طلب معاينة جديد لعقارك.";
+  const quoteMatch = body.match(/"([^"]+)"/);
+  const propertyName = quoteMatch ? quoteMatch[1] : "";
+
+  if (isAr) {
+    if (lowerTitle.includes("bed rental completed")) translatedTitle = "تم تأجير السرير بنجاح";
+    else if (lowerTitle.includes("rental completed")) translatedTitle = "تم تأجير الوحدة بنجاح";
+    else if (lowerTitle.includes("new viewing request")) translatedTitle = "طلب معاينة جديد";
+    else if (lowerTitle.includes("viewing request accepted")) translatedTitle = "تم قبول طلب المعاينة";
+    else if (lowerTitle.includes("viewing request rejected")) translatedTitle = "تم رفض طلب المعاينة";
+    else if (lowerTitle.includes("listing approved")) translatedTitle = "تمت الموافقة على الإعلان";
+    else if (lowerTitle.includes("listing rejected")) translatedTitle = "تم رفض الإعلان";
+    else if (lowerTitle.includes("new review")) translatedTitle = "تقييم جديد";
+    else if (lowerTitle.includes("new message")) translatedTitle = "رسالة جديدة";
+
+    if (lowerBody.includes("bed rental for") && lowerBody.includes("completed")) {
+      translatedBody = propertyName
+        ? `تم إتمام عملية تأجير سرير بنجاح في العقار "${propertyName}".`
+        : "تم إتمام عملية تأجير سرير بنجاح.";
+    } else if (lowerBody.includes("requested to view")) {
+      translatedBody = propertyName
+        ? `قدم مستأجر طلب معاينة للعقار "${propertyName}".`
+        : "قدم مستأجر طلب معاينة جديد لعقارك.";
+    }
+  } else {
+    // English Translation for Legacy Arabic DB Notification Strings
+    if (title.includes("انتهاء عقد الإيجار") || lowerTitle.includes("انتهاء عقد")) {
+      translatedTitle = "Lease Expired";
+    } else if (title.includes("تم تأجير السرير") || lowerTitle.includes("تأجير السرير")) {
+      translatedTitle = "Bed Rental Completed";
+    } else if (title.includes("تم تأجير الوحدة") || lowerTitle.includes("تأجير الوحدة")) {
+      translatedTitle = "Unit Rental Completed";
+    } else if (title.includes("طلب معاينة جديد") || title.includes("طلب معاينة")) {
+      translatedTitle = "New Viewing Request";
+    } else if (title.includes("تم قبول طلب المعاينة")) {
+      translatedTitle = "Viewing Request Accepted";
+    } else if (title.includes("تم رفض طلب المعاينة")) {
+      translatedTitle = "Viewing Request Rejected";
+    } else if (title.includes("الموافقة على الإعلان") || title.includes("تمت الموافقة")) {
+      translatedTitle = "Listing Approved";
+    } else if (title.includes("تقييم جديد")) {
+      translatedTitle = "New Review Received";
+    } else if (title.includes("رسالة جديدة")) {
+      translatedTitle = "New Message";
+    }
+
+    if (body.includes("طلب معاينة")) {
+      translatedBody = propertyName
+        ? `A tenant submitted a viewing request for your property "${propertyName}".`
+        : "A tenant submitted a new viewing request.";
+    } else if (body.includes("تأجير سرير") || body.includes("تأجير السرير")) {
+      translatedBody = propertyName
+        ? `Bed rental for "${propertyName}" has been completed.`
+        : "Bed rental completed successfully.";
+    } else if (body.includes("تأجير العقار") || body.includes("تأجير الوحدة")) {
+      translatedBody = propertyName
+        ? `Rental for property "${propertyName}" has been completed.`
+        : "Property rental completed successfully.";
+    } else if (body.includes("تقييم")) {
+      translatedBody = propertyName
+        ? `You received a new review on "${propertyName}".`
+        : "You received a new review on your listing.";
+    } else if (body.includes("انتهت مدة عقد")) {
+      translatedBody = propertyName
+        ? `The lease agreement for "${propertyName}" has expired.`
+        : "The lease agreement has expired.";
+    }
   }
 
   return { title: translatedTitle, body: translatedBody };
 }
 
-/**
- * Formats a Notification object into localized warm human language,
- * category icons, priorities, and target route.
- * Handles fallback gracefully for legacy notifications created before eventKey was introduced.
- */
 export function formatNotification(
   notification: Notification,
   locale: string = "ar",
@@ -85,7 +101,6 @@ export function formatNotification(
   const isAr = locale === "ar";
   const { eventKey, payload, type, title: legacyTitle, body: legacyBody } = notification;
 
-  // ── 1. Legacy Fallback with Translation Helper ────────────────────────────
   if (!eventKey) {
     const defaultRoute = resolveNotificationRoute(notification, userRole);
     const translated = translateLegacyText(legacyTitle || "", legacyBody || "", isAr);
@@ -101,7 +116,6 @@ export function formatNotification(
     };
   }
 
-  // ── 2. Scalable EventKey Formatter ──────────────────────────────────────────
   const p = payload || {};
   const route = resolveNotificationRoute(notification, userRole);
   const priority = notification.priority || getEventDefaultPriority(eventKey);
@@ -115,91 +129,77 @@ export function formatNotification(
     case "CONTRACT_EXPIRED":
       title = isAr ? "انتهاء عقد الإيجار" : "Lease Expired";
       body = isAr
-        ? `انتهت مدة عقد الإيجار للوحدة "${p.listingTitle || p.contractNumber || "السكنية"}". يمكنك الآن تجديد العقد أو إعادة نشر الإعلان.`
-        : `The lease agreement for "${p.listingTitle || p.contractNumber || "property"}" has expired. You can now renew or republish.`;
+        ? `انتهت مدة عقد الإيجار للوحدة "${p.listingTitle || p.contractNumber || "السكنية"}".`
+        : `The lease agreement for "${p.listingTitle || p.contractNumber || "property"}" has expired.`;
       break;
 
     case "CONTRACT_RENEWED":
       title = isAr ? "🎉 تم تجديد العقد بنجاح" : "🎉 Lease Renewed";
       body = isAr
-        ? `تم تجديد عقد الإيجار للوحدة "${p.listingTitle || "السكنية"}" بعقد جديد رقم ${p.newContractNumber || ""} حتى ${p.newEndDate || ""}.`
+        ? `تم تجديد عقد الإيجار للوحدة "${p.listingTitle || "السكنية"}" حتى ${p.newEndDate || ""}.`
         : `The lease for "${p.listingTitle || "property"}" has been renewed until ${p.newEndDate || ""}.`;
       break;
 
     case "CONTRACT_TERMINATED":
       title = isAr ? "إنهاء عقد الإيجار" : "Lease Terminated";
       body = isAr
-        ? `تم تسجيل إنهاء عقد الإيجار رقم ${p.contractNumber || ""} مبكراً للوحدة "${p.listingTitle || ""}".`
-        : `Early termination recorded for contract ${p.contractNumber || ""} on "${p.listingTitle || ""}".`;
+        ? `تم تسجيل إنهاء عقد الإيجار للوحدة "${p.listingTitle || ""}".`
+        : `Early termination recorded for "${p.listingTitle || ""}".`;
       break;
 
     case "LISTING_APPROVED":
       title = isAr ? "🎉 مبروك! تمت الموافقة على إعلانك" : "🎉 Listing Approved!";
       body = isAr
-        ? `تمت مراجعة وإقرار إعلانك "${p.listingTitle || ""}" وأصبح متاحاً الآن لجميع الباحثين عن سكن.`
-        : `Your listing "${p.listingTitle || ""}" has been approved and is now live for all prospective tenants.`;
+        ? `تمت مراجعة وإقرار إعلانك "${p.listingTitle || ""}".`
+        : `Your listing "${p.listingTitle || ""}" has been approved.`;
       break;
 
     case "LISTING_REJECTED":
-      title = isAr ? "تحديث بشأن إعلانك" : "Listing Review Update";
+      title = isAr ? "تنبيه حول حالة إعلانك" : "Listing Status Update";
       body = isAr
-        ? `لم يتم إقرار إعلانك "${p.listingTitle || ""}". ${p.rejectionReason ? `السبب: ${p.rejectionReason}` : "يرجى مراجعة تفاصيل الإعلان والتعديل عليه."}`
-        : `Your listing "${p.listingTitle || ""}" was not approved. ${p.rejectionReason ? `Reason: ${p.rejectionReason}` : "Please review and edit details."}`;
-      break;
-
-    case "LISTING_PAUSED":
-      title = isAr ? "إعلانك متوقف مؤقتاً" : "Listing Paused";
-      body = isAr
-        ? `تم إيقاف إعلانك "${p.listingTitle || ""}" مؤقتاً بعد انتهاء العقد. اضغط لإعادة النشر.`
-        : `Your listing "${p.listingTitle || ""}" is paused after lease expiration. Tap to republish.`;
-      break;
-
-    case "LISTING_REPUBLISHED":
-      title = isAr ? "تم إعادة نشر إعلانك" : "Listing Republished";
-      body = isAr
-        ? `عاد إعلانك "${p.listingTitle || ""}" ليصبح نشطاً ومتاحاً للجمهور.`
-        : `Your listing "${p.listingTitle || ""}" is active and published again.`;
+        ? `لم تتم الموافقة على إعلانك "${p.listingTitle || ""}".`
+        : `Your listing "${p.listingTitle || ""}" was not approved.`;
       break;
 
     case "REQUEST_CREATED":
-      title = isAr ? "📩 طلب معاينة جديد" : "📩 New Viewing Request";
+      title = isAr ? "طلب معاينة جديد 🏠" : "New Viewing Request 🏠";
       body = isAr
-        ? `قدم ${p.tenantName || "مستأجر"} طلب معاينة على عقارك "${p.listingTitle || ""}". اضغط للاطلاع والرد.`
-        : `${p.tenantName || "A prospective tenant"} submitted a viewing request for "${p.listingTitle || ""}".`;
+        ? `قدم المستأجر ${p.tenantName || ""} طلب معاينة جديد لعقارك "${p.listingTitle || ""}".`
+        : `Tenant ${p.tenantName || ""} submitted a viewing request for "${p.listingTitle || ""}".`;
       break;
 
     case "REQUEST_ACCEPTED":
-      title = isAr ? "✅ تم قبول طلب المعاينة" : "✅ Request Accepted";
+      title = isAr ? "🎉 تم قبول طلب المعاينة!" : "🎉 Viewing Request Accepted!";
       body = isAr
-        ? `وافق المالك على طلب المعاينة لعقار "${p.listingTitle || ""}". يمكنك الآن التواصل وتحديد الموعد.`
-        : `The landlord accepted your viewing request for "${p.listingTitle || ""}".`;
+        ? `قام المالك ${p.landlordName || ""} بقبول طلب المعاينة لعقار "${p.listingTitle || ""}".`
+        : `Landlord ${p.landlordName || ""} accepted your viewing request for "${p.listingTitle || ""}".`;
       break;
 
     case "REQUEST_REJECTED":
-      title = isAr ? "تحديث طلب المعاينة" : "Viewing Request Update";
+      title = isAr ? "تحديث بخصوص طلب المعاينة" : "Viewing Request Update";
       body = isAr
-        ? `اعتذر المالك عن طلب المعاينة الخاص بعقار "${p.listingTitle || ""}".`
-        : `The landlord was unable to accept your request for "${p.listingTitle || ""}".`;
+        ? `اعتذر المالك عن قبول طلب المعاينة لعقار "${p.listingTitle || ""}".`
+        : `Landlord declined the viewing request for "${p.listingTitle || ""}".`;
       break;
 
-    case "PAYMENT_SUCCESS":
-    case "SUBSCRIPTION_RENEWED":
-      title = isAr ? "💳 تم تأكيد الاشتراك بنجاح" : "💳 Payment Confirmed";
+    case "BED_RENTAL_COMPLETED":
+      title = isAr ? "🎉 تم إتمام تأجير السرير بنجاح" : "🎉 Bed Rental Completed";
       body = isAr
-        ? `تم استلام دفعة الاشتراك بنجاح وتفعيل مزايا خطتك.`
-        : `Your subscription payment was processed successfully.`;
+        ? `تم تأكيد حجز السرير للمستأجر ${p.tenantName || ""} في العقار "${p.listingTitle || ""}".`
+        : `Bed rental confirmed for ${p.tenantName || ""} on listing "${p.listingTitle || ""}".`;
       break;
 
-    case "COMMUNITY_POST_REPLY":
-      title = isAr ? "💬 رد جديد في المجتمع" : "💬 New Community Reply";
+    case "UNIT_RENTAL_COMPLETED":
+      title = isAr ? "🎉 تم تأجير الوحدة بنجاح" : "🎉 Rental Completed";
       body = isAr
-        ? `تم إضافة رد جديد على منشورك في مجتمع سكني.`
-        : `Someone replied to your community post.`;
+        ? `تم إتمام عقد إيجار الوحدة "${p.listingTitle || ""}" للمستأجر ${p.tenantName || ""}.`
+        : `Rental agreement completed for "${p.listingTitle || ""}" with tenant ${p.tenantName || ""}.`;
       break;
 
     default:
-      title = legacyTitle || (isAr ? "إشعار جديد" : "New Notification");
-      body = legacyBody || "";
+      const legacyTranslated = translateLegacyText(legacyTitle || "", legacyBody || "", isAr);
+      title = legacyTranslated.title || (isAr ? "إشعار جديد" : "New Notification");
+      body = legacyTranslated.body || "";
       break;
   }
 
@@ -216,70 +216,65 @@ export function formatNotification(
 
 function mapTypeToCategory(type: string): FormattedNotification["category"] {
   switch (type) {
-    case "REQUEST": return "request";
-    case "PAYMENT": return "payment";
-    case "CHAT": return "community";
-    case "REVIEW": return "system";
-    case "ALERT": return "alert";
-    default: return "system";
+    case "viewing_request": return "request";
+    case "rental_completed": return "rental";
+    case "listing_approved":
+    case "listing_rejected": return "listing";
+    case "payment": return "payment";
+    case "community": return "community";
+    case "system": return "system";
+    default: return "alert";
   }
 }
 
 function mapTypeToIcon(type: string): FormattedNotification["iconName"] {
   switch (type) {
-    case "REQUEST": return "UserCheck";
-    case "PAYMENT": return "CreditCard";
-    case "CHAT": return "MessageSquare";
-    case "REVIEW": return "Star";
-    case "ALERT": return "AlertTriangle";
+    case "viewing_request": return "Clock";
+    case "rental_completed": return "CheckCircle2";
+    case "listing_approved": return "Home";
+    case "listing_rejected": return "XCircle";
+    case "payment": return "CreditCard";
+    case "community": return "MessageSquare";
     default: return "Bell";
   }
 }
 
 function getEventCategory(eventKey: NotificationEventKey): FormattedNotification["category"] {
-  if (eventKey.startsWith("CONTRACT_") || eventKey.endsWith("_RENTAL_COMPLETED")) return "rental";
-  if (eventKey.startsWith("LISTING_")) return "listing";
+  if (eventKey.startsWith("CONTRACT_") || eventKey.endsWith("_RENTAL_COMPLETED") || eventKey === "UNIT_RENTAL_COMPLETED") {
+    return "rental";
+  }
   if (eventKey.startsWith("REQUEST_")) return "request";
-  if (eventKey.startsWith("PAYMENT_") || eventKey.startsWith("SUBSCRIPTION_")) return "payment";
-  if (eventKey.startsWith("COMMUNITY_")) return "community";
+  if (eventKey.startsWith("LISTING_")) return "listing";
   return "system";
 }
 
 function getEventIcon(eventKey: NotificationEventKey): FormattedNotification["iconName"] {
   switch (eventKey) {
     case "CONTRACT_EXPIRED":
-    case "CONTRACT_TERMINATED":
-      return "Clock";
-    case "CONTRACT_RENEWED":
-    case "UNIT_RENTAL_COMPLETED":
+    case "CONTRACT_TERMINATED": return "FileText";
+    case "CONTRACT_RENEWED": return "CheckCircle2";
+    case "LISTING_APPROVED": return "Home";
+    case "LISTING_REJECTED": return "XCircle";
+    case "REQUEST_CREATED": return "Clock";
+    case "REQUEST_ACCEPTED": return "UserCheck";
+    case "REQUEST_REJECTED": return "XCircle";
     case "BED_RENTAL_COMPLETED":
-      return "FileText";
-    case "LISTING_APPROVED":
-    case "LISTING_REPUBLISHED":
-      return "Home";
-    case "LISTING_REJECTED":
-    case "LISTING_PAUSED":
-      return "AlertTriangle";
-    case "REQUEST_CREATED":
-    case "REQUEST_ACCEPTED":
-      return "UserCheck";
-    case "REQUEST_REJECTED":
-    case "REQUEST_CANCELED":
-      return "XCircle";
-    case "PAYMENT_SUCCESS":
-    case "SUBSCRIPTION_RENEWED":
-      return "CreditCard";
-    case "COMMUNITY_POST_REPLY":
-    case "COMMUNITY_ALERT_MATCH":
-      return "MessageSquare";
-    default:
-      return "Bell";
+    case "UNIT_RENTAL_COMPLETED": return "CheckCircle2";
+    default: return "Bell";
   }
 }
 
 function getEventDefaultPriority(eventKey: NotificationEventKey): NotificationPriority {
-  if (eventKey === "CONTRACT_EXPIRED" || eventKey === "PAYMENT_FAILED") return "HIGH";
-  if (eventKey === "CONTRACT_TERMINATED") return "HIGH";
-  if (eventKey === "LISTING_REJECTED") return "HIGH";
-  return "NORMAL";
+  switch (eventKey) {
+    case "REQUEST_CREATED":
+    case "REQUEST_ACCEPTED":
+    case "CONTRACT_EXPIRED":
+      return "HIGH";
+    case "LISTING_APPROVED":
+    case "UNIT_RENTAL_COMPLETED":
+    case "BED_RENTAL_COMPLETED":
+      return "NORMAL";
+    default:
+      return "NORMAL";
+  }
 }

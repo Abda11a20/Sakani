@@ -120,6 +120,22 @@ export function SearchPageClient({
   const [debouncedFilters, setDebouncedFilters] = useState<SearchFilters>(parseFilters);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    const updated = parseFilters();
+    setFilters(updated);
+    setPendingFilters(updated);
+    setDebouncedFilters(updated);
+  }, [
+    initialFilters.q,
+    initialFilters.query,
+    initialFilters.governorate,
+    initialFilters.district,
+    initialFilters.unitType,
+    initialFilters.genderTarget,
+    initialFilters.minPrice,
+    initialFilters.maxPrice,
+  ]);
+
   const debouncedQuery = useDebounceValue(filters.query, 400);
 
   useEffect(() => {

@@ -15,6 +15,7 @@ export const useMyListings = () => {
       return entities.map((e) => e.toJSON() as Listing);
     },
     enabled: !!token,
+    staleTime: 60_000,
   });
 };
 
@@ -28,6 +29,7 @@ export const useListing = (id: string | null | undefined) => {
       return entity.toJSON() as Listing;
     },
     enabled: !!id,
+    staleTime: 5 * 60_000,
   });
 };
 

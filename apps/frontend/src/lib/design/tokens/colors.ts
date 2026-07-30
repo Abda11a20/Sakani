@@ -1,6 +1,6 @@
 /**
- * Sakani Design System — Semantic Color Tokens
- * Single Source of Truth for system colors.
+ * Sakany Design System — Semantic Color Tokens
+ * Single Source of Truth for system brand colors.
  */
 
 export const colors = {
