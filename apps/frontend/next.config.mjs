@@ -74,6 +74,7 @@ const nextConfig = {
   // PWA manifest يُضاف عبر <link> في الـ layout — لا نحتاج مكتبة خارجية
   transpilePackages: ["leaflet", "react-leaflet"],
   experimental: {
+    optimizePackageImports: ["lucide-react"],
   },
   eslint: {
     ignoreDuringBuilds: true,
