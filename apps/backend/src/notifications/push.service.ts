@@ -20,7 +20,7 @@ export class PushNotificationService implements OnModuleInit {
     const privateKey = this.configService.get<string>('VAPID_PRIVATE_KEY');
     const subject =
       this.configService.get<string>('VAPID_SUBJECT') ||
-      'mailto:admin@sakani.com';
+      'mailto:sakani.app.otp@gmail.com';
 
     if (!publicKey || !privateKey) {
       this.logger.warn(
