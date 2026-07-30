@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Mail, Phone } from "lucide-react";
-import { Button, Input, PasswordInput, useToast } from "@/components/ui";
+import { Button, Input, OtpInput, PasswordInput, useToast } from "@/components/ui";
 import {
   useForgotPassword,
   useVerifyOtp,
@@ -24,8 +24,6 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds
-
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const { mutate: forgotPassword, isPending: isForgotPending } =
     useForgotPassword();
@@ -113,41 +111,6 @@ export function ForgotPasswordForm() {
   };
 
   // Step 2: OTP
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto focus next
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").slice(0, 6).split("");
-    const newOtp = [...otp];
-    pastedData.forEach((char, i) => {
-      if (/^\d$/.test(char) && i < 6) newOtp[i] = char;
-    });
-    setOtp(newOtp);
-    const nextEmptyIndex = newOtp.findIndex((v) => !v);
-    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
-    otpRefs.current[focusIndex]?.focus();
-  };
-
   const onOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const otpCode = otp.join("");
@@ -365,25 +328,7 @@ export function ForgotPasswordForm() {
             </p>
           </div>
 
-          <div className="flex justify-center gap-1 sm:gap-2 max-w-full overflow-hidden" dir="ltr">
-            {otp.map((digit, index) => (
-              <div key={index} className="w-9 h-11 sm:w-12 sm:h-14 flex-shrink-0">
-                <Input
-                  ref={(el) => {
-                    otpRefs.current[index] = el;
-                  }}
-                  type="tel"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  onPaste={handleOtpPaste}
-                  className="w-full h-full text-center text-lg font-bold p-0"
-                />
-              </div>
-            ))}
-          </div>
+          <OtpInput value={otp} onChange={setOtp} disabled={isVerifyPending} />
 
           <div className="flex items-center justify-center gap-2 text-sm font-medium">
             <button

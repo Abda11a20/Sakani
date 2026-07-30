@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { User as UserIcon, Phone, CreditCard, Home, Key, Mail, Lock, ArrowRight } from "lucide-react";
-import { Button, Input, PasswordInput, useToast } from "@/components/ui";
+import { Button, Input, OtpInput, PasswordInput, useToast } from "@/components/ui";
 import { useRegister, useVerifyEmail, useResendVerification, authRepository } from "@/features/auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -43,7 +43,6 @@ export function RegisterForm() {
   
   // OTP state for Step 3
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Telegram linking state
   const [telegramCode, setTelegramCode] = useState<string>("");
@@ -256,33 +255,6 @@ export function RegisterForm() {
   };
 
   // OTP Handlers
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").slice(0, 6).split("");
-    const newOtp = [...otp];
-    pastedData.forEach((char, i) => {
-      if (/^\d$/.test(char) && i < 6) newOtp[i] = char;
-    });
-    setOtp(newOtp);
-    const nextEmptyIndex = newOtp.findIndex((v) => !v);
-    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
-    otpRefs.current[focusIndex]?.focus();
-  };
-
   const onOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const otpCode = otp.join("");
@@ -411,24 +383,7 @@ export function RegisterForm() {
           </p>
         </div>
 
-        <div className="flex justify-between gap-2" dir="ltr">
-          {otp.map((digit, index) => (
-            <Input
-              key={index}
-              ref={(el) => {
-                otpRefs.current[index] = el;
-              }}
-              type="tel"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleOtpChange(index, e.target.value)}
-              onKeyDown={(e) => handleOtpKeyDown(index, e)}
-              onPaste={handleOtpPaste}
-              className="w-12 h-14 text-center text-lg font-bold"
-            />
-          ))}
-        </div>
+        <OtpInput value={otp} onChange={setOtp} disabled={isVerifyPending} />
 
         <div className="flex items-center justify-center gap-2 text-sm font-medium">
           <button

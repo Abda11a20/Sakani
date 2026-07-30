@@ -5,6 +5,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   HttpCode,
@@ -164,8 +165,8 @@ export class AuthController {
     return { success: true, ...result };
   }
 
-  // ── POST /auth/verify-reset-otp ────────────────────────────────────────────
-  @Post('verify-reset-otp')
+  // ── POST /auth/verify-reset-otp & /auth/verify-otp ─────────────────────────
+  @Post(['verify-reset-otp', 'verify-otp'])
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 600000 } }) // 5 per 10 mins
   async verifyResetOtp(
@@ -173,6 +174,18 @@ export class AuthController {
   ): Promise<{ success: boolean; data: { valid: boolean } }> {
     const result = await this.authService.verifyResetOtp(dto);
     return { success: true, data: result };
+  }
+
+  // ── DELETE /auth/telegram/link ─────────────────────────────────────────────
+  @ApiBearerAuth()
+  @Delete('telegram/link')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async unlinkTelegram(
+    @CurrentUser() user: SafeUser,
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.authService.unlinkTelegram(user.id);
+    return { success: true, ...result };
   }
 
   // ── POST /auth/reset-password ──────────────────────────────────────────────

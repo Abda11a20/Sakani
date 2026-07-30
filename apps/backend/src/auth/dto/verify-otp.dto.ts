@@ -1,11 +1,15 @@
 // apps/backend/src/auth/dto/verify-otp.dto.ts
 
-import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class VerifyOtpDto {
-  @IsNotEmpty({ message: 'البريد الإلكتروني مطلوب' })
+  @IsOptional()
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
-  email!: string;
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsNotEmpty({ message: 'رمز التحقق مطلوب' })
   @IsString()

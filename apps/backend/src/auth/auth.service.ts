@@ -449,8 +449,21 @@ export class AuthService {
 
   // ── Verify Reset OTP ───────────────────────────────────────────────────────
   async verifyResetOtp(dto: VerifyOtpDto): Promise<{ valid: boolean }> {
-    await this.verifyCode(dto.email, dto.otp, VerificationType.PASSWORD_RESET);
+    const identifier = dto.email || dto.phone;
+    if (!identifier) {
+      throw new BadRequestException('البريد الإلكتروني أو رقم الهاتف مطلوب');
+    }
+    await this.verifyCode(identifier, dto.otp, VerificationType.PASSWORD_RESET);
     return { valid: true };
+  }
+
+  // ── Unlink Telegram ────────────────────────────────────────────────────────
+  async unlinkTelegram(userId: string): Promise<{ message: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { telegramChatId: null, otpChannel: OtpChannel.EMAIL },
+    });
+    return { message: 'تم إلغاء ربط حساب تليجرام بنجاح' };
   }
 
   // ── Reset Password ─────────────────────────────────────────────────────────
