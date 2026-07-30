@@ -44,7 +44,7 @@ async function bootstrap(): Promise<void> {
   const allowedOrigins = isProduction
     ? ([
         process.env.FRONTEND_URL,
-        'https://sakani-app-topaz.vercel.app',
+        'https://sakani-web-site.vercel.app',
         'https://sakany.com',
       ].filter(Boolean) as string[])
     : ['http://localhost:3000', 'http://127.0.0.1:3000'];

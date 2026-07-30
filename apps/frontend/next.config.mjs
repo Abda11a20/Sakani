@@ -53,11 +53,19 @@ const securityHeaders = [
   },
   {
     key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains",
+    value: "max-age=63072000; includeSubDomains; preload",
   },
   {
     key: "Content-Security-Policy",
     value: cspHeader,
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(self), payment=(self https://accept.paymob.com), fullscreen=(self)",
+  },
+  {
+    key: "X-Permitted-Cross-Domain-Policies",
+    value: "none",
   },
 ];
 
@@ -72,9 +80,30 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // Security headers على كل الصفحات
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      // Cache-Control للـ static assets (JS, CSS, fonts)
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Cache الصور
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=3600",
+          },
+        ],
       },
     ];
   },

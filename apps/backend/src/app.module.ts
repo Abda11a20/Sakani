@@ -1,6 +1,8 @@
 // apps/backend/src/app.module.ts
 
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { RequestIdMiddleware } from './common/middlewares/request-id.middleware';
 import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware';
 import { LoggerModule } from './common/logger/logger.module';
@@ -82,7 +84,13 @@ import { LocationModule } from './location/location.module';
     CommunityModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    // تفعيل Rate Limiting عالمياً على كل الـ routes
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
