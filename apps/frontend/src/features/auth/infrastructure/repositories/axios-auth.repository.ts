@@ -49,12 +49,12 @@ export class AxiosAuthRepository implements IAuthRepository {
     return res.data;
   }
 
-  async verifyOtp(payload: { email: string; otp: string }): Promise<any> {
-    const res = await api.post("/auth/verify-otp", payload);
+  async verifyOtp(payload: { email?: string; phone?: string; otp: string }): Promise<any> {
+    const res = await api.post("/auth/verify-reset-otp", payload);
     return res.data;
   }
 
-  async resetPassword(payload: { email: string; otp: string; newPassword: string; confirmPassword?: string }): Promise<any> {
+  async resetPassword(payload: { email?: string; phone?: string; otp: string; newPassword: string; confirmPassword?: string }): Promise<any> {
     const res = await api.post("/auth/reset-password", payload);
     return res.data;
   }
@@ -69,9 +69,14 @@ export class AxiosAuthRepository implements IAuthRepository {
     return res.data;
   }
 
-  async generateTelegramLinkCode(identifier?: string): Promise<any> {
-    const res = await api.post("/auth/telegram/generate-link-code", identifier ? { identifier } : {});
-    return res.data;
+  async generateTelegramLinkCode(
+    identifier?: string,
+  ): Promise<{ linkCode: string; expiresAt: string }> {
+    const res = await api.post(
+      "/auth/telegram/generate-link-code",
+      identifier ? { identifier } : {},
+    );
+    return res.data?.data ?? res.data;
   }
 
   async checkTelegramLinkStatus(code: string): Promise<any> {

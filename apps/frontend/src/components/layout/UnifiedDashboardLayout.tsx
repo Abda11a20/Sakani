@@ -44,21 +44,21 @@ interface UnifiedDashboardLayoutProps {
 // ── Accent style helpers ────────────────────────────────────────────────────────
 
 const ACCENT_ACTIVE: Record<AccentTheme, string> = {
-  blue: "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border-s-4 border-[#1B4F8A]",
-  gold: "bg-[#D4A847]/10 text-[#C49535] font-bold border-s-4 border-[#D4A847]",
-  admin: "bg-[#1B4F8A] text-white shadow-lg shadow-[#1B4F8A]/20",
+  blue: "bg-primary/10 text-primary font-bold border-s-4 border-primary",
+  gold: "bg-accent/15 text-accent-dark font-bold border-s-4 border-accent",
+  admin: "bg-primary text-white shadow-md shadow-primary/20",
 };
 
 const ACCENT_ICON: Record<AccentTheme, string> = {
-  blue: "text-[#1B4F8A]",
-  gold: "text-[#D4A847]",
-  admin: "text-[#D4A847]",
+  blue: "text-primary",
+  gold: "text-accent-dark",
+  admin: "text-accent-light",
 };
 
 const SIDEBAR_BG: Record<AccentTheme, string> = {
-  blue: "bg-white border-e border-slate-200",
-  gold: "bg-white border-e border-slate-200",
-  admin: "bg-slate-900 border-e border-slate-800 text-slate-400",
+  blue: "bg-surface border-e border-border",
+  gold: "bg-surface border-e border-border",
+  admin: "bg-text border-e border-text-secondary/20 text-text-tertiary",
 };
 
 // ── Component ──────────────────────────────────────────────────────────────────

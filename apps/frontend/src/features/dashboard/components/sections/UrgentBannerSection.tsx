@@ -33,47 +33,37 @@ export const UrgentBannerSection: React.FC<{ items: UrgentItem[] }> = ({ items }
             : item.type === "LISTING_UNAPPROVED" || item.type === "LISTING_PAUSED" ? Clock
               : Inbox;
 
-          // High = Rose · Medium/Info = Gold
-          const iconBg = isHigh ? "#C9637A" : "#D4A847";
-          const cardBg = isHigh ? "#FFF1F3" : "#FFFBEB";
-          const border = isHigh ? "#FECDD3" : "#FDE68A";
-          const btnBg = isHigh ? "#C9637A" : "#D4A847";
-          const btnText = isHigh ? "#ffffff" : "#0f1a2e";
-          const labelClr = isHigh ? "#C9637A" : "#C49535";
+          // High = Status Danger · Medium/Info = Accent Gold
+          const iconBg = isHigh ? "bg-status-danger" : "bg-accent";
+          const cardBg = isHigh ? "bg-status-danger/10 border-status-danger/30" : "bg-accent/10 border-accent/30";
+          const btnBg = isHigh ? "bg-status-danger text-white hover:bg-status-danger/90" : "bg-accent text-text hover:bg-accent-hover";
+          const labelClr = isHigh ? "text-status-danger" : "text-accent-active";
 
           return (
             <div
               key={item.id}
-              className="flex items-start gap-3 p-3.5 rounded-xl border"
-              style={{ background: cardBg, borderColor: border }}
+              className={`flex items-start gap-3 p-3.5 rounded-xl border ${cardBg}`}
             >
-              <div
-                className="p-2 rounded-lg shrink-0 text-white"
-                style={{ background: iconBg }}
-              >
+              <div className={`p-2 rounded-lg shrink-0 text-white ${iconBg}`}>
                 <Icon className="w-4 h-4" />
               </div>
 
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-slate-900 leading-snug font-cairo truncate">
+                  <h4 className="text-sm font-bold text-text leading-snug font-cairo truncate">
                     {item.title}
                   </h4>
-                  <span
-                    className="text-[9px] font-black uppercase tracking-widest shrink-0"
-                    style={{ color: labelClr }}
-                  >
+                  <span className={`text-[9px] font-black uppercase tracking-widest shrink-0 ${labelClr}`}>
                     {severityLabel(item.severity, isAr)}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed font-cairo line-clamp-2">
+                <p className="text-[11px] text-text-secondary leading-relaxed font-cairo line-clamp-2">
                   {item.description}
                 </p>
                 {item.route && (
                   <Link
                     href={item.route}
-                    className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all hover:opacity-90"
-                    style={{ background: btnBg, color: btnText }}
+                    className={`inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all shadow-2xs ${btnBg}`}
                   >
                     {isAr ? "اتخاذ إجراء" : "Take Action"}
                     <Arrow className="w-3 h-3" />

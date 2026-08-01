@@ -45,8 +45,8 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
   const actions = sortByPriority(rawActions);
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider font-cairo">
+    <div className="space-y-2 font-cairo">
+      <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
         {isAr ? "إجراءات سريعة" : "Quick Actions"}
       </p>
 
@@ -54,14 +54,13 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
         {actions.map((act) => {
           const Icon = ICON_MAP[act.iconName] || Plus;
 
-          // Primary — Gold filled, dark text
+          // Primary — Accent Gold filled, dark text
           if (act.variant === "primary") {
             return (
               <Link
                 key={act.key}
                 href={`/${locale}${act.route}`}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-bold transition-all cursor-pointer hover:opacity-90 active:scale-[0.98] shadow-sm"
-                style={{ background: "#D4A847", color: "#0f1a2e" }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-bold bg-accent text-text hover:bg-accent-hover active:scale-[0.98] shadow-xs transition-all cursor-pointer"
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-bold leading-tight font-cairo truncate">
@@ -71,14 +70,13 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
             );
           }
 
-          // Accent — Rose filled, white text
+          // Accent — Brand Primary filled, white text
           if (act.variant === "accent") {
             return (
               <Link
                 key={act.key}
                 href={`/${locale}${act.route}`}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-bold transition-all cursor-pointer hover:opacity-90 active:scale-[0.98] shadow-sm"
-                style={{ background: "#C9637A", color: "#ffffff" }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl font-bold bg-primary text-white hover:bg-primary-hover active:scale-[0.98] shadow-xs transition-all cursor-pointer"
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-bold leading-tight font-cairo truncate">
@@ -88,21 +86,15 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
             );
           }
 
-          // Secondary — warm cream outlined, gold icon on hover
+          // Secondary — Outlined surface card
           return (
             <Link
               key={act.key}
               href={`/${locale}${act.route}`}
-              className="group flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all cursor-pointer active:scale-[0.98]"
-              style={{
-                background: "#FDF8F0",
-                borderColor: "#EFE0C0",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#D4A847"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#EFE0C0"; }}
+              className="group flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-surface text-text-secondary hover:border-primary/50 hover:text-primary hover:bg-surface-secondary active:scale-[0.98] transition-all cursor-pointer"
             >
-              <Icon className="w-4 h-4 shrink-0" style={{ color: "#B8935A" }} />
-              <span className="text-xs font-bold leading-tight font-cairo truncate" style={{ color: "#7A5C30" }}>
+              <Icon className="w-4 h-4 shrink-0 text-text-tertiary group-hover:text-primary transition-colors" />
+              <span className="text-xs font-bold leading-tight font-cairo truncate">
                 {act.title}
               </span>
             </Link>

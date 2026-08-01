@@ -24,6 +24,9 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  ShieldCheck,
+  Lock,
+  KeyRound,
 } from "lucide-react";
 import {
   useNotifications,
@@ -52,6 +55,9 @@ const ICON_MAP: Record<FormattedNotification["iconName"], React.ElementType> = {
   CheckCircle2,
   XCircle,
   Bell,
+  ShieldCheck,
+  Lock,
+  KeyRound,
 };
 
 const CATEGORY_STYLES: Record<FormattedNotification["category"], { bg: string; text: string }> = {
@@ -62,6 +68,7 @@ const CATEGORY_STYLES: Record<FormattedNotification["category"], { bg: string; t
   community: { bg: "bg-purple-50 border-purple-200", text: "text-purple-600" },
   alert: { bg: "bg-rose-50 border-rose-200", text: "text-rose-600" },
   system: { bg: "bg-slate-50 border-slate-200", text: "text-slate-600" },
+  security: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-600" },
 };
 
 export function NotificationDrawer({ isOpen, onClose }: NotificationDrawerProps) {

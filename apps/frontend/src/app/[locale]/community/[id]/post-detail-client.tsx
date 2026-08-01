@@ -21,7 +21,7 @@ import {
   ArrowRight,
   ShieldAlert,
 } from "lucide-react";
-import { communityRepository } from "@/features/community";
+import { communityRepository, formatTimeSlot12h } from "@/features/community";
 import { chatApi } from "@/features/chat";
 import { Button } from "@/components/ui";
 
@@ -370,7 +370,7 @@ export function CommunityPostDetailClient({
               </span>
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1 font-cairo">
                 <Clock size={14} className="text-blue-500" />
-                {post.timeSlot}
+                {formatTimeSlot12h(post.timeSlot, isRtl)}
               </span>
             </div>
 
@@ -492,7 +492,7 @@ export function CommunityPostDetailClient({
                   {isAccepted && isExpired && (
                     <button
                       onClick={() => setRateModalOpen(true)}
-                      className="flex items-center gap-1 px-4 py-2.5 bg-[#0EA5E9] hover:bg-[#0284C7] text-slate-900 rounded-xl text-xs font-bold font-cairo transition-all shadow-md shadow-amber-500/10"
+                      className="flex items-center gap-1 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold font-cairo transition-all shadow-xs"
                     >
                       <Star size={14} fill="currentColor" />
                       {isRtl ? "تقييم المضيف" : "Rate Host"}

@@ -248,4 +248,28 @@ export class AdminController {
   ) {
     return this.adminService.getAllRequests(page, limit, status, search);
   }
+
+  // ── Banned Words ─────────────────────────────────────────────────────────
+  @Get('banned-words')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async getBannedWords(
+    @Query('type') type?: any,
+    @Query('severity') severity?: any,
+  ) {
+    return this.adminService.getBannedWords(type, severity);
+  }
+
+  @Post('banned-words')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async addBannedWord(
+    @Body() dto: { phrase: string; type?: any; severity?: any; description?: string },
+  ) {
+    return this.adminService.addBannedWord(dto);
+  }
+
+  @Delete('banned-words/:id')
+  @Roles(UserRole.admin, UserRole.super_admin)
+  async deleteBannedWord(@Param('id') id: string) {
+    return this.adminService.deleteBannedWord(id);
+  }
 }

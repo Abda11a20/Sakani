@@ -1,6 +1,6 @@
 // apps/backend/src/chat/dto/send-message.dto.ts
 
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class SendMessageDto {
   @IsString()
@@ -10,4 +10,8 @@ export class SendMessageDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 }

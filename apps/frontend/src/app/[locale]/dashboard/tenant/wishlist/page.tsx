@@ -25,17 +25,17 @@ function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRem
   };
 
   return (
-    <div className="relative rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 flex flex-col items-center justify-center text-center gap-3 min-h-[180px]">
-      <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center">
-        <Archive size={18} className="text-slate-500" />
+    <div className="relative rounded-2xl border border-dashed border-border bg-surface-secondary p-4 flex flex-col items-center justify-center text-center gap-3 min-h-[180px]">
+      <div className="w-10 h-10 rounded-xl bg-surface-tertiary flex items-center justify-center">
+        <Archive size={18} className="text-text-tertiary" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-600 font-cairo">هذا العقار لم يعد متاحاً</p>
-        <p className="text-xs text-slate-400 font-cairo mt-0.5">تمت أرشفته أو حذفه</p>
+        <p className="text-sm font-semibold text-text font-cairo">هذا العقار لم يعد متاحاً</p>
+        <p className="text-xs text-text-tertiary font-cairo mt-0.5">تمت أرشفته أو حذفه</p>
       </div>
       <button
         onClick={handleRemove}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-cairo text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-cairo text-status-danger bg-status-danger/10 border border-status-danger/30 hover:bg-status-danger/20 transition-colors"
       >
         <Trash2 size={12} />
         إزالة من المفضلة
@@ -51,7 +51,7 @@ export default function TenantWishlist() {
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Get client-side wishlist IDs
-  const { wishlistIds, removeFromWishlist } = useWishlist();
+  const { wishlistIds } = useWishlist();
   const [removed, setRemoved] = React.useState<string[]>([]);
 
   const activeIds = wishlistIds.filter((id) => !removed.includes(id));

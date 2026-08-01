@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/components/dashboard/form/ListingFormImagesStep.tsx
+// apps/frontend/src/components/dashboard/form/ListingFormImagesStep.tsx
 "use client";
 
 import React from "react";
@@ -29,7 +29,7 @@ export function ListingFormImagesStep({
       </h2>
 
       {/* Upload Zone */}
-      <div className="border-2 border-dashed border-slate-200 hover:border-[#0EA5E9] rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer relative group transition-colors">
+      <div className="border-2 border-dashed border-border hover:border-primary rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer relative group transition-colors">
         <input
           type="file"
           multiple
@@ -37,13 +37,13 @@ export function ListingFormImagesStep({
           onChange={onImageChange}
           className="absolute inset-0 opacity-0 cursor-pointer"
         />
-        <div className="w-14 h-14 bg-[#0EA5E9]/10 text-amber-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
           <Upload size={24} />
         </div>
-        <p className="font-bold text-slate-700 font-cairo text-sm">
+        <p className="font-bold text-text font-cairo text-sm">
           اسحب الصور هنا أو انقر للاختيار
         </p>
-        <p className="text-xs text-slate-400 mt-1 font-cairo">
+        <p className="text-xs text-text-secondary mt-1 font-cairo">
           JPEG, PNG, WEBP — بحد أقصى 10 صور، وحجم 5 ميجابايت للصورة.
         </p>
       </div>

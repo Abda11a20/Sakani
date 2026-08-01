@@ -1,7 +1,7 @@
 // apps/frontend/src/app/[locale]/(auth)/forgot-password/forgot-password-form.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,7 +21,10 @@ export function ForgotPasswordForm() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<"EMAIL" | "TELEGRAM">("EMAIL");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState<{ value: string; type: "email" | "phone" }>({
+    value: "",
+    type: "email",
+  });
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds
 
@@ -52,11 +55,15 @@ export function ForgotPasswordForm() {
   });
 
   const onEmailSubmit = (data: { email: string }) => {
+    const cleanEmail = data.email.trim();
+    setIdentifier({ value: cleanEmail, type: "email" });
     forgotPassword(
-      { email: data.email, channel: "EMAIL" },
+      { email: cleanEmail, channel: "EMAIL" },
       {
         onSuccess: (res: any) => {
-          setEmail(res?.email || data.email);
+          if (res?.email) {
+            setIdentifier({ value: res.email, type: "email" });
+          }
           setStep(2);
           setTimeLeft(90);
           if (process.env.NODE_ENV === "development" && res?.otp) {
@@ -88,11 +95,12 @@ export function ForgotPasswordForm() {
   });
 
   const onPhoneSubmit = (data: { phone: string }) => {
+    const cleanPhone = data.phone.trim();
+    setIdentifier({ value: cleanPhone, type: "phone" });
     forgotPassword(
-      { phone: data.phone, channel: "TELEGRAM" },
+      { phone: cleanPhone, channel: "TELEGRAM" },
       {
         onSuccess: (res: any) => {
-          setEmail(res?.email || "");
           setStep(2);
           setTimeLeft(90);
           if (process.env.NODE_ENV === "development" && res?.otp) {
@@ -123,36 +131,40 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    verifyOtp(
-      { email, otp: otpCode },
-      {
-        onSuccess: () => {
-          setStep(3);
-        },
-        onError: (error: any) => {
-          toast({
-            title: tCommon("error"),
-            description: error?.response?.data?.message || t("validation.otpIncorrect"),
-            type: "error",
-          });
-        },
-      }
-    );
+    const payload =
+      identifier.type === "phone"
+        ? { phone: identifier.value, otp: otpCode }
+        : { email: identifier.value, otp: otpCode };
+
+    verifyOtp(payload, {
+      onSuccess: () => {
+        setStep(3);
+      },
+      onError: (error: any) => {
+        toast({
+          title: tCommon("error"),
+          description: error?.response?.data?.message || t("validation.otpIncorrect"),
+          type: "error",
+        });
+      },
+    });
   };
 
   const resendOtp = () => {
-    forgotPassword(
-      { email, channel },
-      {
-        onSuccess: (res: any) => {
-          setTimeLeft(90);
-          toast({ title: tCommon("success"), description: t("validation.otpSentSuccess"), type: "success" });
-          if (process.env.NODE_ENV === "development" && res?.otp) {
-            alert(`OTP (Dev Mode): ${res.otp}`);
-          }
-        },
-      }
-    );
+    const payload =
+      identifier.type === "phone"
+        ? { phone: identifier.value, channel: "TELEGRAM" as const }
+        : { email: identifier.value, channel: "EMAIL" as const };
+
+    forgotPassword(payload, {
+      onSuccess: (res: any) => {
+        setTimeLeft(90);
+        toast({ title: tCommon("success"), description: t("validation.otpSentSuccess"), type: "success" });
+        if (process.env.NODE_ENV === "development" && res?.otp) {
+          alert(`OTP (Dev Mode): ${res.otp}`);
+        }
+      },
+    });
   };
 
   // Step 3: Reset Password
@@ -195,25 +207,37 @@ export function ForgotPasswordForm() {
   const strength = getPasswordStrength();
 
   const onResetSubmit = (data: ResetValues) => {
-    resetPassword(
-      { email, otp: otp.join(""), newPassword: data.password, confirmPassword: data.confirmPassword },
-      {
-        onSuccess: () => {
-          toast({
-            title: tCommon("success"),
-            description: t("validation.passwordChangeSuccess"),
-            type: "success",
-          });
-        },
-        onError: (error: any) => {
-          toast({
-            title: tCommon("error"),
-            description: error?.response?.data?.message || tCommon("error"),
-            type: "error",
-          });
-        },
-      }
-    );
+    const payload =
+      identifier.type === "phone"
+        ? {
+            phone: identifier.value,
+            otp: otp.join(""),
+            newPassword: data.password,
+            confirmPassword: data.confirmPassword,
+          }
+        : {
+            email: identifier.value,
+            otp: otp.join(""),
+            newPassword: data.password,
+            confirmPassword: data.confirmPassword,
+          };
+
+    resetPassword(payload, {
+      onSuccess: () => {
+        toast({
+          title: tCommon("success"),
+          description: t("validation.passwordChangeSuccess"),
+          type: "success",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: tCommon("error"),
+          description: error?.response?.data?.message || tCommon("error"),
+          type: "error",
+        });
+      },
+    });
   };
 
   return (

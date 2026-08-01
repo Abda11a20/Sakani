@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ListingDetailClient } from "./listing-detail-client";
 import type { Listing, Review } from "@/types";
-import { getImageUrl, getCloudinaryUrl } from "@/lib/utils";
+import { getCloudinaryUrl } from "@/lib/utils";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildPageMetadata } from "@/lib/seo";
 

@@ -21,10 +21,10 @@ import Image from "next/image";
 
 // ── Brand color role badges ───────────────────────────────────────────────────
 const roleBadge: Record<string, { label: string; className: string }> = {
-  tenant: { label: "مستأجر", className: "bg-[#0EA5E9]/10 text-[#0EA5E9]" },
-  landlord: { label: "مُعلِن", className: "bg-[#0EA5E9]/15 text-[#0284C7]" },
-  admin: { label: "أدمن", className: "bg-slate-100 text-slate-700" },
-  super_admin: { label: "سوبر أدمن", className: "bg-red-50 text-red-600" },
+  tenant: { label: "مستأجر", className: "bg-primary/10 text-primary border border-primary/20" },
+  landlord: { label: "مُعلِن", className: "bg-accent/15 text-accent-dark border border-accent/30" },
+  admin: { label: "أدمن", className: "bg-surface-tertiary text-text-secondary border border-border" },
+  super_admin: { label: "سوبر أدمن", className: "bg-status-danger/15 text-status-danger border border-status-danger/30" },
 };
 
 // ── ID Card Viewer ────────────────────────────────────────────────────────────

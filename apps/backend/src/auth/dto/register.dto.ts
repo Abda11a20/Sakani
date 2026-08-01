@@ -9,6 +9,7 @@ import {
   Matches,
   IsOptional,
   IsIn,
+  ValidateIf,
 } from 'class-validator';
 
 // القيم المقبولة للـ role في التسجيل العادي فقط
@@ -28,6 +29,7 @@ export class RegisterDto {
 
   // ── البريد الإلكتروني: اختياري ────────────────────────────
   @IsOptional()
+  @ValidateIf((o) => !!o.email)
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
   email?: string;
 

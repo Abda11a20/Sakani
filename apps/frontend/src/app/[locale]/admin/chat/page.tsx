@@ -11,7 +11,6 @@ import {
   Unlock,
   Ban,
   Search,
-  Send,
   Image as ImageIcon,
   X,
   User as UserIcon,
@@ -33,6 +32,7 @@ import { useToast } from "@/components/ui/toast";
 import { BlockedConversationFilters, BLOCK_REASON_LABELS } from "@/components/admin/chat/BlockedConversationFilters";
 import { BlockedConversationsTable } from "@/components/admin/chat/BlockedConversationsTable";
 import { BlockedConversationDrawer } from "@/components/admin/chat/BlockedConversationDrawer";
+import { AdminChatSendButton } from "@/components/admin/chat/AdminChatSendButton";
 import { ConfirmUnblockModal } from "@/components/admin/chat/ConfirmUnblockModal";
 
 const WHATSAPP_RAW_NUMBER = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "+201551876606";
@@ -76,7 +76,7 @@ export default function AdminChatPage() {
   const isRtl = locale === "ar";
   const { toast } = useToast();
 
-  const { token, user } = useAuthStore();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<"active" | "blocked">("active");
 
   // Queries for active vs blocked
@@ -350,12 +350,12 @@ export default function AdminChatPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-xl shrink-0">
+        <div className="flex items-center gap-2 bg-[#0F1A2E] p-1 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab("active")}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
-              activeTab === "active" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+              activeTab === "active" ? "bg-primary text-white shadow-xs" : "text-white/60 hover:text-white"
             )}
           >
             <MessageSquare size={14} />
@@ -366,7 +366,7 @@ export default function AdminChatPage() {
             onClick={() => setActiveTab("blocked")}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
-              activeTab === "blocked" ? "bg-rose-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+              activeTab === "blocked" ? "bg-status-danger text-white shadow-xs" : "text-white/60 hover:text-white"
             )}
           >
             <Ban size={14} />
@@ -645,14 +645,10 @@ export default function AdminChatPage() {
                       className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition-all"
                     />
 
-                    <button
-                      type="submit"
+                    <AdminChatSendButton
                       disabled={!inputText.trim() || isSending}
-                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 disabled:opacity-40 shrink-0 transition-all shadow-xs cursor-pointer"
-                    >
-                      {isSending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                      <span>إرسال</span>
-                    </button>
+                      isSending={isSending}
+                    />
                   </form>
                 )}
               </div>

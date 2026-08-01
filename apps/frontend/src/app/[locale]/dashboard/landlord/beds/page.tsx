@@ -204,25 +204,25 @@ export default function LandlordBeds() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold font-cairo">إدارة الأسرة والشواغر</h1>
-          <p className="text-slate-500 mt-1 font-cairo text-sm">
+          <h1 className="text-3xl font-extrabold font-cairo text-text">إدارة الأسرة والشواغر</h1>
+          <p className="text-text-secondary mt-1 font-cairo text-sm">
             قم بتسجيل عقود إيجار الأسرة وإخلاءها لتحديث شواغر الأسرة تلقائياً.
           </p>
         </div>
 
         {/* Dropdown Selector */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm max-w-xl">
+        <div className="bg-surface border border-border rounded-3xl p-5 shadow-xs max-w-xl">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 font-cairo">اختر الإعلان المشترك</label>
+            <label className="text-sm font-bold text-text font-cairo">اختر الإعلان المشترك</label>
             {bedListings.length === 0 ? (
-              <p className="text-sm text-red-500 font-cairo">
+              <p className="text-sm text-status-danger font-cairo">
                 {`ليس لديك أي عقارات من نوع "سرير" (Bed) لتتمكن من إدارتها هنا.`}
               </p>
             ) : (
               <select
                 value={selectedId}
                 onChange={(e) => handleSelectChange(e.target.value)}
-                className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] font-cairo font-semibold text-slate-800"
+                className="w-full h-11 rounded-xl border border-border bg-surface-secondary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-cairo font-semibold text-text"
               >
                 {bedListings.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -239,11 +239,11 @@ export default function LandlordBeds() {
             {/* Stats strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {[
-                { label: "إجمالي الأسرة", value: stats?.total ?? beds.length, color: "bg-slate-100 text-slate-700" },
-                { label: "الأسرة المتاحة", value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-green-500/10 text-green-600" },
-                { label: "الأسرة المؤجرة", value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-red-500/10 text-red-600" },
+                { label: "إجمالي الأسرة", value: stats?.total ?? beds.length, color: "bg-surface-secondary text-text border-border" },
+                { label: "الأسرة المتاحة", value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-status-success/15 text-status-success border-status-success/30" },
+                { label: "الأسرة المؤجرة", value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-status-danger/15 text-status-danger border-status-danger/30" },
               ].map((stat, idx) => (
-                <div key={idx} className={`p-5 rounded-2xl border border-slate-200/50 flex items-center justify-between ${stat.color}`}>
+                <div key={idx} className={`p-5 rounded-2xl border flex items-center justify-between ${stat.color}`}>
                   <div className="space-y-1">
                     <span className="text-xs font-semibold font-cairo opacity-80">{stat.label}</span>
                     <h3 className="text-3xl font-bold font-sans">{stat.value}</h3>
@@ -313,19 +313,19 @@ export default function LandlordBeds() {
                           {bed.isAvailable ? (
                             <Button
                               onClick={() => setRentModalBed({ id: bed.id, bedNumber: bed.bedNumber })}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold font-cairo py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                              leftIcon={<UserCheck size={16} />}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold font-cairo py-2.5 rounded-xl text-xs shadow-xs"
                             >
-                              <UserCheck size={14} />
-                              <span>تسجيل تأجير السرير</span>
+                              تسجيل تأجير السرير
                             </Button>
                           ) : (
                             <Button
                               onClick={() => setVacateModalBed({ id: bed.id, bedNumber: bed.bedNumber })}
                               variant="outline"
-                              className="w-full text-red-600 border-red-500/20 hover:bg-red-500/10 font-bold font-cairo py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                              leftIcon={<AlertTriangle size={16} />}
+                              className="w-full text-red-600 border-red-500/20 hover:bg-red-500/10 font-bold font-cairo py-2.5 rounded-xl text-xs shadow-xs"
                             >
-                              <AlertTriangle size={14} />
-                              <span>إخلاء السرير</span>
+                              إخلاء السرير
                             </Button>
                           )}
                         </div>

@@ -2,15 +2,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsApi, type NotificationsResponse, type UnreadCountResponse } from "@/features/notifications";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { Notification } from "@/types";
 
 export type { NotificationsResponse, UnreadCountResponse };
 
 /** Paginated list of notifications (newest first). */
 export const useNotifications = (page = 1, limit = 20) => {
+  const token = useAuthStore((state) => state.token);
+
   return useQuery<NotificationsResponse>({
     queryKey: ["notifications", page, limit],
     queryFn: () => notificationsApi.getNotifications(page, limit),
+    enabled: !!token,
     staleTime: 10_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -96,6 +100,7 @@ function useIsLeaderTab(): boolean {
 export const useUnreadNotificationsCount = () => {
   const queryClient = useQueryClient();
   const isLeader = useIsLeaderTab();
+  const token = useAuthStore((state) => state.token);
   const prevCountRef = useRef<number | null>(null);
 
   // Sync state with other open browser tabs
@@ -121,7 +126,8 @@ export const useUnreadNotificationsCount = () => {
   const query = useQuery<UnreadCountResponse>({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => notificationsApi.getUnreadCount(),
-    refetchInterval: isLeader ? 15_000 : false, // ONLY Leader Tab polls HTTP!
+    enabled: !!token,
+    refetchInterval: isLeader && !!token ? 15_000 : false, // ONLY Leader Tab with active token polls HTTP!
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 5_000,

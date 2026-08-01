@@ -7,7 +7,7 @@ import { KPIStatCard } from "../cards/KPIStatCard";
 import {
   BedDouble, Building2, ClipboardList, Eye,
   Bell, FileText, Users, ShieldAlert, Home, CheckCircle2,
-  ShieldBan, UserCheck, Shield, Archive, MessageCircle, HelpCircle,
+  ShieldBan, UserCheck, Shield, Archive,
 } from "lucide-react";
 
 interface StatsSectionProps {

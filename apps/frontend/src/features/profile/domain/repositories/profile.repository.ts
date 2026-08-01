@@ -10,6 +10,7 @@ export interface TenantLookupResult {
 export interface IProfileRepository {
   getProfile(): Promise<any>;
   updateProfile(data: { name?: string; avatarUrl?: string }): Promise<any>;
+  deleteProfile(reason?: string): Promise<any>;
   getPublic(id: string): Promise<any>;
   lookupByPhone(phone: string): Promise<TenantLookupResult>;
 }

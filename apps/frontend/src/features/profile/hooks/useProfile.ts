@@ -89,15 +89,22 @@ export const useChangePassword = () => {
 
 export const useDeleteAccount = () => {
   const queryClient = useQueryClient();
-  const logout = useAuthStore((state) => state.logout);
+  const { user, clearAuth } = useAuthStore();
 
-  return useMutation<void, Error, string | void>({
-    mutationFn: async (): Promise<void> => {
-      await profileRepository.updateProfile({ name: "Deleted User" });
+  return useMutation<any, Error, string | void>({
+    mutationFn: async (reason?: string | void): Promise<any> => {
+      return await profileRepository.deleteProfile(typeof reason === "string" ? reason : undefined);
     },
     onSuccess: () => {
-      logout();
+      const identifier = user?.email || user?.phone || "";
+      clearAuth();
       queryClient.clear();
+      queryClient.removeQueries();
+      const locale = typeof window !== "undefined" ? window.location.pathname.split("/")[1] || "ar" : "ar";
+      const redirectUrl = `/${locale}/restore-account?identifier=${encodeURIComponent(identifier)}&remainingDays=30`;
+      if (typeof window !== "undefined") {
+        window.location.href = redirectUrl;
+      }
     },
   });
 };

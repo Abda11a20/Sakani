@@ -97,7 +97,7 @@ export function ListingImageGallery({
     <div className="space-y-2">
       {/* Image Gallery Carousel */}
       <div
-        className="relative w-full h-[220px] sm:h-[340px] md:h-[380px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-sm flex items-center justify-center group"
+        className="relative w-full h-[220px] sm:h-[340px] md:h-[380px] rounded-2xl overflow-hidden bg-black border border-border shadow-xs flex items-center justify-center group"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

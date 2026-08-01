@@ -14,7 +14,7 @@ export function mapTenantQuickAction(
         title: isAr ? "البحث عن سكن" : "Search Housing",
         description: isAr ? "تصفح الشقق والأسرة المتاحة" : "Browse available units",
         iconName: "Search",
-        route: "/listings",
+        route: "/search",
         variant: "primary",
       };
 
@@ -34,7 +34,7 @@ export function mapTenantQuickAction(
         title: isAr ? "تنبيه ذكي جديد" : "Create Smart Alert",
         description: isAr ? "استلم تنبيهاً حين يتوفر سكن مناسب" : "Get notified on matching listings",
         iconName: "Bell",
-        route: "/dashboard/tenant",
+        route: "/dashboard/tenant/alerts",
         variant: "accent",
       };
 
@@ -65,7 +65,7 @@ export function mapTenantQuickAction(
         title: isAr ? "إجراء سريع" : "Quick Action",
         description: "",
         iconName: "Search",
-        route: "/listings",
+        route: "/search",
         variant: "secondary",
       };
   }

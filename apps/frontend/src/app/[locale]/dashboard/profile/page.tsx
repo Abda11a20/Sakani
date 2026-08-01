@@ -18,8 +18,6 @@ import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { getIdentityVerificationStatus, IdentityVerificationStatus } from "@/types";
 import {
-  Card,
-  CardBody,
   Spinner,
   Button,
   Input,
@@ -108,7 +106,7 @@ export default function ProfilePage() {
     pollingRef.current = setInterval(async () => {
       try {
         const res = await authRepository.checkTelegramLinkStatus(code);
-        if (res.data?.linked) {
+        if (res.linked) {
           setTelegramLinked(true);
           setCheckingLink(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
@@ -124,7 +122,7 @@ export default function ProfilePage() {
     try {
       const identifier = user?.phone || user?.email || user?.id || "";
       const res = await authRepository.generateTelegramLinkCode(identifier);
-      const code = res.data?.code;
+      const code = res.linkCode;
       if (code) { setTelegramCode(code); startLinkPolling(code); }
     } catch (err: any) {
       toast({ title: "خطأ", description: err.response?.data?.message || "حدث خطأ.", type: "error" });
@@ -177,7 +175,6 @@ export default function ProfilePage() {
       onSuccess: (res: any) => {
         toast({ title: "تم تقديم الطلب", description: res?.message || "تم تسجيل طلبك ودخل الحساب فترة السماح.", type: "success" });
         setShowDeleteModal(false);
-        window.location.href = "/login";
       },
       onError: (err: any) => {
         toast({ title: "تعارض في حالة الحساب", description: err.response?.data?.message || err.message || "فشل طلب حذف الحساب.", type: "error" });
@@ -267,7 +264,7 @@ export default function ProfilePage() {
   const onPasswordSave = (data: PasswordValues) => {
     changePassword({ currentPassword: data.currentPassword, newPassword: data.newPassword, confirmPassword: data.confirmPassword }, {
       onSuccess: () => { toast({ title: "تم تغيير كلمة المرور", description: "تم تحديث كلمة المرور بنجاح.", type: "success" }); resetPasswordForm(); },
-      onError: (err) => toast({ title: "فشل تغيير كلمة المرور", description: err.message || "تأكد من صحة كلمة المرور الحالية.", type: "error" }),
+      onError: (err: any) => toast({ title: "فشل تغيير كلمة المرور", description: err.friendlyMessage || err.response?.data?.message || err.message || "تأكد من صحة كلمة المرور الحالية.", type: "error" }),
     });
   };
 
@@ -299,10 +296,10 @@ export default function ProfilePage() {
   const verificationStatusCode: IdentityVerificationStatus = getIdentityVerificationStatus(user);
   const getBadgeConfig = (status: IdentityVerificationStatus) => {
     switch (status) {
-      case "verified":  return { label: "موثق رسمياً",   color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <BadgeCheck size={13} className="text-emerald-600" />, description: "هويتك موثّقة ومعتمدة — يظهر حسابك بعلامة الثقة لدى جميع أطراف التعاملات." };
-      case "pending":   return { label: "قيد المراجعة",  color: "bg-amber-50 text-amber-700 border-amber-200",       icon: <Clock size={13} className="text-amber-600" />,        description: "وصلتنا وثيقتك وهي في طابور المراجعة. سنُبلّغك فور الانتهاء." };
-      case "rejected":  return { label: "مرفوضة",        color: "bg-rose-50 text-rose-700 border-rose-200",           icon: <XCircle size={13} className="text-rose-600" />,       description: "الوثيقة المُرسلة لم تُقبل. يرجى إعادة رفع صورة واضحة لبطاقة الهوية." };
-      default:          return { label: "غير موثق",      color: "bg-slate-100 text-slate-600 border-slate-200",       icon: <ShieldAlert size={13} className="text-slate-400" />,  description: "لم يُرفع مستند هوية بعد. التوثيق يعزّز ثقة الأطراف الأخرى بك." };
+      case "verified":  return { label: "موثق رسمياً",   color: "bg-status-success/15 text-status-success border-status-success/30", icon: <BadgeCheck size={13} className="text-status-success" />, description: "هويتك موثّقة ومعتمدة — يظهر حسابك بعلامة الثقة لدى جميع أطراف التعاملات." };
+      case "pending":   return { label: "قيد المراجعة",  color: "bg-status-warning/15 text-status-warning border-status-warning/30", icon: <Clock size={13} className="text-status-warning" />,        description: "وصلتنا وثيقتك وهي في طابور المراجعة. سنُبلّغك فور الانتهاء." };
+      case "rejected":  return { label: "مرفوضة",        color: "bg-status-danger/15 text-status-danger border-status-danger/30",   icon: <XCircle size={13} className="text-status-danger" />,       description: "الوثيقة المُرسلة لم تُقبل. يرجى إعادة رفع صورة واضحة لبطاقة الهوية." };
+      default:          return { label: "غير موثق",      color: "bg-surface-tertiary text-text-secondary border-border",       icon: <ShieldAlert size={13} className="text-text-tertiary" />,  description: "لم يُرفع مستند هوية بعد. التوثيق يعزّز ثقة الأطراف الأخرى بك." };
     }
   };
 
@@ -540,18 +537,18 @@ export default function ProfilePage() {
                       <h2 className="font-bold text-[15px] text-slate-900">كلمة المرور</h2>
                       <p className="text-[12px] text-slate-500 mt-0.5">ننصح بتغيير كلمة المرور دورياً للحفاظ على أمان حسابك.</p>
                     </div>
-                    <form onSubmit={handlePasswordSubmit(onPasswordSave)} className="space-y-4">
+                    <form onSubmit={handlePasswordSubmit(onPasswordSave)} className="space-y-4" autoComplete="off">
                       <div>
                         <label className="block text-[12px] font-bold text-slate-700 mb-1.5">كلمة المرور الحالية</label>
-                        <PasswordInput {...registerPassword("currentPassword")} error={passwordErrors.currentPassword?.message} placeholder="أدخل كلمة المرور الحالية" />
+                        <PasswordInput {...registerPassword("currentPassword")} error={passwordErrors.currentPassword?.message} placeholder="أدخل كلمة المرور الحالية" autoComplete="off" />
                       </div>
                       <div>
                         <label className="block text-[12px] font-bold text-slate-700 mb-1.5">كلمة المرور الجديدة</label>
-                        <PasswordInput {...registerPassword("newPassword")} error={passwordErrors.newPassword?.message} placeholder="6 أحرف على الأقل" />
+                        <PasswordInput {...registerPassword("newPassword")} error={passwordErrors.newPassword?.message} placeholder="6 أحرف على الأقل" autoComplete="new-password" />
                       </div>
                       <div>
                         <label className="block text-[12px] font-bold text-slate-700 mb-1.5">تأكيد كلمة المرور</label>
-                        <PasswordInput {...registerPassword("confirmPassword")} error={passwordErrors.confirmPassword?.message} placeholder="أعد كتابة كلمة المرور الجديدة" />
+                        <PasswordInput {...registerPassword("confirmPassword")} error={passwordErrors.confirmPassword?.message} placeholder="أعد كتابة كلمة المرور الجديدة" autoComplete="new-password" />
                       </div>
                       <div className="pt-1">
                         <Button type="submit" loading={isChangingPassword} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] rounded-xl">

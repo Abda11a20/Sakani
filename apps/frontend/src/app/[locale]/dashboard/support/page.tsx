@@ -7,10 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { useAuthGuard } from "@/features/auth";
 import TenantLayout from "@/components/layout/TenantLayout";
 import LandlordLayout from "@/components/layout/LandlordLayout";
-import { Spinner, Button, useToast } from "@/components/ui";
+import { Spinner, useToast } from "@/components/ui";
+import { AdminChatSendButton } from "@/components/admin/chat/AdminChatSendButton";
 import {
-  MessageCircle,
-  Send,
   Loader2,
   HeadphonesIcon,
   Bot,
@@ -278,7 +277,7 @@ export default function SupportPage() {
                 <span
                   className={cn(
                     "w-2.5 h-2.5 rounded-full",
-                    isConnected ? "bg-emerald-500 animate-pulse" : "bg-[#0EA5E9]"
+                    isConnected ? "bg-status-success animate-pulse" : "bg-primary"
                   )}
                 />
                 <span className="text-xs text-muted-foreground font-medium">
@@ -427,20 +426,10 @@ export default function SupportPage() {
                   className="flex-1 input-field py-3 text-sm"
                 />
 
-                <Button
-                  type="submit"
+                <AdminChatSendButton
                   disabled={!input.trim() || isSending || !token || !conversationId}
-                  className="px-5 py-3 rounded-xl font-bold flex items-center gap-2 shrink-0"
-                >
-                  {isSending ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <>
-                      <span>إرسال</span>
-                      <Send size={16} />
-                    </>
-                  )}
-                </Button>
+                  isSending={isSending}
+                />
               </form>
             )}
           </div>

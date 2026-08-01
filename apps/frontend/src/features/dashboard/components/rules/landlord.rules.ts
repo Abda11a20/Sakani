@@ -14,7 +14,7 @@ export function mapLandlordQuickAction(
         title: isAr ? "أنشئ أول إعلان" : "Create First Listing",
         description: isAr ? "ابدأ بنشر وحدتك أو أسرّتك المتاحة" : "Start listing your property",
         iconName: "Plus",
-        route: "/dashboard/landlord/advertisements/new",
+        route: "/dashboard/landlord/listings/add",
         variant: "primary",
       };
 
@@ -24,7 +24,7 @@ export function mapLandlordQuickAction(
         title: isAr ? "إضافة إعلان جديد" : "Add New Listing",
         description: isAr ? "نشر وحدة أو سرير إضافي" : "Publish a new property",
         iconName: "Plus",
-        route: "/dashboard/landlord/advertisements/new",
+        route: "/dashboard/landlord/listings/add",
         variant: "primary",
       };
 

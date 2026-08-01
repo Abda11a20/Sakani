@@ -6,8 +6,8 @@ import { resolveNotificationRoute } from "./notification-router";
 export interface FormattedNotification {
   title: string;
   body: string;
-  category: "listing" | "rental" | "request" | "payment" | "community" | "alert" | "system";
-  iconName: "Home" | "FileText" | "UserCheck" | "CreditCard" | "Star" | "MessageSquare" | "AlertTriangle" | "Clock" | "CheckCircle2" | "XCircle" | "Bell";
+  category: "listing" | "rental" | "request" | "payment" | "community" | "alert" | "system" | "security";
+  iconName: "Home" | "FileText" | "UserCheck" | "CreditCard" | "Star" | "MessageSquare" | "AlertTriangle" | "Clock" | "CheckCircle2" | "XCircle" | "Bell" | "ShieldCheck" | "Lock" | "KeyRound";
   priority: NotificationPriority;
   route: string | null;
   isLegacy: boolean;
@@ -27,16 +27,25 @@ function translateLegacyText(title: string = "", body: string = "", isAr: boolea
 
   if (isAr) {
     if (lowerTitle.includes("bed rental completed")) translatedTitle = "تم تأجير السرير بنجاح";
-    else if (lowerTitle.includes("rental completed")) translatedTitle = "تم تأجير الوحدة بنجاح";
-    else if (lowerTitle.includes("new viewing request")) translatedTitle = "طلب معاينة جديد";
-    else if (lowerTitle.includes("viewing request accepted")) translatedTitle = "تم قبول طلب المعاينة";
-    else if (lowerTitle.includes("viewing request rejected")) translatedTitle = "تم رفض طلب المعاينة";
-    else if (lowerTitle.includes("listing approved")) translatedTitle = "تمت الموافقة على الإعلان";
+    // Arabic Translation for English Notification Strings
+    if (lowerTitle.includes("password changed") || lowerTitle.includes("password reset")) {
+      translatedTitle = "تغيير كلمة المرور";
+    } else if (lowerTitle.includes("lease expired") || lowerTitle.includes("contract expired")) {
+      translatedTitle = "انتهاء عقد الإيجار";
+    } else if (lowerTitle.includes("bed rental")) {
+      translatedTitle = "تأجير السرير";
+    } else if (lowerTitle.includes("unit rental") || lowerTitle.includes("rental completed")) {
+      translatedTitle = "تأجير الوحدة";
+    } else if (lowerTitle.includes("viewing request")) {
+      translatedTitle = "طلب معاينة جديد";
+    } else if (lowerTitle.includes("listing approved")) translatedTitle = "تمت الموافقة على الإعلان";
     else if (lowerTitle.includes("listing rejected")) translatedTitle = "تم رفض الإعلان";
     else if (lowerTitle.includes("new review")) translatedTitle = "تقييم جديد";
     else if (lowerTitle.includes("new message")) translatedTitle = "رسالة جديدة";
 
-    if (lowerBody.includes("bed rental for") && lowerBody.includes("completed")) {
+    if (lowerBody.includes("password was changed") || lowerBody.includes("password was reset")) {
+      translatedBody = "تم تغيير كلمة المرور الخاصة بحسابك بنجاح. إذا لم تقم بهذا التغيير، يرجى التواصل مع الدعم الفني فوراً.";
+    } else if (lowerBody.includes("bed rental completed")) {
       translatedBody = propertyName
         ? `تم إتمام عملية تأجير سرير بنجاح في العقار "${propertyName}".`
         : "تم إتمام عملية تأجير سرير بنجاح.";
@@ -47,7 +56,9 @@ function translateLegacyText(title: string = "", body: string = "", isAr: boolea
     }
   } else {
     // English Translation for Legacy Arabic DB Notification Strings
-    if (title.includes("انتهاء عقد الإيجار") || lowerTitle.includes("انتهاء عقد")) {
+    if (title.includes("Password changed") || title.includes("تغيير كلمة المرور")) {
+      translatedTitle = "Password Changed";
+    } else if (title.includes("انتهاء عقد الإيجار") || lowerTitle.includes("انتهاء عقد")) {
       translatedTitle = "Lease Expired";
     } else if (title.includes("تم تأجير السرير") || lowerTitle.includes("تأجير السرير")) {
       translatedTitle = "Bed Rental Completed";
@@ -67,7 +78,9 @@ function translateLegacyText(title: string = "", body: string = "", isAr: boolea
       translatedTitle = "New Message";
     }
 
-    if (body.includes("طلب معاينة")) {
+    if (body.includes("كلمة المرور") || lowerBody.includes("password was changed")) {
+      translatedBody = "Your account password was updated successfully.";
+    } else if (body.includes("طلب معاينة")) {
       translatedBody = propertyName
         ? `A tenant submitted a viewing request for your property "${propertyName}".`
         : "A tenant submitted a new viewing request.";
@@ -108,8 +121,8 @@ export function formatNotification(
     return {
       title: translated.title || (isAr ? "إشعار جديد" : "New Notification"),
       body: translated.body || "",
-      category: mapTypeToCategory(type),
-      iconName: mapTypeToIcon(type),
+      category: mapTypeToCategory(type, notification.entityType, legacyTitle),
+      iconName: mapTypeToIcon(type, notification.entityType, legacyTitle),
       priority: notification.priority || "NORMAL",
       route: defaultRoute,
       isLegacy: true,
@@ -119,8 +132,8 @@ export function formatNotification(
   const p = payload || {};
   const route = resolveNotificationRoute(notification, userRole);
   const priority = notification.priority || getEventDefaultPriority(eventKey);
-  const category = getEventCategory(eventKey);
-  const iconName = getEventIcon(eventKey);
+  const category = mapTypeToCategory(type, notification.entityType, legacyTitle) || getEventCategory(eventKey);
+  const iconName = mapTypeToIcon(type, notification.entityType, legacyTitle) || getEventIcon(eventKey);
 
   let title = "";
   let body = "";
@@ -214,29 +227,62 @@ export function formatNotification(
   };
 }
 
-function mapTypeToCategory(type: string): FormattedNotification["category"] {
-  switch (type) {
-    case "viewing_request": return "request";
-    case "rental_completed": return "rental";
-    case "listing_approved":
-    case "listing_rejected": return "listing";
-    case "payment": return "payment";
-    case "community": return "community";
-    case "system": return "system";
-    default: return "alert";
+function mapTypeToCategory(type: string, entityType?: string | null, title?: string | null): FormattedNotification["category"] {
+  const t = (type || "").toLowerCase();
+  const et = (entityType || "").toLowerCase();
+  const titleText = (title || "").toLowerCase();
+
+  if (et.startsWith("security.") || titleText.includes("password") || titleText.includes("كلمة المرور")) {
+    return "security";
   }
+  if (et.includes("contract") || et.includes("rental") || titleText.includes("عقد") || titleText.includes("تأجير") || titleText.includes("lease") || t === "rental_completed") {
+    return "rental";
+  }
+  if (et.includes("viewing_request") || titleText.includes("معاينة") || titleText.includes("viewing") || t === "viewing_request") {
+    return "request";
+  }
+  if (et.includes("listing") || titleText.includes("إعلان") || titleText.includes("listing")) {
+    return "listing";
+  }
+  if (t === "payment" || et.includes("payment") || titleText.includes("دفع") || titleText.includes("payment")) {
+    return "payment";
+  }
+  if (t === "community" || et.includes("review") || titleText.includes("تقييم") || titleText.includes("رسالة")) {
+    return "community";
+  }
+  return "alert";
 }
 
-function mapTypeToIcon(type: string): FormattedNotification["iconName"] {
-  switch (type) {
-    case "viewing_request": return "Clock";
-    case "rental_completed": return "CheckCircle2";
-    case "listing_approved": return "Home";
-    case "listing_rejected": return "XCircle";
-    case "payment": return "CreditCard";
-    case "community": return "MessageSquare";
-    default: return "Bell";
+function mapTypeToIcon(type: string, entityType?: string | null, title?: string | null): FormattedNotification["iconName"] {
+  const t = (type || "").toLowerCase();
+  const et = (entityType || "").toLowerCase();
+  const titleText = (title || "").toLowerCase();
+
+  if (et.startsWith("security.") || titleText.includes("password") || titleText.includes("كلمة المرور")) {
+    return "ShieldCheck";
   }
+  if (et.includes("contract") || titleText.includes("عقد") || titleText.includes("lease") || titleText.includes("contract")) {
+    return "FileText";
+  }
+  if (et.includes("rental") || titleText.includes("تأجير") || titleText.includes("rental") || t === "rental_completed") {
+    return "KeyRound";
+  }
+  if (et.includes("viewing_request") || titleText.includes("معاينة") || titleText.includes("viewing") || t === "viewing_request") {
+    return "Clock";
+  }
+  if (et.includes("review") || titleText.includes("تقييم") || titleText.includes("review")) {
+    return "Star";
+  }
+  if (et.includes("listing") || titleText.includes("إعلان") || titleText.includes("listing")) {
+    return "Home";
+  }
+  if (t === "payment" || et.includes("payment") || titleText.includes("دفع")) {
+    return "CreditCard";
+  }
+  if (t === "community" || titleText.includes("رسالة")) {
+    return "MessageSquare";
+  }
+  return "Bell";
 }
 
 function getEventCategory(eventKey: NotificationEventKey): FormattedNotification["category"] {

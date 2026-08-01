@@ -4,7 +4,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { MapPin, LocateFixed, Loader2 } from "lucide-react";
-import { SearchableCombobox, Textarea, Button } from "@/components/ui";
+import { SearchableCombobox, Textarea } from "@/components/ui";
 import { EGYPTIAN_GOVERNORATES, EGYPTIAN_DISTRICTS } from "@/lib/constants";
 import type { ListingFormData, ListingFormChangeHandler, LocationCandidate } from "./listing-form.types";
 
@@ -81,13 +81,13 @@ export function ListingFormLocationStep({
       />
 
       {/* Location Map Preview & Geocoding Pipeline */}
-      <div className="space-y-3 pt-2">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-slate-100 pt-4">
+      <div className="space-y-3 pt-2 font-cairo">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-border pt-4">
           <div>
-            <p className="text-sm font-bold text-slate-800 font-cairo">
+            <p className="text-sm font-bold text-text font-cairo">
               تحديد وتأكيد الموقع على الخريطة
             </p>
-            <p className="text-xs text-slate-400 font-cairo mt-0.5">
+            <p className="text-xs text-text-secondary font-cairo mt-0.5">
               اختياري — يساعد المستأجرين في التوصل للعنوان الدقيق بسرعة
             </p>
           </div>
@@ -96,7 +96,7 @@ export function ListingFormLocationStep({
             type="button"
             disabled={isGeocodingLoading}
             onClick={onExploreLocation}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0EA5E9] hover:bg-[#0284C7] text-white transition-all shadow-sm disabled:opacity-50 font-cairo shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-primary hover:bg-primary-hover text-white transition-all shadow-xs disabled:opacity-50 font-cairo shrink-0 cursor-pointer"
           >
             {isGeocodingLoading ? (
               <>

@@ -18,13 +18,25 @@ export const useAuthGuard = (options?: AuthGuardOptions) => {
   const pathname = usePathname();
   const locale = pathname?.split("/")[1] || "ar";
 
-  const { isLoading: isMeLoading, isError } = useMe();
+  const { isLoading: isMeLoading, isError, error } = useMe();
 
   const isLoading =
     !isHydrated || (!!token && !isError && (!user || isMeLoading));
 
   useEffect(() => {
     if (isLoading) return;
+
+    const isSoftDeletedError =
+      (error as any)?.response?.data?.code === "ACCOUNT_SOFT_DELETED" ||
+      (error as any)?.code === "ACCOUNT_SOFT_DELETED";
+
+    if (isSoftDeletedError || (user && ((user as any).deletedAt || (user as any).isDeleted))) {
+      if (!pathname?.includes("/restore-account")) {
+        router.push(`/${locale}/restore-account`);
+        return;
+      }
+      return;
+    }
 
     if (!token || isError) {
       const searchParams = new URLSearchParams();

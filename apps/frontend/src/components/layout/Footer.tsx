@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-[#1B3A6B] text-white">
+    <footer className="bg-[#0F1A2E] text-white border-t border-white/10 font-cairo">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Column 1: Logo + description + social */}
@@ -35,7 +35,7 @@ export const Footer: React.FC = () => {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-gold hover:text-white transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-accent hover:text-text transition-colors"
                 aria-label="Facebook"
               >
                 <Share2 size={15} />
@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-gold hover:text-white transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-accent hover:text-text transition-colors"
                 aria-label="Instagram"
               >
                 <Camera size={15} />
@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
                 href={getWhatsAppLink("+201551876606")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-gold hover:text-white transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-accent hover:text-text transition-colors"
                 aria-label="WhatsApp"
               >
                 <MessageCircle size={15} />

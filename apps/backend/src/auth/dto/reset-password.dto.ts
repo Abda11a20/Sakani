@@ -3,15 +3,22 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class ResetPasswordDto {
-  @IsNotEmpty({ message: 'البريد الإلكتروني مطلوب' })
+  @IsOptional()
+  @ValidateIf((o) => !!o.email)
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
-  email!: string;
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsNotEmpty({ message: 'رمز التحقق مطلوب' })
   @IsString()

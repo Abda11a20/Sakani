@@ -78,21 +78,21 @@ function CustomSelect({ value, options, onChange, placeholder }: CustomSelectPro
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between text-xs font-bold text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-[#1B7A6B] focus:border-[#1B7A6B] focus:ring-1 focus:ring-[#1B7A6B] transition-all cursor-pointer shadow-2xs text-start"
+        className="w-full flex items-center justify-between text-xs font-bold text-text px-2.5 py-1.5 rounded-xl border border-border bg-surface hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer shadow-xs text-start"
       >
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder || "اختر..."}
         </span>
         <ChevronDown
           size={13}
-          className={`text-slate-400 shrink-0 transition-transform ${
-            isOpen ? "rotate-180 text-[#1B7A6B]" : ""
+          className={`text-text-tertiary shrink-0 transition-transform ${
+            isOpen ? "rotate-180 text-primary" : ""
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute start-0 top-full mt-1 w-full bg-white rounded-xl border border-slate-200 shadow-xl z-50 max-h-44 overflow-y-auto p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 font-cairo">
+        <div className="absolute start-0 top-full mt-1 w-full bg-surface rounded-xl border border-border shadow-xl z-50 max-h-44 overflow-y-auto p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 font-cairo">
           {options.map((opt) => {
             const isSelected = opt.value === value;
             return (
@@ -105,12 +105,12 @@ function CustomSelect({ value, options, onChange, placeholder }: CustomSelectPro
                 }}
                 className={`w-full text-start px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-between ${
                   isSelected
-                    ? "bg-[#E6F2F0] text-[#1B7A6B]"
-                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-primary/10 text-primary"
+                    : "text-text-secondary hover:bg-surface-tertiary hover:text-text"
                 }`}
               >
                 <span className="truncate">{opt.label}</span>
-                {isSelected && <Check size={12} className="text-[#1B7A6B] shrink-0" />}
+                {isSelected && <Check size={12} className="text-primary shrink-0" />}
               </button>
             );
           })}
@@ -151,13 +151,13 @@ export function SearchFilterControls({
     <div className={`flex flex-col gap-2.5 font-cairo ${className}`}>
       {/* 1. Location: Governorate & District Side-by-Side */}
       <div className="space-y-1">
-        <div className="flex items-center gap-1 text-xs font-bold text-slate-800">
-          <MapPin size={14} style={{ color: "#1B7A6B" }} />
+        <div className="flex items-center gap-1 text-xs font-bold text-text">
+          <MapPin size={14} className="text-primary" />
           <span>الموقع والجغرافيا</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">المحافظة</label>
+            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">المحافظة</label>
             <CustomSelect
               value={filters.governorate ?? ""}
               options={[
@@ -168,24 +168,24 @@ export function SearchFilterControls({
             />
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">الحي / المنطقة</label>
+            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">الحي / المنطقة</label>
             <input
               type="text"
               placeholder="مثال: المنصورة"
               value={filters.district ?? ""}
               onChange={(e) => onChange({ district: e.target.value, page: 1 })}
-              className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#1B7A6B] bg-white truncate"
+              className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-border focus:outline-none focus:border-primary bg-surface truncate text-text placeholder:text-text-tertiary"
             />
           </div>
         </div>
       </div>
 
-      <div className="h-px bg-slate-100" />
+      <div className="h-px bg-border/50" />
 
       {/* 2. Unit Type */}
       <div className="space-y-1">
-        <div className="flex items-center gap-1 text-xs font-bold text-slate-800">
-          <Building2 size={14} style={{ color: "#1B7A6B" }} />
+        <div className="flex items-center gap-1 text-xs font-bold text-text">
+          <Building2 size={14} className="text-primary" />
           <span>نوع الوحدة السكنية</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -206,10 +206,9 @@ export function SearchFilterControls({
                 }
                 className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   isSelected
-                    ? "border-[#1B7A6B] text-white shadow-xs"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-[#1B7A6B]/50 hover:bg-slate-50"
+                    ? "border-primary bg-primary text-white shadow-xs"
+                    : "border-border bg-surface text-text hover:border-primary/50 hover:bg-surface-secondary"
                 }`}
-                style={{ background: isSelected ? "#1B7A6B" : undefined }}
               >
                 <Icon size={14} />
                 <span className="truncate">{label}</span>
@@ -219,16 +218,16 @@ export function SearchFilterControls({
         </div>
       </div>
 
-      <div className="h-px bg-slate-100" />
+      <div className="h-px bg-border/50" />
 
       {/* 3. Price Range (Dual Inputs + Range Slider) */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs font-bold text-slate-800">
-            <Coins size={14} style={{ color: "#1B7A6B" }} />
+          <div className="flex items-center gap-1 text-xs font-bold text-text">
+            <Coins size={14} className="text-primary" />
             <span>نطاق السعر الشهري</span>
           </div>
-          <span className="text-[10px] font-bold text-[#1B7A6B]">
+          <span className="text-[10px] font-bold text-primary">
             {filters.minPrice || filters.maxPrice
               ? `${filters.minPrice ?? 0} - ${filters.maxPrice ?? "أقصى"} ج.م`
               : "أي سعر"}
@@ -243,7 +242,7 @@ export function SearchFilterControls({
             step={500}
             value={filters.maxPrice ?? 25000}
             onChange={(e) => onChange({ maxPrice: Number(e.target.value), page: 1 })}
-            className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1B7A6B]"
+            className="w-full h-1.5 bg-surface-tertiary rounded-lg appearance-none cursor-pointer accent-primary"
           />
           <div className="flex items-center gap-1.5">
             <input
@@ -251,28 +250,28 @@ export function SearchFilterControls({
               placeholder="من"
               value={filters.minPrice ?? ""}
               onChange={(e) => onChange({ minPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
-              className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-slate-200 focus:outline-none focus:border-[#1B7A6B] bg-white"
+              className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-border focus:outline-none focus:border-primary bg-surface text-text placeholder:text-text-tertiary"
               min={0}
             />
-            <span className="text-slate-400 font-bold text-xs">—</span>
+            <span className="text-text-tertiary font-bold text-xs">—</span>
             <input
               type="number"
               placeholder="إلى"
               value={filters.maxPrice ?? ""}
               onChange={(e) => onChange({ maxPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
-              className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-slate-200 focus:outline-none focus:border-[#1B7A6B] bg-white"
+              className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-border focus:outline-none focus:border-primary bg-surface text-text placeholder:text-text-tertiary"
               min={0}
             />
           </div>
         </div>
       </div>
 
-      <div className="h-px bg-slate-100" />
+      <div className="h-px bg-border/50" />
 
       {/* 4. Gender Target & Sort Side-by-Side */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">الفئة المستهدفة</label>
+          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">الفئة المستهدفة</label>
           <CustomSelect
             value={filters.genderTarget ?? ""}
             options={[
@@ -286,7 +285,7 @@ export function SearchFilterControls({
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">ترتيب النتائج</label>
+          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">ترتيب النتائج</label>
           <CustomSelect
             value={filters.sortBy ?? "newest"}
             options={SORT_OPTIONS}
@@ -295,17 +294,17 @@ export function SearchFilterControls({
         </div>
       </div>
 
-      <div className="h-px bg-slate-100" />
+      <div className="h-px bg-border/50" />
 
       {/* 5. Advanced Filters Collapsible Accordion */}
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+      <div className="border border-border rounded-xl overflow-hidden bg-surface">
         <button
           type="button"
           onClick={() => setIsAccordionOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100/80 transition-colors cursor-pointer text-xs font-bold text-slate-800"
+          className="w-full flex items-center justify-between p-2.5 bg-surface-secondary hover:bg-surface-tertiary transition-colors cursor-pointer text-xs font-bold text-text"
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-[#1B7A6B]">⚙</span>
+            <span className="text-primary">⚙</span>
             <span>مواصفات إضافية (مفروش، خدمات، توثيق)</span>
           </div>
           {isAccordionOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -315,7 +314,7 @@ export function SearchFilterControls({
           <div className="p-3 space-y-3 animate-in fade-in duration-150">
             {/* Furnishing Status */}
             <div>
-              <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">حالة الفرش</h4>
+              <h4 className="text-[11px] font-bold text-text mb-1.5">حالة الفرش</h4>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
                   { value: undefined, label: "الكل" },
@@ -330,10 +329,9 @@ export function SearchFilterControls({
                       onClick={() => onChange({ isFurnished: item.value as any, page: 1 })}
                       className={`py-1 px-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer text-center truncate ${
                         isSelected
-                          ? "border-[#1B7A6B] text-white shadow-xs"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-[#1B7A6B]/50 hover:bg-slate-50"
+                          ? "border-primary bg-primary text-white shadow-xs"
+                          : "border-border bg-surface text-text hover:border-primary/50 hover:bg-surface-secondary"
                       }`}
-                      style={{ background: isSelected ? "#1B7A6B" : undefined }}
                     >
                       {item.label}
                     </button>
@@ -343,14 +341,14 @@ export function SearchFilterControls({
             </div>
 
             {/* Verified Only Card with High-Contrast Distinct Toggle */}
-            <div className="p-2.5 bg-gradient-to-r from-[#E6F2F0] to-[#F4F9F8] border border-[#1B7A6B]/30 rounded-xl flex items-center justify-between shadow-2xs">
+            <div className="p-2.5 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-2">
-                <div className="p-1 bg-white border border-[#1B7A6B]/20 rounded-lg shadow-2xs">
-                  <ShieldCheck size={16} style={{ color: "#C4922A" }} />
+                <div className="p-1 bg-surface border border-primary/20 rounded-lg shadow-2xs">
+                  <ShieldCheck size={16} className="text-accent" />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold text-[#0D3D36]">عقارات موثقة فقط</p>
-                  <p className="text-[10px] font-semibold text-slate-500">إظهار إعلانات المؤجرين الموثقين</p>
+                  <p className="text-xs font-extrabold text-primary">عقارات موثقة فقط</p>
+                  <p className="text-[10px] font-semibold text-text-secondary">إظهار إعلانات المؤجرين الموثقين</p>
                 </div>
               </div>
               <button
@@ -360,19 +358,19 @@ export function SearchFilterControls({
                 onClick={() => onChange({ verifiedOnly: !filters.verifiedOnly, page: 1 })}
                 className={`relative w-11 h-6 rounded-full border-2 transition-all cursor-pointer shrink-0 shadow-inner ${
                   filters.verifiedOnly
-                    ? "bg-[#1B7A6B] border-[#1B7A6B]"
-                    : "bg-slate-200 border-slate-300"
+                    ? "bg-primary border-primary"
+                    : "bg-surface-tertiary border-border"
                 }`}
               >
                 <span
                   className={`absolute top-0.5 start-0.5 w-4 h-4 rounded-full shadow-md transition-transform flex items-center justify-center ${
                     filters.verifiedOnly
                       ? "translate-x-5 rtl:-translate-x-5 bg-white"
-                      : "translate-x-0 rtl:translate-x-0 bg-slate-600"
+                      : "translate-x-0 rtl:translate-x-0 bg-text-tertiary"
                   }`}
                 >
                   {filters.verifiedOnly && (
-                    <Check size={10} className="text-[#1B7A6B] stroke-[3]" />
+                    <Check size={10} className="text-primary stroke-[3]" />
                   )}
                 </span>
               </button>
@@ -380,7 +378,7 @@ export function SearchFilterControls({
 
             {/* Amenities */}
             <div>
-              <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">المميزات والخدمات</h4>
+              <h4 className="text-[11px] font-bold text-text mb-1.5">المميزات والخدمات</h4>
               <div className="grid grid-cols-2 gap-1.5">
                 {AMENITIES_CONFIG.map(({ key, labelAr }) => {
                   const isChecked = filters.amenities?.includes(key) ?? false;
@@ -390,20 +388,18 @@ export function SearchFilterControls({
                       onClick={() => toggleAmenity(key)}
                       className={`flex items-center gap-1.5 p-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer select-none ${
                         isChecked
-                          ? "border-[#1B7A6B] bg-[#E6F2F0] text-[#1B7A6B]"
-                          : "border-slate-100 bg-[#FFFFFF] text-slate-600 hover:border-slate-200"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-surface text-text-secondary hover:border-primary/30"
                       }`}
                     >
                       <div
-                        className="w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 transition-colors"
-                        style={{
-                          background: isChecked ? "#1B7A6B" : "#fff",
-                          borderColor: isChecked ? "#1B7A6B" : "#CBD5E1",
-                        }}
+                        className={`w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 transition-colors ${
+                          isChecked ? "bg-primary border-primary" : "bg-surface border-border"
+                        }`}
                       >
                         {isChecked && <Check size={10} className="text-white stroke-[3]" />}
                       </div>
-                      <span className={isChecked ? "text-[#1B7A6B]" : "text-slate-400"}>
+                      <span className={isChecked ? "text-primary" : "text-text-tertiary"}>
                         {AMENITY_ICON_MAP_SEARCH[key]}
                       </span>
                       <span className="truncate">{labelAr}</span>
@@ -418,19 +414,18 @@ export function SearchFilterControls({
 
       {/* Desktop Sidebar Inline Actions */}
       {!hideActions && (
-        <div className="flex gap-2 pt-2 border-t border-slate-100">
+        <div className="flex gap-2 pt-2 border-t border-border/50">
           <button
             type="button"
             onClick={onApply}
-            className="flex-1 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer hover:opacity-90 flex items-center justify-center gap-1.5"
-            style={{ background: "#1B7A6B" }}
+            className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-xl shadow-xs transition-all cursor-pointer hover:bg-primary-hover flex items-center justify-center gap-1.5"
           >
             تطبيق الفلاتر
           </button>
           <button
             type="button"
             onClick={onReset}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center gap-1"
+            className="px-3 py-2 rounded-xl border border-border text-xs font-bold text-text-secondary hover:bg-surface-secondary transition-colors cursor-pointer flex items-center justify-center gap-1"
           >
             <RotateCcw size={13} />
             مسح

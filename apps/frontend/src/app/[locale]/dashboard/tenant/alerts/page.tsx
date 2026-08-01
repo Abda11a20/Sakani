@@ -184,18 +184,19 @@ export default function TenantAlerts() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold font-cairo">تنبيهاتي الذكية</h1>
-            <p className="text-slate-500 mt-1 font-cairo text-sm">
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-cairo text-text">تنبيهاتي الذكية</h1>
+            <p className="text-text-secondary mt-1 font-cairo text-xs sm:text-sm">
               نبلغك ونرسل لك إشعاراً فور إدراج عقار جديد يطابق مواصفات البحث الخاصة بك.
             </p>
           </div>
-          <Button
+          <button
+            type="button"
             onClick={openCreateModal}
-            className="font-cairo flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-6 px-6 shadow-sm"
+            className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-cairo text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
           >
-            <Plus size={18} />
+            <Plus size={16} className="shrink-0" />
             <span>تنبيه جديد</span>
-          </Button>
+          </button>
         </div>
 
         {/* List of Alerts */}
@@ -205,9 +206,14 @@ export default function TenantAlerts() {
             title="لا توجد تنبيهات بعد"
             description="أنشئ تنبيهاً ذكياً لنخطرك فور نزول شقة أو سرير يناسب ميزانيتك وموقعك المفضل."
             action={
-              <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5">
-                أنشئ أول تنبيه
-              </Button>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-cairo text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                <Plus size={16} className="shrink-0" />
+                <span>أنشئ أول تنبيه</span>
+              </button>
             }
           />
         ) : (
@@ -218,18 +224,16 @@ export default function TenantAlerts() {
               return (
                 <Card
                   key={alert.id}
-                  className={`border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between transition-all duration-300 ${
-                    active
-                      ? "border-blue-100 bg-white"
-                      : "border-slate-200 bg-slate-50/50 opacity-75"
-                  }`}
+                  className={`border rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between transition-all duration-300 ${active
+                      ? "border-border bg-surface"
+                      : "border-border bg-surface-secondary/50 opacity-75"
+                    }`}
                 >
                   <CardBody className="p-6 space-y-4">
                     {/* Top Row: Icon + Switch */}
                     <div className="flex items-center justify-between">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        active ? "bg-blue-500/10 text-blue-500" : "bg-slate-200 text-slate-400"
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? "bg-primary/10 text-primary" : "bg-surface-tertiary text-text-tertiary"
+                        }`}>
                         {active ? <Bell size={18} /> : <BellOff size={18} />}
                       </div>
 
@@ -241,13 +245,13 @@ export default function TenantAlerts() {
                           onChange={() => handleToggle(alert.id)}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 bg-slate-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/30 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
+                        <div className="w-10 h-5 bg-border rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/30 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
                     {/* Summary */}
                     <div>
-                      <h3 className="font-bold text-slate-800 text-sm font-cairo line-clamp-1 leading-snug">
+                      <h3 className="font-bold text-text text-sm font-cairo line-clamp-1 leading-snug">
                         {generateAlertSummary(alert)}
                       </h3>
                       <p className="text-xs text-slate-400 mt-1 font-cairo">
@@ -297,8 +301,14 @@ export default function TenantAlerts() {
                     <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                       {active && (
                         <Link
-                          href={`/${locale}/search?alertId=${alert.id}`}
-                          className="rounded-lg text-xs font-cairo py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1 shadow-sm transition-all"
+                          href={`/${locale}/search?${new URLSearchParams({
+                            ...(alert.governorate ? { governorate: alert.governorate } : {}),
+                            ...(alert.district ? { district: alert.district } : {}),
+                            ...(alert.unitType ? { unitType: alert.unitType.toLowerCase() } : {}),
+                            ...(alert.maxPrice ? { maxPrice: String(alert.maxPrice) } : {}),
+                            ...(alert.genderTarget ? { genderTarget: alert.genderTarget.toLowerCase() } : {}),
+                          }).toString()}`}
+                          className="rounded-xl text-xs font-cairo py-2 px-3 bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                         >
                           <Search size={12} />
                           <span>عرض المطابقات</span>
@@ -373,11 +383,10 @@ export default function TenantAlerts() {
                       key={opt.key}
                       type="button"
                       onClick={() => setUnitType(opt.key)}
-                      className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
-                        unitType === opt.key
+                      className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${unitType === opt.key
                           ? "bg-blue-600 text-white border-blue-600"
                           : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </button>
@@ -389,7 +398,7 @@ export default function TenantAlerts() {
                 type="number"
                 label="الحد الأقصى للسعر"
                 placeholder="مثال: 3000"
-                rightIcon={<span className="text-xs font-semibold">ج.م</span>}
+                leftIcon={<span className="text-xs font-bold text-text-secondary select-none">ج.م</span>}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
               />

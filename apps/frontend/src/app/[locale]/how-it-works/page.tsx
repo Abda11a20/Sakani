@@ -31,22 +31,19 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
   const isRtl = locale === "ar";
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-surface-secondary">
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden flex items-center justify-center">
         {/* Background gradient */}
         <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background: "linear-gradient(135deg, #0F1A2E 0%, #1B4F8A 50%, #0F1A2E 100%)",
-          }}
+          className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0F1A2E] via-[#142E54] to-[#1B4F8A]"
         />
         {/* Decorative blur elements */}
-        <div className="absolute top-10 start-10 w-72 h-72 rounded-full opacity-10 bg-amber-500 blur-2xl -z-10" />
-        <div className="absolute bottom-10 end-10 w-72 h-72 rounded-full opacity-10 bg-blue-500 blur-2xl -z-10" />
+        <div className="absolute top-10 start-10 w-72 h-72 rounded-full opacity-10 bg-accent blur-2xl -z-10" />
+        <div className="absolute bottom-10 end-10 w-72 h-72 rounded-full opacity-10 bg-primary blur-2xl -z-10" />
 
         <div className="container mx-auto px-4 text-center text-white">
-          <h1 className="text-4xl md:text-5xl font-black font-cairo mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold font-cairo mb-4 leading-tight">
             {t("title")}
           </h1>
           <p className="text-lg text-white/70 max-w-2xl mx-auto leading-relaxed font-cairo">
@@ -59,15 +56,15 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
       <section className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-6xl mx-auto">
           {/* Tenant Card */}
-          <Card className="border border-slate-200 bg-white shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="p-8 pb-4 border-b border-slate-100 bg-blue-500/5">
-              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center mb-4">
+          <Card className="border border-border bg-surface shadow-xs rounded-3xl overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="p-8 pb-4 border-b border-border bg-primary/5">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <Search size={28} />
               </div>
-              <h2 className="text-2xl font-bold font-cairo text-slate-900">
+              <h2 className="text-2xl font-bold font-cairo text-text">
                 {t("forTenants")}
               </h2>
-              <p className="text-sm text-slate-500 font-cairo mt-1">
+              <p className="text-sm text-text-secondary font-cairo mt-1">
                 {t("forTenantsSubtitle")}
               </p>
             </CardHeader>

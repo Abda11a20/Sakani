@@ -249,6 +249,7 @@ export class RequestsService {
         include: {
           listing: {
             include: {
+              images: true,
               landlord: {
                 select: userPublicSelect,
               },
@@ -281,7 +282,7 @@ export class RequestsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          listing: { select: { id: true, title: true, unitType: true } },
+          listing: { select: { id: true, title: true, unitType: true, images: true } },
           tenant: {
             select: {
               ...userPublicSelect,

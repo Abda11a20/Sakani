@@ -17,13 +17,13 @@ import {
   Modal,
 } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { colors, spacing, typography } from "@/lib/design/tokens";
-import { Bell, Heart, Mail, Moon, Sun, Globe, Layers, Layout, Type, Palette, Sliders, Eye } from "lucide-react";
+import { typography } from "@/lib/design/tokens";
+import { Heart, Mail, Moon, Sun, Globe, Layers, Layout, Type, Palette, Sliders, Eye } from "lucide-react";
 
 type TabType = "buttons" | "inputs" | "cards" | "badges" | "modals" | "typography" | "colors";
 
 export default function UIShowcasePage() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>("buttons");
   const [modalOpen, setModalOpen] = useState(false);
   const [switchChecked, setSwitchChecked] = useState(true);

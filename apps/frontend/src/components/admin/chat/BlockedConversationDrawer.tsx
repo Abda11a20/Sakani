@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { X, User as UserIcon, Phone, Calendar, ShieldAlert, History, MessageSquare, Unlock, Copy, Check } from "lucide-react";
+import { X, User as UserIcon, ShieldAlert, History, MessageSquare, Unlock, Copy, Check } from "lucide-react";
 import { BLOCK_REASON_LABELS } from "./BlockedConversationFilters";
 
 interface BlockedConversationDrawerProps {
@@ -151,7 +151,7 @@ export const BlockedConversationDrawer: React.FC<BlockedConversationDrawerProps>
                 <span>معاينة آخر رسالة</span>
               </h5>
               <div className="bg-slate-100 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-700 leading-relaxed font-medium">
-                "{conversation.lastMessage.content}"
+                &quot;{conversation.lastMessage.content}&quot;
               </div>
             </div>
           )}

@@ -44,13 +44,13 @@ export function Toaster({ children }: { children: ReactNode }) {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case "success":
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-5 w-5 text-status-success" />;
       case "error":
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <AlertCircle className="h-5 w-5 text-status-danger" />;
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-5 w-5 text-status-warning" />;
       case "info":
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-5 w-5 text-status-info" />;
     }
   };
 
@@ -65,25 +65,25 @@ export function Toaster({ children }: { children: ReactNode }) {
               if (!open) removeToast(t.id);
             }}
             className={cn(
-              "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border border-gray-200 p-4 pr-6 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full bg-white"
+              "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-xl border border-border p-4 pr-6 shadow-xl transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full bg-surface text-text font-cairo"
             )}
           >
             <div className="flex gap-3">
               <div className="flex-shrink-0 pt-0.5">{getIcon(t.type)}</div>
               <div className="grid gap-1">
                 {t.title && (
-                  <ToastPrimitive.Title className="text-sm font-semibold text-gray-900">
+                  <ToastPrimitive.Title className="text-sm font-bold text-text">
                     {t.title}
                   </ToastPrimitive.Title>
                 )}
                 {t.description && (
-                  <ToastPrimitive.Description className="text-sm opacity-90 text-gray-600">
+                  <ToastPrimitive.Description className="text-sm text-text-secondary">
                     {t.description}
                   </ToastPrimitive.Description>
                 )}
               </div>
             </div>
-            <ToastPrimitive.Close className="absolute end-2 top-2 rounded-md p-1 text-gray-500 opacity-0 transition-opacity hover:text-gray-900 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100">
+            <ToastPrimitive.Close className="absolute end-2 top-2 rounded-lg p-1 text-text-tertiary opacity-0 transition-opacity hover:text-text focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary group-hover:opacity-100">
               <X className="h-4 w-4" />
             </ToastPrimitive.Close>
           </ToastPrimitive.Root>

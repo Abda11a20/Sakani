@@ -20,7 +20,6 @@ import {
   ArrowDown,
   X,
   ExternalLink,
-  User,
 } from "lucide-react";
 import { useAdminRequests } from "@/hooks/useAdmin";
 import { formatDate } from "@/lib/formatters";

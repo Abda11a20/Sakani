@@ -42,48 +42,48 @@ export function ListingActionCard({
       {/* Additional Info & Landlord Details Splits */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Columns A: Additional info */}
-        <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+        <Card className="border border-border rounded-2xl bg-surface shadow-xs overflow-hidden">
           <CardBody className="p-5 space-y-4 font-cairo">
-            <h3 className="font-bold text-slate-855 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
-              <Info size={14} className="text-[#1B4F8A]" />
+            <h3 className="font-bold text-text text-sm border-b border-border pb-2 flex items-center gap-2">
+              <Info size={14} className="text-primary" />
               {isRtl ? "معلومات إضافية" : "Additional Info"}
             </h3>
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">{isRtl ? "رقم الإعلان" : "Listing ID"}</span>
-                <span className="font-mono font-semibold text-slate-700">
+                <span className="text-text-tertiary">{isRtl ? "رقم الإعلان" : "Listing ID"}</span>
+                <span className="font-mono font-semibold text-text">
                   #{listing.id.slice(-6).toUpperCase()}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">{isRtl ? "تاريخ النشر" : "Published Date"}</span>
-                <span className="font-semibold text-slate-700">
+                <span className="text-text-tertiary">{isRtl ? "تاريخ النشر" : "Published Date"}</span>
+                <span className="font-semibold text-text">
                   {new Date(listing.createdAt).toLocaleDateString(isRtl ? "ar-EG" : "en-US")}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">{isRtl ? "آخر تحديث" : "Last Updated"}</span>
-                <span className="font-semibold text-slate-700">
+                <span className="text-text-tertiary">{isRtl ? "آخر تحديث" : "Last Updated"}</span>
+                <span className="font-semibold text-text">
                   {new Date(listing.updatedAt).toLocaleDateString(isRtl ? "ar-EG" : "en-US")}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">{isRtl ? "حالة الإشغال" : "Occupancy"}</span>
+                <span className="text-text-tertiary">{isRtl ? "حالة الإشغال" : "Occupancy"}</span>
                 <span className="font-semibold">
                   {listing.status === "rented" ? (
-                    <Badge className="bg-slate-100 text-slate-850 text-[10px]">
+                    <Badge className="bg-surface-tertiary text-text-secondary text-[10px]">
                       {isRtl ? "مؤجر" : "Rented"}
                     </Badge>
                   ) : (
-                    <Badge className="bg-green-100 text-green-850 text-[10px]">
+                    <Badge className="bg-status-success/15 text-status-success border border-status-success/30 text-[10px]">
                       {isRtl ? "متاح" : "Active"}
                     </Badge>
                   )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">{isRtl ? "إجمالي المشاهدات" : "Views Count"}</span>
-                <span className="font-semibold text-slate-700 font-sans">
+                <span className="text-text-tertiary">{isRtl ? "إجمالي المشاهدات" : "Views Count"}</span>
+                <span className="font-semibold text-text font-sans">
                   {listing.viewCount ?? listing.views ?? 0}
                 </span>
               </div>
@@ -93,10 +93,10 @@ export function ListingActionCard({
 
         {/* Columns B: Landlord details */}
         {listing.landlord && (
-          <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+          <Card className="border border-border rounded-2xl bg-surface shadow-xs overflow-hidden">
             <CardBody className="p-5 space-y-4 font-cairo">
-              <h3 className="font-bold text-slate-855 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
-                <User size={14} className="text-[#1B4F8A]" />
+              <h3 className="font-bold text-text text-sm border-b border-border pb-2 flex items-center gap-2">
+                <User size={14} className="text-primary" />
                 {isRtl ? "تفاصيل المؤجر" : "Landlord Details"}
               </h3>
               <div className="flex items-center gap-3">

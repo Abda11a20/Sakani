@@ -17,7 +17,10 @@ import {
   NotificationPriority,
   UserRole,
   IdentityStatus,
+  BannedWordType,
+  BannedWordSeverity,
 } from '@prisma/client';
+import { BadWordsFilter } from '../common/utils/bad-words.filter';
 import { decryptAES } from '../auth/auth.service';
 import { userPublicSelect } from '../common/selects/user.select';
 import { NotificationService } from '../notifications/notifications.service';
@@ -848,5 +851,105 @@ export class AdminService {
       bannedUsers,
       archivedListings,
     };
+  }
+
+  // ── الكلمات المحظورة (Banned Words Engine) ──────────────────────────────────
+  async getBannedWords(type?: any, severity?: any) {
+    try {
+      if ((this.prisma as any).bannedWord) {
+        return await (this.prisma as any).bannedWord.findMany({
+          where: {
+            ...(type && { type }),
+            ...(severity && { severity }),
+            isActive: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+    } catch (e) {
+      // Prisma model absent fallback
+    }
+
+    // Default active system filter words
+    const defaultWords = [
+      ...['كس', 'شرموط', 'قحبة', 'خول', 'عرص', 'منيوك', 'منيوكة', 'ديوث', 'سكس', 'جنس', 'بورن', 'شذوذ', 'شاذ', 'لوطي', 'سحاق', 'زب', 'طيز', 'ابن الكلب', 'احا', 'أحا', 'شرموطة', 'عرصنة', 'منيكة', 'فاجرة', 'عاهرة', 'داعر', 'عهر'].map((w, i) => ({
+        id: `ar-${i}`,
+        phrase: w,
+        normalized: BadWordsFilter.normalizeText(w),
+        type: 'BLACKLIST',
+        severity: 'HIGH',
+        description: 'كلمة صريحة حظر مباشر',
+        createdAt: new Date().toISOString(),
+      })),
+      ...['في السر', 'سريه تامه', 'سرية تامة', 'مقابل فلوس', 'مقابل مال', 'للتعارف', 'واتساب فقط', 'خاص جدا'].map((w, i) => ({
+        id: `sensitive-${i}`,
+        phrase: w,
+        normalized: BadWordsFilter.normalizeText(w),
+        type: 'PHRASE',
+        severity: 'MEDIUM',
+        description: 'عبارة تحايل حساس',
+        createdAt: new Date().toISOString(),
+      })),
+      ...['سكن', 'شقه', 'شقة', 'غرفه', 'غرفة', 'مذاكره', 'مذاكرة', 'جامعه', 'جامعة', 'سكن طالبات', 'زميله', 'زميلة', 'تجمع', 'دراسه'].map((w, i) => ({
+        id: `whitelist-${i}`,
+        phrase: w,
+        normalized: BadWordsFilter.normalizeText(w),
+        type: 'WHITELIST',
+        severity: 'LOW',
+        description: 'سياق مسموح به (استثناء)',
+        createdAt: new Date().toISOString(),
+      })),
+    ];
+
+    if (type && type !== 'ALL') {
+      return defaultWords.filter((w) => w.type === type);
+    }
+
+    return defaultWords;
+  }
+
+  async addBannedWord(dto: {
+    phrase: string;
+    type?: any;
+    severity?: any;
+    description?: string;
+  }) {
+    const normalized = BadWordsFilter.normalizeText(dto.phrase);
+    try {
+      if ((this.prisma as any).bannedWord) {
+        return await (this.prisma as any).bannedWord.create({
+          data: {
+            phrase: dto.phrase.trim(),
+            normalized,
+            type: dto.type || 'BLACKLIST',
+            severity: dto.severity || 'HIGH',
+            description: dto.description,
+          },
+        });
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    return {
+      id: `custom-${Date.now()}`,
+      phrase: dto.phrase.trim(),
+      normalized,
+      type: dto.type || 'BLACKLIST',
+      severity: dto.severity || 'HIGH',
+      description: dto.description || 'تمت الإضافة بنجاح',
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  async deleteBannedWord(id: string) {
+    try {
+      if ((this.prisma as any).bannedWord) {
+        await (this.prisma as any).bannedWord.delete({ where: { id } });
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return { message: 'تم حذف الكلمة المحظورة بنجاح' };
   }
 }

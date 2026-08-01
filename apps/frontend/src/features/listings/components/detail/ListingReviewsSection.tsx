@@ -30,27 +30,27 @@ export function ListingReviewsSection({ reviews, avgRating, locale }: ListingRev
   const isRtl = locale === "ar";
 
   return (
-    <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden font-cairo">
+    <Card className="border border-border rounded-2xl bg-surface shadow-xs overflow-hidden font-cairo">
       <CardBody className="p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-          <h2 className="text-sm font-bold text-slate-855 flex items-center gap-2">
-            <span className="w-1 h-4 bg-[#1B4F8A] rounded-full" />
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h2 className="text-sm font-bold text-text flex items-center gap-2">
+            <span className="w-1 h-4 bg-primary rounded-full" />
             {isRtl ? "تقييمات العقار والمؤجر" : "Reviews & Ratings"}
           </h2>
           {reviews.length > 0 && (
             <div className="flex items-center gap-1.5">
               <StarRating rating={Math.round(avgRating)} />
-              <span className="text-xs font-bold text-slate-855 font-sans">
+              <span className="text-xs font-bold text-text font-sans">
                 {avgRating.toFixed(1)}
               </span>
-              <span className="text-[10px] text-slate-400 font-medium font-sans">({reviews.length})</span>
+              <span className="text-[10px] text-text-tertiary font-medium font-sans">({reviews.length})</span>
             </div>
           )}
         </div>
 
         {reviews.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 border border-dashed border-slate-200 rounded-xl">
-            <Star size={24} className="mx-auto mb-2 opacity-30 text-slate-450" />
+          <div className="text-center py-8 text-text-tertiary border border-dashed border-border rounded-xl">
+            <Star size={24} className="mx-auto mb-2 opacity-30 text-text-tertiary" />
             <p className="text-xs font-semibold">{isRtl ? "لا توجد تقييمات مكتوبة بعد" : "No reviews written yet."}</p>
           </div>
         ) : (
@@ -58,26 +58,26 @@ export function ListingReviewsSection({ reviews, avgRating, locale }: ListingRev
             {reviews.map((review) => (
               <div
                 key={review.id}
-                className="border border-slate-150 rounded-xl p-4 space-y-2 bg-slate-50/40"
+                className="border border-border rounded-xl p-4 space-y-2 bg-surface-secondary/40"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#1B4F8A]/10 text-[#1B4F8A] flex items-center justify-center text-xs font-bold">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                     {review.tenant?.name?.[0] ?? "T"}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-855 leading-tight">
+                    <p className="text-xs font-bold text-text leading-tight">
                       {review.tenant?.name ?? (isRtl ? "مستأجر" : "Tenant")}
                     </p>
                     <div className="mt-0.5">
                       <StarRating rating={review.rating} />
                     </div>
                   </div>
-                  <span className="ms-auto text-[10px] text-slate-400 font-sans font-medium">
+                  <span className="ms-auto text-[10px] text-text-tertiary font-sans font-medium">
                     {new Date(review.createdAt).toLocaleDateString(isRtl ? "ar-EG" : "en-US")}
                   </span>
                 </div>
                 {review.comment && (
-                  <p className="text-xs text-slate-650 leading-relaxed font-medium">
+                  <p className="text-xs text-text-secondary leading-relaxed font-medium">
                     {review.comment}
                   </p>
                 )}

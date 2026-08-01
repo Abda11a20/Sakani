@@ -64,30 +64,30 @@ function ConfirmDialog({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full mx-4 font-cairo">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
+      <div className="bg-surface rounded-2xl shadow-xl border border-border p-6 max-w-md w-full mx-4 font-cairo">
         <div className={cn(
           "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
-          confirmVariant === "danger" ? "bg-red-100" : "bg-amber-100"
+          confirmVariant === "danger" ? "bg-status-danger/15" : "bg-status-warning/15"
         )}>
-          <AlertTriangle size={22} className={confirmVariant === "danger" ? "text-red-600" : "text-amber-600"} />
+          <AlertTriangle size={22} className={confirmVariant === "danger" ? "text-status-danger" : "text-status-warning"} />
         </div>
-        <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
-        <p className="text-sm text-slate-500 mb-6 leading-relaxed">{description}</p>
+        <h3 className="text-lg font-bold text-text mb-2">{title}</h3>
+        <p className="text-sm text-text-secondary mb-6 leading-relaxed">{description}</p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-surface-tertiary text-text-secondary hover:bg-surface-secondary transition-colors cursor-pointer border border-border"
           >
             إلغاء
           </button>
           <button
             onClick={onConfirm}
             className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
+              "px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer",
               confirmVariant === "danger"
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-amber-600 hover:bg-amber-700 text-white"
+                ? "bg-status-danger hover:opacity-90 text-white"
+                : "bg-status-warning hover:opacity-90 text-white"
             )}
           >
             {confirmLabel}

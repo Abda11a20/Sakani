@@ -43,8 +43,7 @@ export const DynamicHeaderSection: React.FC<DynamicHeaderSectionProps> = ({
 
   return (
     <div
-      className="px-4 py-3.5 rounded-2xl"
-      style={{ background: "linear-gradient(135deg, #1a0e00 0%, #8B5E10 60%, #D4A847 100%)" }}
+      className="px-5 py-4 rounded-2xl bg-gradient-to-br from-[#0F1A2E] via-[#142E54] to-[#1B4F8A] text-white border border-white/15 shadow-sm"
     >
       {/* Greeting */}
       <p className="text-sm sm:text-base font-extrabold text-white font-cairo">

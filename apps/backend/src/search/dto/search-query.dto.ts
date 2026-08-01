@@ -20,6 +20,7 @@ export class SearchQueryDto {
   q?: string;
 
   @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase() : value)
   @IsEnum(UnitType)
   unitType?: UnitType;
 
@@ -44,6 +45,7 @@ export class SearchQueryDto {
   maxPrice?: number;
 
   @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase() : value)
   @IsEnum(GenderTarget)
   genderTarget?: GenderTarget;
 

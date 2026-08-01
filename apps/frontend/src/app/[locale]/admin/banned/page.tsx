@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useLocale } from "next-intl";
 import {
   ShieldBan, Plus, Trash2, ChevronLeft, ChevronRight,
-  AlertCircle, Loader2, Phone, Hash, Calendar, X, Search
+  AlertCircle, Loader2, Phone, Calendar, X, Search
 } from "lucide-react";
 import { useBannedUsers, useBanUser, useUnbanUser } from "@/hooks/useAdmin";
 import { useToast } from "@/components/ui/toast";
@@ -106,16 +106,16 @@ export default function AdminBannedPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-cairo">
+          <h1 className="text-2xl font-extrabold text-text font-cairo">
             قائمة الحظر
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5 font-cairo">
+          <p className="text-sm text-text-secondary mt-0.5 font-cairo">
             المستخدمون المحظورون من المنصة
           </p>
         </div>
         <button
           onClick={() => setShowBanForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium font-cairo bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-cairo bg-status-danger hover:opacity-90 text-white transition-all shadow-xs cursor-pointer"
         >
           <Plus size={16} />
           إضافة حظر
@@ -129,23 +129,23 @@ export default function AdminBannedPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="البحث برقم الهاتف أو سبب الحظر..."
-          className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 font-cairo placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400"
+          className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-border bg-surface text-sm text-text font-cairo placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-status-danger/30"
         />
         <div className={cn("absolute top-3.5 shrink-0", isRtl ? "left-3" : "right-3")}>
-          <Search size={16} className="text-slate-400" />
+          <Search size={16} className="text-text-tertiary" />
         </div>
       </div>
 
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={28} className="animate-spin text-red-500" />
+          <Loader2 size={28} className="animate-spin text-status-danger" />
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-cairo text-sm">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-status-danger/15 border border-status-danger/30 text-status-danger font-cairo text-sm font-bold">
           <AlertCircle size={18} className="shrink-0" />
           <span>فشل في تحميل قائمة الحظر</span>
         </div>
@@ -153,13 +153,13 @@ export default function AdminBannedPage() {
 
       {/* Banned List */}
       {!isLoading && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-border shadow-xs overflow-hidden">
           {banned.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
-                <ShieldBan size={28} className="text-emerald-500" />
+              <div className="w-16 h-16 bg-status-success/15 rounded-2xl flex items-center justify-center mb-4 border border-status-success/30">
+                <ShieldBan size={28} className="text-status-success" />
               </div>
-              <p className="text-slate-500 font-cairo">
+              <p className="text-text-secondary font-cairo font-semibold">
                 لا يوجد مستخدمون محظورون حالياً
               </p>
             </div>

@@ -1,4 +1,4 @@
-// apps/frontend/src/app/[locale]/dashboard/tenant/requests/page.tsx
+// apps/frontend/src/app/[locale]/dashboard/tenant/viewing-requests/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -8,19 +8,19 @@ import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 import { useTenantRequests, useCancelRequest } from "@/hooks/useRequests";
 import { useCreateReview, useMyReviews } from "@/hooks/useReviews";
 import TenantLayout from "@/components/layout/TenantLayout";
-import { Card, CardBody, Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
+import { Spinner, Button, Badge, Modal, useToast } from "@/components/ui";
 import {
   FileText,
   Calendar,
   Clock,
-  Building,
   Trash2,
   Star,
-  CheckCircle,
-  XCircle,
   HelpCircle,
   MessageSquare,
   Eye,
+  Building2,
+  Bed,
+  MapPin,
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -34,6 +34,7 @@ export default function TenantRequests() {
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
   const [page] = useState(1);
+  const isAr = locale === "ar";
 
   // Queries & Mutations
   const { data: requestsData, isLoading: isRequestsLoading } = useTenantRequests(page);
@@ -45,6 +46,7 @@ export default function TenantRequests() {
   const [activeTab, setActiveTab] = useState<FilterStatus>("all");
 
   // Modal States
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [cancelModalId, setCancelModalId] = useState<string | null>(null);
   const [reviewModalListing, setReviewModalListing] = useState<{ id: string; title: string } | null>(null);
 
@@ -84,6 +86,7 @@ export default function TenantRequests() {
           type: "success",
         });
         setCancelModalId(null);
+        setSelectedRequest(null);
       },
       onError: () => {
         toast({
@@ -113,6 +116,7 @@ export default function TenantRequests() {
             type: "success",
           });
           setReviewModalListing(null);
+          setSelectedRequest(null);
           setRating(5);
           setComment("");
         },
@@ -127,11 +131,18 @@ export default function TenantRequests() {
     );
   };
 
+  const getListingCoverUrl = (listing?: any) => {
+    if (!listing?.images || listing.images.length === 0) return null;
+    const first = listing.images[0];
+    const urlStr = typeof first === "string" ? first : first?.url || first?.path;
+    return urlStr ? getImageUrl(urlStr) : null;
+  };
+
   const getStatusBadge = (status: string) => {
     const normalized = status === "approved" ? "accepted" : status;
     const cfg = REQUEST_STATUS_CONFIG[normalized as keyof typeof REQUEST_STATUS_CONFIG];
     return (
-      <Badge variant={cfg?.color ?? "gray"} className="font-bold font-cairo">
+      <Badge variant={cfg?.color ?? "gray"} className="font-bold font-cairo text-xs px-2.5 py-1">
         {cfg?.labelAr ?? status}
       </Badge>
     );
@@ -139,17 +150,22 @@ export default function TenantRequests() {
 
   return (
     <TenantLayout>
-      <div className="space-y-8">
+      <div className="space-y-6" dir={isAr ? "rtl" : "ltr"}>
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold font-cairo">طلبات الاستئجار</h1>
-          <p className="text-slate-500 mt-1 font-cairo text-sm">
-            تابع حالة طلبات المعاينة التي قمت بتقديمها وتواصل مع المؤجرين.
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-cairo flex items-center gap-2 text-text">
+            <FileText size={26} className="text-primary" />
+            <span>{isAr ? "طلبات الاستئجار والمعاينة" : "Viewing Requests"}</span>
+          </h1>
+          <p className="text-text-secondary mt-1 font-cairo text-xs sm:text-sm">
+            {isAr
+              ? "تابع حالة طلبات المعاينة التي قمت بتقديمها وتواصل مع المؤجرين."
+              : "Track your submitted viewing requests and coordinate with landlords."}
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4 font-cairo">
           {(
             [
               { key: "all", label: "الكل" },
@@ -162,10 +178,10 @@ export default function TenantRequests() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium font-cairo transition-all duration-200 ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === tab.key
-                  ? "bg-blue-600 text-white shadow-sm font-bold"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  ? "bg-primary text-white shadow-xs font-bold"
+                  : "bg-surface border border-border text-text-secondary hover:bg-surface-secondary"
               }`}
             >
               {tab.label}
@@ -173,138 +189,191 @@ export default function TenantRequests() {
           ))}
         </div>
 
-        {/* List Grid */}
+        {/* Compact Cards Grid — Matched with Rental History */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
-            <FileText size={48} className="mx-auto mb-4 text-slate-300" />
-            <h3 className="text-lg font-bold text-slate-800">لا توجد طلبات</h3>
-            <p className="text-slate-500 mt-1 max-w-sm mx-auto text-sm">
-              لم تقم بتقديم طلبات استئجار تطابق التصفية الحالية.
+          <div className="text-center py-20 bg-surface border border-dashed border-border rounded-3xl font-cairo space-y-3">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto border border-primary/20">
+              <FileText size={32} />
+            </div>
+            <h3 className="text-base font-bold text-text">
+              {isAr ? "لا توجد طلبات معاينة" : "No viewing requests found"}
+            </h3>
+            <p className="text-text-secondary text-xs max-w-xs mx-auto">
+              {isAr
+                ? "لم تقم بتقديم طلبات استئجار تطابق التصفية الحالية."
+                : "No viewing requests match your current tab filter."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {filteredItems.map((req) => {
-              const isPending = req.status === "pending";
-              const isAccepted = req.status === "accepted" || req.status === "approved";
-              const isCompleted = req.status === "completed";
-              const isRejected = req.status === "rejected";
-              const hasReviewed = reviewedListingIds.has(req.listingId);
+              const coverUrl = getListingCoverUrl(req.listing);
+              const isApartment = req.listing?.unitType === "apartment";
 
               return (
-                <Card
+                <div
                   key={req.id}
-                  className="border border-slate-200 rounded-3xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedRequest(req)}
+                  className="group bg-white rounded-3xl border border-slate-200 p-3 sm:p-4 hover:shadow-md hover:border-[#1B4F8A]/30 transition-all hover:scale-[1.01] cursor-pointer flex flex-col justify-between items-center text-center gap-3 relative"
                 >
-                  <CardBody className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      {/* Left: Thumbnail & Details */}
-                      <div className="flex flex-col sm:flex-row items-start gap-4 flex-1">
-                        <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-100">
-                          {req.listing?.images?.[0] ? (
-                            <img
-                              src={getImageUrl(req.listing.images[0])}
-                              alt={req.listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Building size={28} />
-                          )}
-                        </div>
-
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-slate-900 text-sm truncate font-cairo">
-                              {req.listing?.title || "عقار غير معروف"}
-                            </h3>
-                            {getStatusBadge(req.status)}
-                          </div>
-                          
-                          <p className="text-xs text-slate-500 font-cairo">
-                            {req.listing?.address || "عنوان غير محدد"}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 font-cairo">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={11} className="text-amber-500" />
-                              <span>تاريخ المعاينة: {new Date(req.preferredDate).toLocaleDateString("ar-EG")}</span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock size={11} className="text-slate-400" />
-                              <span>تاريخ الطلب: {new Date(req.createdAt).toLocaleDateString("ar-EG")}</span>
-                            </span>
-                          </div>
-
-                          {/* Notes */}
-                          {req.message && (
-                            <div className="flex gap-1.5 text-slate-600 text-xs p-2 bg-slate-50 rounded-xl border border-slate-100 mt-2">
-                              <MessageSquare size={13} className="text-slate-400 shrink-0 mt-0.5" />
-                              <p className="font-cairo truncate">{req.message}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div className="flex flex-row lg:flex-col items-center gap-2 self-stretch lg:self-center shrink-0 border-t lg:border-t-0 lg:border-s border-slate-100 pt-4 lg:pt-0 lg:ps-6 justify-end">
-                        <Button
-                          onClick={() => router.push(`/${locale}/listings/${req.listingId}`)}
-                          className="flex-1 lg:w-32 bg-blue-600 hover:bg-blue-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
-                        >
-                          <Eye size={13} />
-                          <span>{locale === "ar" ? "عرض الإعلان" : "View Listing"}</span>
-                        </Button>
-
-                        {isPending && (
-                          <Button
-                            onClick={() => setCancelModalId(req.id)}
-                            className="flex-1 lg:w-32 bg-red-600 hover:bg-red-700 text-white font-bold font-cairo flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs"
-                          >
-                            <Trash2 size={13} />
-                            <span>إلغاء الطلب</span>
-                          </Button>
-                        )}
-
-                        {isAccepted && (
-                          <div className="text-center font-cairo text-xs text-green-600 font-bold flex items-center gap-1 bg-green-500/10 py-1.5 px-3 rounded-full">
-                            <CheckCircle size={12} />
-                            <span>تم القبول من المؤجر</span>
-                          </div>
-                        )}
-
-                        {isRejected && (
-                          <div className="text-center font-cairo text-xs text-red-600 font-bold flex items-center gap-1 bg-red-500/10 py-1.5 px-3 rounded-full">
-                            <XCircle size={12} />
-                            <span>مرفوض</span>
-                          </div>
-                        )}
-
-                        {isCompleted && req.listing && !hasReviewed && (
-                          <Button
-                            onClick={() => setReviewModalListing({ id: req.listingId, title: req.listing?.title || "" })}
-                            className="flex-1 lg:w-32 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold font-cairo flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs"
-                          >
-                            <Star size={13} />
-                            <span>كتابة تقييم</span>
-                          </Button>
-                        )}
-
-                        {isCompleted && hasReviewed && (
-                          <div className="text-center font-cairo text-xs text-amber-600 font-bold flex items-center gap-1 bg-[#0EA5E9]/10 py-1.5 px-3 rounded-full">
-                            <Star size={12} />
-                            <span>تم إضافة التقييم</span>
-                          </div>
+                  {/* Cover Image Banner (Full Width) */}
+                  <div className="w-full h-32 sm:h-36 rounded-2xl overflow-hidden shrink-0 border border-slate-100 shadow-xs">
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={req.listing?.title || ""}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-blue-50 flex items-center justify-center border border-blue-100">
+                        {isApartment ? (
+                          <Building2 size={32} className="text-[#1B4F8A]" />
+                        ) : (
+                          <Bed size={32} className="text-[#1B4F8A]" />
                         )}
                       </div>
-                    </div>
-                  </CardBody>
-                </Card>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-1 w-full px-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 font-cairo line-clamp-2 min-h-[2.25rem]">
+                      {req.listing?.title || "عقار غير معروف"}
+                    </h3>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div>
+                    {getStatusBadge(req.status)}
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
 
-        {/* Cancel Request Modal */}
+        {/* Details Modal */}
+        {selectedRequest && (
+          <Modal
+            isOpen={true}
+            onClose={() => setSelectedRequest(null)}
+            title={isAr ? "تفاصيل طلب المعاينة" : "Viewing Request Details"}
+            size="md"
+          >
+            <div className="p-1 sm:p-2 space-y-4 font-cairo">
+              {/* Cover & Title Header */}
+              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                {getListingCoverUrl(selectedRequest.listing) ? (
+                  <img
+                    src={getListingCoverUrl(selectedRequest.listing)!}
+                    alt={selectedRequest.listing?.title || ""}
+                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
+                    <Building2 size={26} className="text-[#1B4F8A]" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(selectedRequest.status)}
+                  </div>
+                  <h3 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                    {selectedRequest.listing?.title || "عقار غير معروف"}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Date & Location Grid */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+                  <span className="flex items-center gap-1.5 text-slate-400 font-semibold text-[10px]">
+                    <Calendar size={12} className="text-amber-500" />
+                    <span>تاريخ المعاينة المطلوب</span>
+                  </span>
+                  <p className="font-bold text-slate-900">
+                    {new Date(selectedRequest.preferredDate).toLocaleDateString("ar-EG")}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+                  <span className="flex items-center gap-1.5 text-slate-400 font-semibold text-[10px]">
+                    <Clock size={12} className="text-slate-400" />
+                    <span>تاريخ تقديم الطلب</span>
+                  </span>
+                  <p className="font-bold text-slate-900">
+                    {new Date(selectedRequest.createdAt).toLocaleDateString("ar-EG")}
+                  </p>
+                </div>
+
+                {selectedRequest.listing?.address && (
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2 space-y-1">
+                    <span className="flex items-center gap-1.5 text-slate-400 font-semibold text-[10px]">
+                      <MapPin size={12} className="text-[#1B4F8A]" />
+                      <span>العنوان والموقع</span>
+                    </span>
+                    <p className="font-bold text-slate-900">
+                      {selectedRequest.listing.address}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Message Note if present */}
+              {selectedRequest.message && (
+                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200/50 space-y-1 text-xs">
+                  <span className="flex items-center gap-1.5 font-bold text-amber-900 text-[10px]">
+                    <MessageSquare size={12} />
+                    <span>ملاحظات الطلب:</span>
+                  </span>
+                  <p className="text-amber-800 leading-relaxed">
+                    {selectedRequest.message}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons — Unified with side-by-side icons */}
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                <Button
+                  onClick={() => {
+                    setSelectedRequest(null);
+                    router.push(`/${locale}/listings/${selectedRequest.listingId}`);
+                  }}
+                  leftIcon={<Eye size={16} />}
+                  className="flex-1 bg-[#1B4F8A] hover:bg-[#153e6d] text-white font-bold text-xs py-3 rounded-xl shadow-xs"
+                >
+                  {isAr ? "عرض الإعلان" : "View Listing"}
+                </Button>
+
+                {selectedRequest.status === "pending" && (
+                  <Button
+                    onClick={() => {
+                      setCancelModalId(selectedRequest.id);
+                    }}
+                    leftIcon={<Trash2 size={16} />}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-3 rounded-xl shadow-xs"
+                  >
+                    إلغاء الطلب
+                  </Button>
+                )}
+
+                {selectedRequest.status === "completed" && selectedRequest.listing && !reviewedListingIds.has(selectedRequest.listingId) && (
+                  <Button
+                    onClick={() => {
+                      setReviewModalListing({ id: selectedRequest.listingId, title: selectedRequest.listing?.title || "" });
+                    }}
+                    leftIcon={<Star size={16} />}
+                    className="flex-1 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold text-xs py-3 rounded-xl shadow-xs"
+                  >
+                    كتابة تقييم
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Cancel Request Confirmation Modal */}
         {cancelModalId && (
           <Modal
             isOpen={true}
@@ -312,27 +381,29 @@ export default function TenantRequests() {
             title="تأكيد إلغاء الطلب"
           >
             <div className="p-6 text-center space-y-4 font-cairo">
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-xs">
                 <HelpCircle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900">
-                هل أنت متأكد من إلغاء طلب المعاينة؟
-              </h3>
-              <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                سيتم إزالة الطلب وإشعار المؤجر بإلغائه. لا يمكنك التراجع عن هذا الإجراء.
-              </p>
-              <div className="flex gap-3 pt-4">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900">
+                  هل أنت متأكد من إلغاء طلب المعاينة؟
+                </h3>
+                <p className="text-slate-500 text-xs max-w-sm mx-auto">
+                  سيتم إزالة الطلب وإشعار المؤجر بإلغائه. لا يمكنك التراجع عن هذا الإجراء.
+                </p>
+              </div>
+              <div className="flex gap-2.5 pt-4">
                 <Button
                   onClick={() => setCancelModalId(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold"
+                  className="flex-1 rounded-xl py-3 border-slate-200 font-semibold text-xs text-slate-600"
                 >
                   تراجع
                 </Button>
                 <Button
                   onClick={handleCancelRequestSubmit}
                   disabled={isCancelling}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl py-3"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl py-3 shadow-xs"
                 >
                   {isCancelling ? "جاري الإلغاء..." : "تأكيد الإلغاء"}
                 </Button>
@@ -348,9 +419,9 @@ export default function TenantRequests() {
             onClose={() => setReviewModalListing(null)}
             title="كتابة تقييم للعقار والمؤجر"
           >
-            <form onSubmit={handleReviewSubmit} className="p-6 space-y-4 font-cairo">
+            <form onSubmit={handleReviewSubmit} className="p-6 space-y-4 font-cairo text-xs">
               <h4 className="font-bold text-sm text-slate-800">
-                تقييمك لعقار: <span className="text-blue-600">{reviewModalListing.title}</span>
+                تقييمك لعقار: <span className="text-[#1B4F8A]">{reviewModalListing.title}</span>
               </h4>
 
               {/* Star rating selection */}
@@ -372,10 +443,10 @@ export default function TenantRequests() {
                         className="p-1 focus:outline-none transition-transform hover:scale-110 shrink-0"
                       >
                         <Star
-                          size={32}
+                          size={28}
                           className={
                             isLit
-                              ? "text-yellow-400 fill-yellow-400 stroke-yellow-500"
+                              ? "text-amber-400 fill-amber-400 stroke-amber-500"
                               : "text-slate-300 stroke-slate-400"
                           }
                         />
@@ -393,23 +464,23 @@ export default function TenantRequests() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={4}
-                  className="w-full text-sm rounded-xl border border-slate-200 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] resize-none text-slate-800"
+                  className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]/30 focus:border-[#1B4F8A] resize-none text-slate-800"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <div className="flex gap-2.5 pt-4 border-t border-slate-100">
                 <Button
                   type="button"
                   onClick={() => setReviewModalListing(null)}
                   variant="outline"
-                  className="flex-1 rounded-xl py-3 border-slate-200"
+                  className="flex-1 rounded-xl py-3 border-slate-200 text-xs font-semibold"
                 >
                   إلغاء
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmittingReview}
-                  className="flex-1 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold rounded-xl py-3"
+                  className="flex-1 bg-[#1B4F8A] hover:bg-[#153e6d] text-white font-bold text-xs rounded-xl py-3 shadow-xs"
                 >
                   {isSubmittingReview ? "جاري الإرسال..." : "إرسال التقييم"}
                 </Button>
@@ -421,3 +492,4 @@ export default function TenantRequests() {
     </TenantLayout>
   );
 }
+

@@ -15,14 +15,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-red-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-secondary flex items-center justify-center px-4">
       <div className="text-center max-w-md mx-auto">
         {/* Icon */}
         <div className="relative mx-auto mb-8 w-32 h-32">
-          <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-          <div className="relative flex items-center justify-center w-32 h-32 bg-white rounded-full shadow-xl border border-red-100">
+          <div className="absolute inset-0 bg-status-danger/15 rounded-full animate-pulse" />
+          <div className="relative flex items-center justify-center w-32 h-32 bg-surface rounded-full shadow-md border border-status-danger/30">
             <AlertCircle
-              className="text-red-500"
+              className="text-status-danger"
               size={52}
               strokeWidth={1.5}
             />
@@ -30,17 +30,17 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </div>
 
         {/* Error code */}
-        <p className="text-7xl font-black text-red-500/20 font-cairo mb-2 select-none">
+        <p className="text-7xl font-black text-status-danger/20 font-cairo mb-2 select-none">
           500
         </p>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold font-cairo text-slate-800 mb-3">
+        <h1 className="text-2xl font-bold font-cairo text-text mb-3">
           حدث خطأ غير متوقع
         </h1>
 
         {/* Description */}
-        <p className="text-slate-500 font-cairo mb-8 leading-relaxed">
+        <p className="text-text-secondary font-cairo mb-8 leading-relaxed">
           نعتذر، حدث خطأ من جانبنا. يرجى المحاولة مرة أخرى.
           <br />
           إذا استمرت المشكلة، تواصل مع فريق الدعم.
@@ -50,14 +50,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={reset}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-cairo font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-status-danger hover:opacity-90 text-white font-cairo font-semibold rounded-xl transition-all duration-200 shadow-xs"
           >
             <RefreshCw size={18} />
             إعادة المحاولة
           </button>
           <a
             href="/ar"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-cairo font-semibold rounded-xl border border-slate-200 transition-all duration-200 shadow-sm hover:shadow-md"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface hover:bg-surface-secondary text-text font-cairo font-semibold rounded-xl border border-border transition-all duration-200 shadow-xs"
           >
             <Home size={18} />
             العودة للرئيسية

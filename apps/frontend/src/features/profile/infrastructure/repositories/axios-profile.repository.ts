@@ -13,6 +13,11 @@ export class AxiosProfileRepository implements IProfileRepository {
     return res.data;
   }
 
+  async deleteProfile(reason?: string): Promise<any> {
+    const res = await api.delete("/users/profile", { data: { reason } });
+    return res.data;
+  }
+
   async getPublic(id: string): Promise<any> {
     const res = await api.get(`/users/${id}`);
     return res.data;

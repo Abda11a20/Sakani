@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/app/[locale]/admin/rentals/page.tsx
+// apps/frontend/src/app/[locale]/admin/rentals/page.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -51,28 +51,28 @@ function StatusBadge({ status, locale }: { status: string; locale: string }) {
   switch (status) {
     case "active":
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-success/15 text-status-success border border-status-success/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse" />
           {isAr ? "نشط" : "Active"}
         </span>
       );
     case "expired":
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-danger/15 text-status-danger border border-status-danger/30">
           <Clock size={10} />
           {isAr ? "منتهي" : "Expired"}
         </span>
       );
     case "terminated":
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-warning/15 text-status-warning border border-status-warning/30">
           <XCircle size={10} />
           {isAr ? "مفسوخ" : "Terminated"}
         </span>
       );
     case "renewed":
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-info/15 text-status-info border border-status-info/30">
           <RefreshCw size={10} />
           {isAr ? "مجدد" : "Renewed"}
         </span>

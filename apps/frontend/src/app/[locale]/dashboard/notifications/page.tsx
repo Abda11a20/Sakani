@@ -45,6 +45,9 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  ShieldCheck,
+  Lock,
+  KeyRound,
 } from "lucide-react";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
@@ -61,16 +64,20 @@ const ICON_MAP: Record<FormattedNotification["iconName"], React.ElementType> = {
   CheckCircle2,
   XCircle,
   Bell,
+  ShieldCheck,
+  Lock,
+  KeyRound,
 };
 
 const CATEGORY_STYLES: Record<FormattedNotification["category"], { bg: string; text: string; labelAr: string; labelEn: string }> = {
-  listing: { bg: "bg-blue-50 border-blue-200", text: "text-blue-600", labelAr: "إعلان", labelEn: "Listing" },
-  rental: { bg: "bg-amber-50 border-amber-200", text: "text-amber-600", labelAr: "عقد إيجار", labelEn: "Rental" },
-  request: { bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-600", labelAr: "طلب معاينة", labelEn: "Viewing Request" },
-  payment: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-600", labelAr: "دفع", labelEn: "Payment" },
-  community: { bg: "bg-purple-50 border-purple-200", text: "text-purple-600", labelAr: "مجتمع", labelEn: "Community" },
-  alert: { bg: "bg-rose-50 border-rose-200", text: "text-rose-600", labelAr: "تنبيه", labelEn: "Alert" },
-  system: { bg: "bg-slate-50 border-slate-200", text: "text-slate-600", labelAr: "نظام", labelEn: "System" },
+  listing: { bg: "bg-primary/10 border-primary/20", text: "text-primary", labelAr: "إعلان", labelEn: "Listing" },
+  rental: { bg: "bg-status-warning/15 border-status-warning/30", text: "text-status-warning", labelAr: "عقد إيجار", labelEn: "Rental" },
+  request: { bg: "bg-primary/10 border-primary/20", text: "text-primary", labelAr: "طلب معاينة", labelEn: "Viewing Request" },
+  payment: { bg: "bg-status-success/15 border-status-success/30", text: "text-status-success", labelAr: "دفع", labelEn: "Payment" },
+  community: { bg: "bg-status-info/15 border-status-info/30", text: "text-status-info", labelAr: "مجتمع", labelEn: "Community" },
+  alert: { bg: "bg-status-danger/15 border-status-danger/30", text: "text-status-danger", labelAr: "تنبيه", labelEn: "Alert" },
+  system: { bg: "bg-surface-tertiary border-border", text: "text-text-secondary", labelAr: "نظام", labelEn: "System" },
+  security: { bg: "bg-status-success/15 border-status-success/30", text: "text-status-success", labelAr: "أمان", labelEn: "Security" },
 };
 
 type FilterType = "all" | "unread" | "rental" | "request" | "listing" | "payment";

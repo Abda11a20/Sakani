@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/app/[locale]/admin/listings/page.tsx
+// apps/frontend/src/app/[locale]/admin/listings/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -120,10 +120,10 @@ export default function AdminListingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-cairo">
+          <h1 className="text-2xl font-extrabold text-text font-cairo">
             إدارة الإعلانات
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5 font-cairo">
+          <p className="text-sm text-text-secondary mt-0.5 font-cairo">
             إدارة وتصفية جميع الإعلانات في المنصة
           </p>
         </div>
@@ -138,8 +138,8 @@ export default function AdminListingsPage() {
             className={cn(
               "px-4 py-2 rounded-xl text-sm font-bold font-cairo transition-all whitespace-nowrap",
               statusTab === tab.id
-                ? "bg-[#0EA5E9] text-white shadow-sm"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                ? "bg-primary text-white shadow-xs"
+                : "bg-surface text-text-secondary border border-border hover:bg-surface-secondary"
             )}
           >
             {tab.label}

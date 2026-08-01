@@ -39,7 +39,7 @@ export const ConfirmUnblockModal: React.FC<ConfirmUnblockModalProps> = ({
         {/* Content */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 space-y-1.5 leading-relaxed">
           <p className="font-bold text-slate-900">
-            هل أنت تأكد من رفع الحظر عن العميل <span className="text-blue-600">"{clientName}"</span>؟
+            هل أنت تأكد من رفع الحظر عن العميل <span className="text-primary">&quot;{clientName}&quot;</span>؟
           </p>
           <p className="text-slate-500 text-[11px]">
             سيتم السماح للعميل والأدمن بإرسال رسائل جديدة فوراً. لن يتم حذف سجل الحظر السابق من الـ Audit Log.

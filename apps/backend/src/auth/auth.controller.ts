@@ -29,6 +29,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { GenerateLinkCodeDto } from './dto/generate-link-code.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AllowSoftDeleted } from './decorators/allow-soft-deleted.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '@prisma/client';
 
@@ -38,12 +39,12 @@ type SafeUser = Omit<User, 'passwordHash'>;
 @Controller('auth')
 @UseGuards(AuthThrottlerGuard)
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   // ── POST /auth/register ────────────────────────────────────────────────────
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ default: { limit: 20, ttl: 900000 } }) // 20 per 15 mins
+  @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 per 15 mins
   async register(
     @Body() dto: RegisterDto,
   ): Promise<{ success: boolean; message: string }> {
@@ -79,7 +80,7 @@ export class AuthController {
   // ── POST /auth/verify-email ────────────────────────────────────────────────
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 20, ttl: 600000 } }) // 20 per 10 mins
+  @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 per 15 mins
   async verifyEmail(
     @Body() dto: VerifyEmailDto,
   ): Promise<{ success: boolean; message: string }> {
@@ -101,7 +102,7 @@ export class AuthController {
   // ── POST /auth/login ───────────────────────────────────────────────────────
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 per 1 min
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per 1 min
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -133,7 +134,10 @@ export class AuthController {
   }
 
   // ── POST /auth/logout ──────────────────────────────────────────────────────
+  @ApiBearerAuth()
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @AllowSoftDeleted()
   @HttpCode(HttpStatus.OK)
   async logout(
     @Body('refreshToken') refreshToken: string,
@@ -146,12 +150,35 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  @AllowSoftDeleted()
   @HttpCode(HttpStatus.OK)
   async getMe(
     @CurrentUser() user: SafeUser,
   ): Promise<{ success: boolean; data: { user: SafeUser } }> {
     const freshUser = await this.authService.getMe(user.id);
     return { success: true, data: { user: freshUser } };
+  }
+
+  // ── POST /auth/restore-account ──────────────────────────────────────────────
+  @Post('restore-account')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 900000 } })
+  async restoreAccount(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+  ): Promise<{ success: boolean; message: string; data: { accessToken: string; refreshToken: string; user: SafeUser } }> {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    const deviceName = req.headers['user-agent'];
+    const result = await this.authService.restoreAccountByCredentials(dto, ip, deviceName);
+    return {
+      success: true,
+      message: result.message,
+      data: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user,
+      },
+    };
   }
 
   // ── POST /auth/forgot-password ─────────────────────────────────────────────
@@ -168,7 +195,7 @@ export class AuthController {
   // ── POST /auth/verify-reset-otp & /auth/verify-otp ─────────────────────────
   @Post(['verify-reset-otp', 'verify-otp'])
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 600000 } }) // 5 per 10 mins
+  @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 per 15 mins
   async verifyResetOtp(
     @Body() dto: VerifyOtpDto,
   ): Promise<{ success: boolean; data: { valid: boolean } }> {
@@ -191,6 +218,7 @@ export class AuthController {
   // ── POST /auth/reset-password ──────────────────────────────────────────────
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 per 15 mins
   async resetPassword(
     @Body() dto: ResetPasswordDto,
   ): Promise<{ success: boolean; message: string }> {

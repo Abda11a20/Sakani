@@ -36,18 +36,18 @@ export const Modal: React.FC<ModalProps> = ({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-3 border border-slate-200 bg-white p-4 sm:p-5 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl",
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-3 border border-border bg-surface text-text p-4 sm:p-5 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl",
             sizeClasses[size]
           )}
         >
           <div className="flex flex-col space-y-1.5 text-center sm:text-start">
             {title && (
-              <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">
+              <Dialog.Title className="text-lg font-bold text-text leading-none tracking-tight">
                 {title}
               </Dialog.Title>
             )}
             {description && (
-              <Dialog.Description className="text-sm text-gray-500">
+              <Dialog.Description className="text-sm text-text-secondary">
                 {description}
               </Dialog.Description>
             )}
@@ -57,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <Dialog.Close
             aria-label="إغلاق النافذة"
-            className="absolute end-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-gray-100 data-[state=open]:text-gray-500"
+            className="absolute end-4 top-4 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:pointer-events-none data-[state=open]:bg-surface-secondary data-[state=open]:text-text-secondary"
           >
             <X className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">إغلاق</span>

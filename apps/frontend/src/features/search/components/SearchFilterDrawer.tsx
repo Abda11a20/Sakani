@@ -7,14 +7,18 @@ import { SearchFilterControls } from "./SearchFilterControls";
 import type { SearchFilters } from "@/types";
 import { Button } from "@/components/ui";
 
-interface SearchFilterDrawerProps {
+export interface SearchFilterDrawerProps {
   open: boolean;
-  draftFilters: SearchFilters;
-  onChange: (partial: Partial<SearchFilters>) => void;
+  draftFilters?: SearchFilters;
+  onChange?: (partial: Partial<SearchFilters>) => void;
   onReset: () => void;
   onApply: () => void;
   onClose: () => void;
   totalCount?: number;
+  title?: string;
+  subtitle?: string;
+  applyText?: string;
+  children?: React.ReactNode;
 }
 
 export function SearchFilterDrawer({
@@ -25,6 +29,10 @@ export function SearchFilterDrawer({
   onApply,
   onClose,
   totalCount,
+  title = "فلاتر البحث",
+  subtitle = "حدد مواصفات البحث المناسبة لك",
+  applyText,
+  children,
 }: SearchFilterDrawerProps) {
   // Close drawer on Escape key press
   useEffect(() => {
@@ -78,10 +86,10 @@ export function SearchFilterDrawer({
             />
             <div>
               <h2 id="filter-drawer-title" className="text-xs font-extrabold text-text leading-tight">
-                فلاتر البحث
+                {title}
               </h2>
               <p className="text-[10px] text-text-secondary font-medium leading-tight">
-                حدد مواصفات العقار المناسب لك
+                {subtitle}
               </p>
             </div>
           </div>
@@ -99,13 +107,19 @@ export function SearchFilterDrawer({
 
         {/* Scrollable Filter Content */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <SearchFilterControls
-            filters={draftFilters}
-            onChange={onChange}
-            onReset={onReset}
-            onApply={onApply}
-            hideActions={true}
-          />
+          {children ? (
+            children
+          ) : (
+            draftFilters && onChange && (
+              <SearchFilterControls
+                filters={draftFilters}
+                onChange={onChange}
+                onReset={onReset}
+                onApply={onApply}
+                hideActions={true}
+              />
+            )
+          )}
         </div>
 
         {/* Action Bar */}
@@ -119,7 +133,7 @@ export function SearchFilterDrawer({
             leftIcon={<Check size={15} className="stroke-[3]" />}
             className="text-xs font-bold py-2.5 rounded-xl"
           >
-            {totalCount !== undefined ? `عرض (${totalCount}) عقاراً` : "تطبيق الفلاتر"}
+            {applyText ? applyText : totalCount !== undefined ? `عرض (${totalCount}) نتيجة` : "تطبيق الفلاتر"}
           </Button>
           <Button
             type="button"

@@ -23,14 +23,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-gray-700">
+          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-text-secondary">
             {label}
           </label>
         )}
         <div className="relative" dir={isLtrContent ? "ltr" : undefined}>
           {leftIcon && (
             <div
-              className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-gray-500"
+              className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-text-tertiary"
               style={{ direction: "ltr" }}
               aria-hidden="true"
             >
@@ -44,8 +44,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              "flex w-full rounded-lg border bg-white ps-3 pe-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50",
-              error ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300",
+              "flex w-full rounded-lg border bg-surface text-text placeholder:text-text-tertiary ps-3 pe-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-surface-tertiary disabled:opacity-50",
+              error ? "border-status-danger focus-visible:ring-status-danger" : "border-border",
               leftIcon ? "ps-10" : "",
               rightIcon ? "pe-10" : "",
               className
@@ -56,7 +56,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           />
           {rightIcon && (
             <div
-              className="absolute inset-y-0 end-0 flex items-center pe-3 pointer-events-none text-gray-500"
+              className="absolute inset-y-0 end-0 flex items-center pe-3 pointer-events-none text-text-tertiary"
               style={{ direction: "ltr" }}
               aria-hidden="true"
             >
@@ -65,7 +65,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-red-500">
+          <p id={errorId} className="mt-1 text-sm text-status-danger">
             {error}
           </p>
         )}
@@ -88,20 +88,20 @@ export const PasswordInput = React.forwardRef<
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-text-secondary">
           {label}
         </label>
       )}
       <div
         className={cn(
-          "flex items-center gap-0 rounded-lg border bg-white transition-colors focus-within:ring-2 focus-within:ring-primary",
+          "flex items-center gap-0 rounded-lg border bg-surface transition-colors focus-within:ring-2 focus-within:ring-primary",
           error
-            ? "border-red-500 focus-within:ring-red-500"
-            : "border-gray-300"
+            ? "border-status-danger focus-within:ring-status-danger"
+            : "border-border"
         )}
       >
         {leftIcon && (
-          <div className="flex items-center ps-3 text-gray-500 pointer-events-none shrink-0" aria-hidden="true">
+          <div className="flex items-center ps-3 text-text-tertiary pointer-events-none shrink-0" aria-hidden="true">
             {leftIcon}
           </div>
         )}
@@ -113,7 +113,7 @@ export const PasswordInput = React.forwardRef<
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "flex-1 min-w-0 bg-transparent py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-start ps-3 pe-2",
+            "flex-1 min-w-0 bg-transparent py-2 text-sm text-text placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-start ps-3 pe-2",
             className
           )}
           ref={ref}
@@ -127,7 +127,7 @@ export const PasswordInput = React.forwardRef<
           disabled={disabled}
           aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
           aria-pressed={showPassword}
-          className="pe-3 ps-2 text-gray-400 hover:text-gray-600 focus:outline-none shrink-0"
+          className="pe-3 ps-2 text-text-tertiary hover:text-text-secondary focus:outline-none shrink-0"
         >
           {showPassword ? (
             <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -137,7 +137,7 @@ export const PasswordInput = React.forwardRef<
         </button>
       </div>
       {error && (
-        <p id={errorId} className="mt-1 text-sm text-red-500">
+        <p id={errorId} className="mt-1 text-sm text-status-danger">
           {error}
         </p>
       )}
@@ -178,7 +178,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-gray-700 font-cairo">
+          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-text-secondary font-cairo">
             {label}
           </label>
         )}
@@ -191,8 +191,8 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              "flex w-full rounded-lg border bg-white ps-3 pe-16 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50",
-              error ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300",
+              "flex w-full rounded-lg border bg-surface text-text placeholder:text-text-tertiary ps-3 pe-16 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:bg-surface-tertiary disabled:opacity-50",
+              error ? "border-status-danger focus-visible:ring-status-danger" : "border-border",
               className
             )}
             ref={ref}
@@ -200,14 +200,14 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
             {...props}
           />
           <div
-            className="absolute inset-y-0 end-0 flex items-center pe-3 pointer-events-none text-xs font-semibold text-gray-500 font-cairo"
+            className="absolute inset-y-0 end-0 flex items-center pe-3 pointer-events-none text-xs font-semibold text-text-tertiary font-cairo"
             aria-hidden="true"
           >
             {symbol}
           </div>
         </div>
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-red-500 font-cairo">
+          <p id={errorId} className="mt-1 text-sm text-status-danger font-cairo">
             {error}
           </p>
         )}

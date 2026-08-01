@@ -51,35 +51,7 @@ function buildSearchKey(filters: SearchFilters) {
   ];
 }
 
-function normalizeSearchResult(raw: any): SearchResult {
-  if (!raw) return { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
-  if (Array.isArray(raw.items)) {
-    return {
-      items: raw.items,
-      meta: {
-        total: raw.meta?.total ?? raw.total ?? raw.items.length,
-        page: raw.meta?.page ?? raw.page ?? 1,
-        limit: raw.meta?.limit ?? raw.limit ?? 12,
-        lastPage: raw.meta?.lastPage ?? raw.lastPage ?? 1,
-      },
-    };
-  }
-  if (Array.isArray(raw.data)) {
-    return {
-      items: raw.data,
-      meta: {
-        total: raw.meta?.total ?? raw.total ?? raw.data.length,
-        page: raw.meta?.page ?? raw.page ?? 1,
-        limit: raw.meta?.limit ?? raw.limit ?? 12,
-        lastPage: raw.meta?.lastPage ?? raw.lastPage ?? 1,
-      },
-    };
-  }
-  if (Array.isArray(raw)) {
-    return { items: raw, meta: { total: raw.length, page: 1, limit: raw.length || 12, lastPage: 1 } };
-  }
-  return { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
-}
+
 
 interface SearchPageClientProps {
   locale?: string;
@@ -102,8 +74,8 @@ export function SearchPageClient({
       query: initialFilters.query || initialFilters.q || undefined,
       governorate: initialFilters.governorate || undefined,
       district: initialFilters.district || undefined,
-      unitType: (initialFilters.unitType as any) || undefined,
-      genderTarget: (initialFilters.genderTarget as any) || undefined,
+      unitType: initialFilters.unitType ? (initialFilters.unitType.toLowerCase() as any) : undefined,
+      genderTarget: initialFilters.genderTarget ? (initialFilters.genderTarget.toLowerCase() as any) : undefined,
       minPrice: minP ? Number(minP) : undefined,
       maxPrice: maxP ? Number(maxP) : undefined,
       isFurnished: furn !== undefined ? furn === "true" : undefined,

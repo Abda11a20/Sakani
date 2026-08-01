@@ -4,10 +4,12 @@ import {
   IsOptional,
   IsString,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 
 export class VerifyEmailDto {
   @IsOptional()
+  @ValidateIf((o) => !!o.email)
   @IsEmail({}, { message: 'البريد الإلكتروني غير صحيح' })
   email?: string;
 

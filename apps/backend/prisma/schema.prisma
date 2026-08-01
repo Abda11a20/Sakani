@@ -859,3 +859,29 @@ model CommunityReport {
   @@map("community_reports")
 }
 
+enum BannedWordSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BannedWordType {
+  BLACKLIST
+  PHRASE
+  WHITELIST
+}
+
+model BannedWord {
+  id          String             @id @default(cuid())
+  phrase      String             @unique
+  normalized  String
+  type        BannedWordType     @default(BLACKLIST)
+  severity    BannedWordSeverity @default(HIGH)
+  description String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@map("banned_words")
+}
+

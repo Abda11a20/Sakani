@@ -174,6 +174,7 @@ export class RentalContractsService {
     return this.prisma.$transaction(async (tx) => {
       const old = await tx.rentalContract.findUnique({
         where: { id: contractId },
+        include: { listing: true },
       });
 
       if (!old) {
@@ -197,15 +198,15 @@ export class RentalContractsService {
         data: { status: ContractStatus.renewed },
       });
 
-      // 2. Create new active contract
+      // 2. Create new active contract (viewingRequestId is undefined because it belongs solely to the initial contract)
       const newContract = await this.createContract(
         {
           listingId: old.listingId,
           landlordId: old.landlordId,
           tenantId: old.tenantId,
           bedId: old.bedId || undefined,
-          viewingRequestId: old.viewingRequestId || undefined,
-          createdByType: dto.createdByType || ContractCreatedBy.MANUAL,
+          viewingRequestId: undefined,
+          createdByType: dto.createdByType || ContractCreatedBy.AUTO_RENEW,
           startDate: old.endDate,
           endDate: new Date(dto.newEndDate),
           monthlyRent:
@@ -217,7 +218,7 @@ export class RentalContractsService {
           currency: old.currency,
           isAutoRenew:
             dto.isAutoRenew !== undefined ? dto.isAutoRenew : old.isAutoRenew,
-          notes: dto.notes,
+          notes: dto.notes ? `${dto.notes} (تجديد عقد)` : 'تجديد عقد',
         },
         tx,
       );
@@ -265,6 +266,7 @@ export class RentalContractsService {
 
       // 4. Send Notifications (Tenant & Landlord)
       const formattedDate = newContract.endDate.toLocaleDateString('ar-EG');
+      const listingTitle = old.listing?.title ?? 'العقار';
 
       await this.notificationService.createUnique(
         {
@@ -275,7 +277,7 @@ export class RentalContractsService {
           payload: {
             oldContractNumber: old.contractNumber,
             newContractNumber: newContract.contractNumber,
-            listingTitle: old.listing?.title || '',
+            listingTitle,
             newEndDate: formattedDate,
             contractId: newContract.id,
           },
@@ -296,7 +298,7 @@ export class RentalContractsService {
           payload: {
             oldContractNumber: old.contractNumber,
             newContractNumber: newContract.contractNumber,
-            listingTitle: old.listing?.title || '',
+            listingTitle,
             newEndDate: formattedDate,
             contractId: newContract.id,
           },

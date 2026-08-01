@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsApi, type PushSubscriptionItem } from "@/features/notifications";
 
+import { useAuthStore } from "@/features/auth";
+
 export type { PushSubscriptionItem };
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -38,9 +40,12 @@ function getBrowserAndDevice() {
 
 /** Hook to fetch active push subscriptions for current user */
 export const usePushSubscriptions = () => {
+  const token = useAuthStore((state) => state.token);
+
   return useQuery<PushSubscriptionItem[]>({
     queryKey: ["push-subscriptions"],
     queryFn: () => notificationsApi.getPushSubscriptions(),
+    enabled: !!token,
   });
 };
 

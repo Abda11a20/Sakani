@@ -33,11 +33,11 @@ export interface IAuthRepository {
   verifyEmail(payload: { email?: string; phone?: string; otp: string }): Promise<any>;
   resendVerification(payload: { email?: string; phone?: string }): Promise<any>;
   forgotPassword(payload: { email?: string; phone?: string; channel?: "EMAIL" | "TELEGRAM" }): Promise<any>;
-  verifyOtp(payload: { email: string; otp: string }): Promise<any>;
-  resetPassword(payload: { email: string; otp: string; newPassword: string; confirmPassword?: string }): Promise<any>;
+  verifyOtp(payload: { email?: string; phone?: string; otp: string }): Promise<any>;
+  resetPassword(payload: { email?: string; phone?: string; otp: string; newPassword: string; confirmPassword?: string }): Promise<any>;
   changePassword(payload: { currentPassword: string; newPassword: string; confirmPassword?: string }): Promise<any>;
   refreshToken(token: string): Promise<{ accessToken: string; refreshToken?: string }>;
-  generateTelegramLinkCode(identifier?: string): Promise<any>;
+  generateTelegramLinkCode(identifier?: string): Promise<{ linkCode: string; expiresAt: string }>;
   checkTelegramLinkStatus(code: string): Promise<any>;
   unlinkTelegram(): Promise<any>;
   updateOtpChannel(channel: string): Promise<any>;

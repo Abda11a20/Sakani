@@ -437,8 +437,8 @@ export class UsersService implements OnModuleInit {
 
   // ── Lookup By Phone ───────────────────────────────────────────────────────
   async lookupByPhone(phone: string): Promise<SafeUser | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { phone },
+    const user = await this.prisma.user.findFirst({
+      where: { phone, isDeleted: false },
     });
 
     if (!user) return null;

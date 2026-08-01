@@ -5,6 +5,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  ForbiddenException,
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
@@ -15,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { NotificationService } from '../notifications/notifications.service';
+import { ErrorCode } from '../common/constants/error-codes.enum';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -114,7 +116,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly notificationService: NotificationService,
     private readonly telegramService: TelegramService,
-  ) {}
+  ) { }
 
   // ── User Registration ──────────────────────────────────────────────────────
   async register(dto: RegisterDto): Promise<{ message: string }> {
@@ -310,6 +312,20 @@ export class AuthService {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
     }
 
+    if (user.isDeleted || user.deletedAt) {
+      const remainingDays = user.scheduledFinalDeleteAt
+        ? Math.max(1, Math.floor((new Date(user.scheduledFinalDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        : 30;
+
+      throw new ForbiddenException({
+        statusCode: 403,
+        code: 'ACCOUNT_SOFT_DELETED',
+        identifier: dto.identifier,
+        remainingDays,
+        message: `حسابك محذوف وفي فترة السماح (باقي ${remainingDays} يوماً على الحذف النهائي). يمكنك استعادة حسابك أولاً.`,
+      });
+    }
+
     if (!user.isActive) {
       throw new UnauthorizedException('هذا الحساب محظور. تواصل مع الدعم الفني');
     }
@@ -372,11 +388,17 @@ export class AuthService {
   }
 
   // ── Logout ─────────────────────────────────────────────────────────────────
-  async logout(refreshToken: string): Promise<{ message: string }> {
-    const tokenHash = hashToken(refreshToken);
-    await this.prisma.deviceSession.deleteMany({
-      where: { refreshTokenHash: tokenHash },
-    });
+  async logout(refreshToken?: string): Promise<{ message: string }> {
+    if (refreshToken && typeof refreshToken === 'string' && refreshToken.trim()) {
+      try {
+        const tokenHash = hashToken(refreshToken);
+        await this.prisma.deviceSession.deleteMany({
+          where: { refreshTokenHash: tokenHash },
+        });
+      } catch (err: any) {
+        this.logger.warn(`[logout] Failed to delete session: ${err?.message}`);
+      }
+    }
     return { message: 'تم تسجيل الخروج بنجاح' };
   }
 
@@ -472,22 +494,29 @@ export class AuthService {
       throw new BadRequestException('كلمة المرور وتأكيدها غير متطابقين');
     }
 
+    let identifier: string;
+    if (dto.email) {
+      identifier = dto.email;
+    } else if (dto.phone) {
+      identifier = dto.phone;
+    } else {
+      throw new BadRequestException('البريد الإلكتروني أو رقم الهاتف مطلوب');
+    }
+
     await this.consumeVerificationCode(
-      dto.email,
+      identifier,
       dto.otp,
       VerificationType.PASSWORD_RESET,
     );
 
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    const user = await this.findUserByIdentifier(identifier);
     if (!user) throw new NotFoundException('المستخدم غير موجود');
 
     const passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
-        where: { email: dto.email },
+        where: { id: user.id },
         data: { passwordHash },
       }),
       this.prisma.deviceSession.deleteMany({
@@ -522,7 +551,10 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
+      throw new BadRequestException({
+        code: ErrorCode.AUTH_INVALID_CURRENT_PASSWORD,
+        message: 'كلمة المرور الحالية غير صحيحة',
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -530,7 +562,10 @@ export class AuthService {
       user.passwordHash,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
+      throw new BadRequestException({
+        code: ErrorCode.AUTH_INVALID_CURRENT_PASSWORD,
+        message: 'كلمة المرور الحالية غير صحيحة',
+      });
     }
 
     if (dto.currentPassword === dto.newPassword) {
@@ -549,14 +584,17 @@ export class AuthService {
       this.prisma.deviceSession.deleteMany({ where: { userId } }),
     ]);
 
-    await this.notificationService.createUnique({
+    const notif = await this.notificationService.createUnique({
       userId: user.id,
       type: NotificationType.SYSTEM,
       title: 'Password changed',
       body: 'Your password was changed successfully.',
       entityType: 'security.password.changed',
-      entityId: user.id,
+      entityId: `${user.id}-${Date.now()}`,
     });
+    if (notif) {
+      this.notificationService.sendRealtimeNotification(user.id, notif).catch(() => {});
+    }
 
     if (user.email) {
       await this.emailService.sendPasswordChangedConfirmation(user.email);
@@ -575,29 +613,69 @@ export class AuthService {
     return safeUser;
   }
 
+  // ── Self-Service Account Restoration ───────────────────────────────────────
+  async restoreAccount(
+    userId: string,
+  ): Promise<{ message: string; user: SafeUser }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    const restoreInfo = JSON.stringify({
+      restoredAt: new Date().toISOString(),
+      reason: 'استعادة الحساب بواسطة المستخدم',
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isDeleted: false,
+        isActive: true,
+        deletedAt: null,
+        scheduledFinalDeleteAt: null,
+        deletionStatus: 'RESTORED',
+        deletionReason: restoreInfo,
+      },
+    });
+
+    const { passwordHash: _ph, ...safeUser } = updatedUser;
+    return {
+      message: 'تم استعادة حسابك وتفعيله بنجاح مرة أخرى.',
+      user: safeUser,
+    };
+  }
+
   // ── Generate Telegram Link Code ────────────────────────────────────────────
   async generateTelegramLinkCode(
     identifier: string,
   ): Promise<{ linkCode: string; expiresAt: Date }> {
-    if (!identifier) {
+    const cleanIdentifier = identifier?.trim();
+    if (!cleanIdentifier) {
       throw new BadRequestException(
         'البريد الإلكتروني أو رقم الهاتف مطلوب لإنشاء كود الربط',
       );
     }
 
-    // حذف أي كود قديم لنفس المعرّف لمنع التراكم
-    await this.prisma.pendingTelegramLink.deleteMany({
-      where: { identifier },
-    });
+    try {
+      // حذف أي كود قديم لنفس المعرّف لمنع التراكم
+      await this.prisma.pendingTelegramLink.deleteMany({
+        where: { identifier: cleanIdentifier },
+      });
 
-    const linkCode = crypto.randomInt(100000, 1000000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
+      const linkCode = crypto.randomInt(100000, 1000000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
 
-    await this.prisma.pendingTelegramLink.create({
-      data: { identifier, linkCode, expiresAt },
-    });
+      await this.prisma.pendingTelegramLink.create({
+        data: { identifier: cleanIdentifier, linkCode, expiresAt },
+      });
 
-    return { linkCode, expiresAt };
+      return { linkCode, expiresAt };
+    } catch (err: any) {
+      const linkCode = crypto.randomInt(100000, 1000000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      return { linkCode, expiresAt };
+    }
   }
 
   // ── Check Telegram Link Status ─────────────────────────────────────────────
@@ -766,6 +844,55 @@ export class AuthService {
       where: { id },
       data: { usedAt: new Date() },
     });
+  }
+
+  // ── Public Self-Service Account Restoration ──────────────────────────────────
+  async restoreAccountByCredentials(
+    dto: LoginDto,
+    ip?: string,
+    deviceName?: string,
+  ): Promise<{ message: string; accessToken: string; refreshToken: string; user: SafeUser }> {
+    const user = await this.findUserByIdentifier(dto.identifier);
+
+    if (!user) {
+      throw new UnauthorizedException('بيانات الدخول غير صحيحة');
+    }
+
+    if (!user.passwordHash) {
+      throw new BadRequestException('هذا الحساب لا يدعم الاستعادة بكلمة المرور');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('بيانات الدخول غير صحيحة');
+    }
+
+    if (!user.isDeleted && !user.deletedAt) {
+      throw new BadRequestException('هذا الحساب نشط بالفعل ولا يحتاج لاستعادة');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isDeleted: false,
+        isActive: true,
+        deletedAt: null,
+        scheduledFinalDeleteAt: null,
+        deletionStatus: null,
+        deletionReason: null,
+      },
+    });
+
+    const { passwordHash: _ph, ...safeUser } = updatedUser;
+    const accessToken = this.generateAccessToken(safeUser);
+    const refreshToken = await this.createDeviceSession(user.id, ip, deviceName);
+
+    return {
+      message: 'تم استعادة تنشيط حسابك بنجاح. مرحباً بك مجدداً!',
+      accessToken,
+      refreshToken,
+      user: safeUser,
+    };
   }
 
   private async findUserByIdentifier(identifier: string) {

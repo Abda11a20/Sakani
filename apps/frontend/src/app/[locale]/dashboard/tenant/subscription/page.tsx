@@ -148,31 +148,31 @@ export default function TenantSubscription() {
               
               <div className="space-y-3 font-cairo">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-400">الباقة الحالية:</span>
+                  <span className="text-sm font-semibold text-text-secondary">الباقة الحالية:</span>
                   {isPremium ? (
-                    <Badge className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white font-bold px-3 py-1 flex items-center gap-1 rounded-full text-xs">
+                    <Badge className="bg-primary text-white font-bold px-3 py-1 flex items-center gap-1 rounded-full text-xs">
                       <Sparkles size={12} />
                       <span>سكني الممتاز (Premium)</span>
                     </Badge>
                   ) : (
-                    <Badge className="bg-slate-100 text-slate-600 font-bold px-3 py-1 rounded-full text-xs">
+                    <Badge className="bg-surface-tertiary text-text-secondary font-bold px-3 py-1 rounded-full text-xs">
                       الباقة المجانية (Free)
                     </Badge>
                   )}
                 </div>
 
-                <h3 className="text-2xl font-bold text-slate-900">
+                <h3 className="text-2xl font-bold text-text">
                   {isPremium ? "أنت تتمتع بكافة مميزات سكني الممتاز" : "باقة سكني الأساسية"}
                 </h3>
 
                 {isPremium && planData?.expiresAt && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-text-secondary">
                     تاريخ انتهاء الاشتراك: {new Date(planData.expiresAt).toLocaleDateString("ar-EG")}
                   </p>
                 )}
 
                 {isMockPremium && (
-                  <div className="p-3 bg-blue-500/10 text-blue-700 border border-blue-500/20 rounded-2xl text-xs max-w-xl leading-relaxed">
+                  <div className="p-3 bg-primary/10 text-primary border border-primary/20 rounded-2xl text-xs max-w-xl leading-relaxed">
                     ✨ <strong>الاشتراكات معطلة مؤقتاً:</strong> المنصة حالياً مجانية بالكامل. لقد تم ترقية حسابك تلقائياً لسكني الممتاز لتجربة كافة المميزات بدون رسوم.
                   </div>
                 )}
@@ -184,7 +184,7 @@ export default function TenantSubscription() {
                     <Button
                       onClick={() => setIsCancelModalOpen(true)}
                       variant="outline"
-                      className="border-red-500/20 hover:bg-red-50 text-red-600 font-cairo font-semibold rounded-xl px-6 py-3"
+                      className="border-status-danger/30 hover:bg-status-danger/10 text-status-danger font-cairo font-semibold rounded-xl px-6 py-3"
                     >
                       إلغاء الاشتراك
                     </Button>
@@ -192,7 +192,7 @@ export default function TenantSubscription() {
                 ) : (
                   <Button
                     onClick={() => setIsUpgradeModalOpen(true)}
-                    className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] hover:from-amber-600 hover:to-yellow-600 text-white font-cairo font-bold rounded-xl px-8 py-4 shadow-md flex items-center gap-2"
+                    className="bg-primary hover:bg-primary-hover text-white font-cairo font-bold rounded-xl px-8 py-4 shadow-xs flex items-center gap-2"
                   >
                     <Sparkles size={18} />
                     <span>الترقية إلى الممتاز</span>
@@ -206,20 +206,20 @@ export default function TenantSubscription() {
 
         {/* Feature Comparison Section */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold font-cairo text-slate-800">
+          <h2 className="text-xl font-bold font-cairo text-text">
             مقارنة باقات الاشتراك الممتازة
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-cairo">
             
             {/* Free Plan Card */}
-            <Card className="border border-slate-200 bg-white rounded-3xl shadow-sm overflow-hidden opacity-85">
+            <Card className="border border-border bg-surface rounded-3xl shadow-xs overflow-hidden opacity-85">
               <CardBody className="p-6 space-y-6">
                 <div>
-                  <h3 className="font-bold text-slate-800 text-lg">باقة سكني المجانية</h3>
-                  <p className="text-slate-400 text-xs mt-1">الباقة الأساسية للبحث والاستفسار</p>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-4">
-                    0 <span className="text-sm font-normal text-slate-400">ج.م / شهرياً</span>
+                  <h3 className="font-bold text-text text-lg">باقة سكني المجانية</h3>
+                  <p className="text-text-tertiary text-xs mt-1">الباقة الأساسية للبحث والاستفسار</p>
+                  <div className="text-3xl font-extrabold text-text mt-4">
+                    0 <span className="text-sm font-normal text-text-tertiary">ج.م / شهرياً</span>
                   </div>
                 </div>
 

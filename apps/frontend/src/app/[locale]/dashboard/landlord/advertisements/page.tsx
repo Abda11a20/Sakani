@@ -31,42 +31,42 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "active":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-status-success/15 text-status-success border border-status-success/30 font-cairo">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-success" />
           نشط
         </span>
       );
     case "pending_review":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/30 font-cairo">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-warning" />
           قيد المراجعة
         </span>
       );
     case "rented":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-tertiary text-text-secondary border border-border font-cairo">
+          <span className="w-1.5 h-1.5 rounded-full bg-text-tertiary" />
           مؤجر
         </span>
       );
     case "paused":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/30 font-cairo">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-warning" />
           متوقف
         </span>
       );
     case "rejected":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-status-danger/15 text-status-danger border border-status-danger/30 font-cairo">
+          <span className="w-1.5 h-1.5 rounded-full bg-status-danger" />
           مرفوض
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 font-cairo">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-secondary text-text-secondary border border-border font-cairo">
           {status}
         </span>
       );
@@ -90,7 +90,7 @@ function AdCard({
   return (
     <Link
       href={`/${locale}/dashboard/landlord/advertisements/${item.id}`}
-      className="group text-right w-full flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A847]/60"
+      className="group text-right w-full flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
     >
       {/* Image */}
       <div className="relative h-[160px] sm:h-[180px] overflow-hidden bg-slate-100 shrink-0">
@@ -184,7 +184,7 @@ export default function LandlordAdvertisements() {
   const { data: rawListings = [], isLoading, refetch } = useMyListings();
   const listings = rawListings || [];
   const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
-  const { mutate: republishListing, isPending: isRepublishing } = useRepublishListing();
+  const { mutate: republishListing } = useRepublishListing();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");

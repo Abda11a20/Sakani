@@ -24,7 +24,7 @@ export function ListingLocation({ listing, locale }: ListingLocationProps) {
     <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden font-cairo">
       <CardBody className="p-5 space-y-3">
         <h2 className="text-sm font-bold text-slate-855 border-b border-slate-100 pb-2 flex items-center gap-2">
-          <span className="w-1 h-4 bg-[#0EA5E9] rounded-full" />
+          <span className="w-1 h-4 bg-primary rounded-full" />
           {isRtl ? "موقع العقار" : "Property Location"}
         </h2>
 

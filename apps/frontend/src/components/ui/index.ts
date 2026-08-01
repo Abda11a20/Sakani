@@ -16,3 +16,4 @@ export * from "./empty-state";
 export * from "./SearchableCombobox";
 export * from "./language-switcher";
 export * from "./otp-input";
+export * from "./table";

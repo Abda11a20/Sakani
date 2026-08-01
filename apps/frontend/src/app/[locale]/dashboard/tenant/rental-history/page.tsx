@@ -42,35 +42,49 @@ import { formatDate, formatPrice } from "@/lib/formatters";
 type QuickFilter = "all" | "active" | "expired" | "terminated" | "renewed" | "custom";
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
-function StatusBadge({ status, locale }: { status: ContractStatus; locale: string }) {
+function StatusBadge({ status, locale, item }: { status: ContractStatus; locale: string; item?: RentalHistoryItem }) {
   const isAr = locale === "ar";
+  const isRenewal =
+    item?.createdByType === "AUTO_RENEW" ||
+    item?.createdByType === "MANUAL" ||
+    (item?.createdByType && item.createdByType !== "VIEWING_REQUEST") ||
+    (item?.notes && (item.notes.includes("تجديد") || item.notes.includes("renewed")));
+
   switch (status) {
     case "active":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          {isAr ? "نشط حالياً" : "Active"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-status-success/15 text-status-success border border-status-success/30 font-cairo">
+            <span className="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse" />
+            {isAr ? "نشط حالياً" : "Active"}
+          </span>
+          {isRenewal && (
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-status-info/15 text-status-info border border-status-info/30 font-cairo">
+              <RefreshCw size={11} />
+              {isAr ? "مجدد" : "Renewed"}
+            </span>
+          )}
+        </div>
       );
     case "expired":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200 font-cairo">
+        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-status-danger/15 text-status-danger border border-status-danger/30 font-cairo">
           <Clock size={12} />
           {isAr ? "منتهي" : "Expired"}
         </span>
       );
     case "terminated":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-cairo">
+        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-status-warning/15 text-status-warning border border-status-warning/30 font-cairo">
           <XCircle size={12} />
           {isAr ? "مفسوخ مبكراً" : "Terminated"}
         </span>
       );
     case "renewed":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-cairo">
-          <RefreshCw size={12} />
-          {isAr ? "تم تجديده" : "Renewed"}
+        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-surface-tertiary text-text-secondary border border-border font-cairo">
+          <Clock size={12} />
+          {isAr ? "منتهي (تم تجديده)" : "Expired (Renewed)"}
         </span>
       );
     default:
@@ -185,7 +199,7 @@ function HistoryCard({ item, locale, onClick }: HistoryCardProps) {
       </div>
       
       <div className="mt-1">
-        <StatusBadge status={item.status} locale={locale} />
+        <StatusBadge status={item.status} locale={locale} item={item} />
       </div>
     </div>
   );

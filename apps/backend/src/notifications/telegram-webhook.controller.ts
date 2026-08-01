@@ -22,7 +22,7 @@ export class TelegramWebhookController {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly telegramService: TelegramService,
-  ) {}
+  ) { }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
@@ -115,7 +115,7 @@ export class TelegramWebhookController {
           await this.telegramService.sendMessage(
             chatId,
             `✅ تم ربط حسابك بنجاح!\n\n` +
-              `يمكنك الآن العودة لموقع سَكني وإكمال الخطوات. ستصلك رموز التحقق هنا بشكل آمن.`,
+            `يمكنك الآن العودة لموقع سَكني وإكمال الخطوات. ستصلك رموز التحقق هنا بشكل آمن.`,
           );
         }
       } else {

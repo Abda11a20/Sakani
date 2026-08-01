@@ -16,7 +16,7 @@ interface KPIStatCardProps {
 }
 
 export const KPIStatCard: React.FC<KPIStatCardProps> = ({
-  title, value, context, icon: Icon, colorTheme = "gold", route,
+  title, value, context, icon: Icon, route,
 }) => {
   const inner = (
     <Card

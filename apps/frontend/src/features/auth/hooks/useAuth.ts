@@ -74,6 +74,17 @@ export const useLogin = () => {
         router.push(getDashboardPath(role as UserRoleKey, locale));
       }
     },
+    onError: (err: any, variables: LoginPayload) => {
+      const code = err?.response?.data?.code;
+      const identifier = err?.response?.data?.identifier || variables?.identifier;
+      if (code === "ACCOUNT_SOFT_DELETED") {
+        const locale =
+          typeof window !== "undefined"
+            ? window.location.pathname.split("/")[1] || "ar"
+            : "ar";
+        router.push(`/${locale}/restore-account?identifier=${encodeURIComponent(identifier || "")}`);
+      }
+    },
   });
 };
 
@@ -97,7 +108,8 @@ export const useMe = () => {
       return user;
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    retry: false,
   });
 };
 
@@ -133,7 +145,7 @@ export const useForgotPassword = () => {
 
 export const useVerifyOtp = () => {
   return useMutation({
-    mutationFn: async (data: { email: string; otp: string }) => {
+    mutationFn: async (data: { email?: string; phone?: string; otp: string }) => {
       return await authRepository.verifyOtp(data);
     },
   });
@@ -144,7 +156,8 @@ export const useResetPassword = () => {
 
   return useMutation({
     mutationFn: async (data: {
-      email: string;
+      email?: string;
+      phone?: string;
       otp: string;
       newPassword: string;
       confirmPassword: string;
@@ -199,10 +212,6 @@ export const useLogout = () => {
 
   return useMutation({
     mutationFn: async () => {
-      const refreshToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem(REFRESH_TOKEN_KEY)
-          : null;
       await logoutUseCase.execute();
     },
     onSettled: () => {

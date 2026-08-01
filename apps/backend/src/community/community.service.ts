@@ -63,10 +63,24 @@ export class CommunityService {
       throw new NotFoundException('التصنيف المختار غير موجود.');
     }
 
-    // Validate eventDate is in the future
-    if (new Date(dto.eventDate) < new Date()) {
+    // Validate combined eventDate and timeSlot is in the future
+    const dateStr = typeof dto.eventDate === 'string' ? dto.eventDate.split('T')[0] : '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    let hours = 0;
+    let minutes = 0;
+
+    if (dto.timeSlot && dto.timeSlot.includes(':')) {
+      const [h, m] = dto.timeSlot.split(':').map(Number);
+      hours = isNaN(h) ? 0 : h;
+      minutes = isNaN(m) ? 0 : m;
+    }
+
+    const exactEventDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    const now = new Date();
+
+    if (exactEventDateTime < now) {
       throw new BadRequestException(
-        'تاريخ الفعالية لا يمكن أن يكون في الماضي.',
+        'توقيت الفعالية (التاريخ والوقت) لا يمكن أن يكون في الماضي.',
       );
     }
 

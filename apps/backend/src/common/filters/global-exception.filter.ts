@@ -48,12 +48,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status === 500 ? `[${exceptionName}] ${stackTrace}` : undefined,
     );
 
+    const extraProps =
+      typeof errorResponse === 'object' && errorResponse !== null && !Array.isArray(errorResponse)
+        ? errorResponse
+        : {};
+
     // Safe response - never expose stack traces or internal details to the client
     const safeResponse = {
       success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
+      ...extraProps,
       message: status === 500 ? 'Internal server error' : errorMessage,
       requestId: reqId,
     };

@@ -339,7 +339,8 @@ export const useBannedUsers = (page = 1, limit = 10, search?: string) => {
     queryKey: ["admin", "banned", page, limit, search],
     queryFn: async (): Promise<BannedUsersResponse> => {
       const res = await adminRepository.getBanned(page, search);
-      return res.data as BannedUsersResponse;
+      const payload = (res as any)?.data ?? res;
+      return (payload ?? { banned: [], meta: { page: 1, limit: 10, total: 0, totalPages: 1 } }) as BannedUsersResponse;
     },
     staleTime: 30_000,
   });

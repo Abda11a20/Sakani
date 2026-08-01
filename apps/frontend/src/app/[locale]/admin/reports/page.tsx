@@ -31,9 +31,9 @@ const reasonMap: Record<string, { label: string; color: string }> = {
 };
 
 const statusMap: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "قيد الانتظار", className: "bg-amber-100 text-amber-700" },
-  RESOLVED: { label: "تم الحل", className: "bg-emerald-100 text-emerald-700" },
-  DISMISSED: { label: "مرفوض", className: "bg-slate-100 text-slate-600" },
+  PENDING: { label: "قيد الانتظار", className: "bg-status-warning/15 text-status-warning border border-status-warning/30" },
+  RESOLVED: { label: "تم الحل", className: "bg-status-success/15 text-status-success border border-status-success/30" },
+  DISMISSED: { label: "مرفوض", className: "bg-surface-tertiary text-text-secondary border border-border" },
 };
 
 export default function AdminReportsPage() {
@@ -44,6 +44,7 @@ export default function AdminReportsPage() {
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [reasonFilter, setReasonFilter] = useState<string>("all");
+  void setReasonFilter;
   const [search, setSearch] = useState("");
 
   const { data, isLoading, error } = useAdminReports(page, 10);
@@ -86,15 +87,15 @@ export default function AdminReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <ShieldAlert size={24} className="text-red-500" />
+          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
+            <ShieldAlert size={24} className="text-status-danger" />
             بلاغات المجتمع والمستخدمين
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-text-secondary mt-0.5">
             مراجعة البلاغات المقدمة ضد المنشورات والمحتوى المخالف
           </p>
         </div>
-        <div className="px-3.5 py-1.5 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">
+        <div className="px-3.5 py-1.5 bg-status-danger/15 text-status-danger rounded-xl text-sm font-bold border border-status-danger/30">
           إجمالي البلاغات: {total}
         </div>
       </div>

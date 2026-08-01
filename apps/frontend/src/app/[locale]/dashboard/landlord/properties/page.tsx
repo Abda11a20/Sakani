@@ -1,4 +1,4 @@
-﻿// apps/frontend/src/app/[locale]/dashboard/landlord/properties/page.tsx
+// apps/frontend/src/app/[locale]/dashboard/landlord/properties/page.tsx
 "use client";
 
 import React from "react";
@@ -32,12 +32,12 @@ export default function LandlordPropertiesPage() {
     <LandlordLayout>
       <div className="space-y-8" dir={isRtl ? "rtl" : "ltr"}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-cairo">
-            {isRtl ? "ادارة العقارات" : "My Properties"}
+          <h1 className="text-2xl font-extrabold text-text font-cairo">
+            {isRtl ? "إدارة العقارات" : "My Properties"}
           </h1>
-          <p className="text-sm text-slate-500 font-cairo mt-1">
+          <p className="text-sm text-text-secondary font-cairo mt-1">
             {isRtl
-              ? "اطلع على حالة الاشغال وادر المستاجرين لكل نوع عقار"
+              ? "اطلع على حالة الإشغال وادر المستأجرين لكل نوع عقار"
               : "View occupancy status and manage tenants for each property type"}
           </p>
         </div>
@@ -50,51 +50,51 @@ export default function LandlordPropertiesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
             <Link
               href={`/${locale}/dashboard/landlord/properties/apartments`}
-              className="group block relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-8 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-300"
+              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-8 shadow-xs hover:shadow-md hover:border-primary/50 transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#0EA5E9]/10 text-amber-600 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
                   <Building2 size={28} />
                 </div>
-                <div className="text-slate-300 transition-colors group-hover:text-amber-500">
+                <div className="text-text-tertiary transition-colors group-hover:text-primary">
                   <ArrowIcon size={20} />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 font-cairo mb-1">
+              <h2 className="text-xl font-bold text-text font-cairo mb-1">
                 {isRtl ? "الشقق" : "Apartments"}
               </h2>
-              <p className="text-xs text-slate-500 font-cairo mb-5">
-                {isRtl ? "الاشغال، المستاجر الحالي، وتاريخ الايجارات" : "Occupancy, current tenant & rental history"}
+              <p className="text-xs text-text-secondary font-cairo mb-5">
+                {isRtl ? "الإشغال، المستأجر الحالي، وتاريخ الإيجارات" : "Occupancy, current tenant & rental history"}
               </p>
               <div className="grid grid-cols-4 gap-2">
-                <div className="text-center bg-slate-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-slate-800 font-sans">{aptTotal}</span>
-                  <span className="text-[10px] text-slate-500 font-cairo">{isRtl ? "المجموع" : "Total"}</span>
+                <div className="text-center bg-surface-secondary rounded-xl py-2 px-1 border border-border">
+                  <span className="block text-lg font-bold text-text font-sans">{aptTotal}</span>
+                  <span className="text-[10px] text-text-tertiary font-cairo">{isRtl ? "المجموع" : "Total"}</span>
                 </div>
-                <div className="text-center bg-green-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-green-600 font-sans">{aptActive}</span>
-                  <span className="text-[10px] text-green-600 font-cairo">{isRtl ? "نشط" : "Active"}</span>
+                <div className="text-center bg-status-success/15 rounded-xl py-2 px-1 border border-status-success/30">
+                  <span className="block text-lg font-bold text-status-success font-sans">{aptActive}</span>
+                  <span className="text-[10px] text-status-success font-cairo">{isRtl ? "نشط" : "Active"}</span>
                 </div>
-                <div className="text-center bg-amber-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-amber-600 font-sans">{aptRented}</span>
-                  <span className="text-[10px] text-amber-600 font-cairo">{isRtl ? "مؤجر" : "Rented"}</span>
+                <div className="text-center bg-status-warning/15 rounded-xl py-2 px-1 border border-status-warning/30">
+                  <span className="block text-lg font-bold text-status-warning font-sans">{aptRented}</span>
+                  <span className="text-[10px] text-status-warning font-cairo">{isRtl ? "مؤجر" : "Rented"}</span>
                 </div>
-                <div className="text-center bg-blue-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-blue-600 font-sans">{aptPending}</span>
-                  <span className="text-[10px] text-blue-600 font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
+                <div className="text-center bg-status-info/15 rounded-xl py-2 px-1 border border-status-info/30">
+                  <span className="block text-lg font-bold text-status-info font-sans">{aptPending}</span>
+                  <span className="text-[10px] text-status-info font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
                 </div>
               </div>
             </Link>
 
             <Link
               href={`/${locale}/dashboard/landlord/beds`}
-              className="group block relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-8 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-300"
+              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-8 shadow-xs hover:shadow-md hover:border-accent transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
+                <div className="w-14 h-14 rounded-2xl bg-accent/15 text-accent flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
                   <Bed size={28} />
                 </div>
-                <div className="text-slate-300 transition-colors group-hover:text-blue-500">
+                <div className="text-text-tertiary transition-colors group-hover:text-accent">
                   <ArrowIcon size={20} />
                 </div>
               </div>

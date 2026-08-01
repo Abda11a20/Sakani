@@ -2,20 +2,11 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useLocale } from "next-intl";
 import {
   Users,
-  Building2,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Archive,
   UserPlus,
-  MessageCircle,
-  ShieldAlert,
   Server,
-  Database,
   X,
   Loader2,
   Lock,
@@ -24,17 +15,10 @@ import {
 } from "lucide-react";
 import {
   useHealthCheck,
-  useAdminListings,
-  useAdminUsers,
-  useAdminRequests,
   useRegisterAdmin,
   type RegisterAdminPayload,
 } from "@/hooks/useAdmin";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
-import { Spinner } from "@/components/ui/spinner";
 import { useDashboardSummary } from "@/features/dashboard";
 import { DynamicHeaderSection } from "@/features/dashboard";
 import { UrgentBannerSection } from "@/features/dashboard";
@@ -81,17 +65,17 @@ function CreateAdminModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden font-cairo">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md border border-border overflow-hidden font-cairo">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-gradient-to-br from-[#0F1A2E] via-[#142E54] to-[#1B4F8A]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center">
-              <UserPlus size={18} className="text-blue-400" />
+            <div className="w-9 h-9 rounded-xl bg-accent/20 flex items-center justify-center">
+              <UserPlus size={18} className="text-accent" />
             </div>
             <div>
               <h3 className="text-base font-bold text-white">إضافة مسؤول جديد</h3>
-              <p className="text-xs text-slate-400">يتم إنشاؤه بصلاحيات Admin</p>
+              <p className="text-xs text-white/70">يتم إنشاؤه بصلاحيات Admin</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all">
@@ -193,8 +177,8 @@ export default function AdminDashboardPage() {
   const [showCreateAdmin, setShowCreateAdmin] = useState(false);
 
   // Queries
-  const { data: summary, isLoading: isSummaryLoading, refetch: refetchSummary, isFetching: summaryFetching } = useDashboardSummary("admin");
-  const { data: health, isError: healthError, refetch: refetchHealth } = useHealthCheck();
+  const { data: summary, refetch: refetchSummary, isFetching: summaryFetching } = useDashboardSummary("admin");
+  const { isError: healthError, refetch: refetchHealth } = useHealthCheck();
 
   const handleRefresh = async () => {
     await Promise.allSettled([refetchSummary(), refetchHealth()]);

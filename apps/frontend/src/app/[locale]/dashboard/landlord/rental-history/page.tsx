@@ -41,15 +41,29 @@ type QuickFilter = "all" | "active" | "expired" | "terminated" | "renewed" | "cu
 import { formatDate, formatPrice } from "@/lib/formatters";
 
 // ── Status Badge Widget ────────────────────────────────────────────────────────
-function StatusBadge({ status, locale }: { status: ContractStatus; locale: string }) {
+function StatusBadge({ status, locale, item }: { status: ContractStatus; locale: string; item?: RentalHistoryItem }) {
   const isAr = locale === "ar";
+  const isRenewal =
+    item?.createdByType === "AUTO_RENEW" ||
+    item?.createdByType === "MANUAL" ||
+    (item?.createdByType && item.createdByType !== "VIEWING_REQUEST") ||
+    (item?.notes && (item.notes.includes("تجديد") || item.notes.includes("renewed")));
+
   switch (status) {
     case "active":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-cairo">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          {isAr ? "نشط" : "Active"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-cairo">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {isAr ? "نشط" : "Active"}
+          </span>
+          {isRenewal && (
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-cairo">
+              <RefreshCw size={11} />
+              {isAr ? "مجدد" : "Renewed"}
+            </span>
+          )}
+        </div>
       );
     case "expired":
       return (
@@ -67,9 +81,9 @@ function StatusBadge({ status, locale }: { status: ContractStatus; locale: strin
       );
     case "renewed":
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-cairo">
-          <RefreshCw size={12} />
-          {isAr ? "مجدد" : "Renewed"}
+        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-cairo">
+          <Clock size={12} />
+          {isAr ? "منتهي (تم تجديده)" : "Expired (Renewed)"}
         </span>
       );
     default:
@@ -181,7 +195,7 @@ function HistoryCard({ item, locale, onClick }: HistoryCardProps) {
       </div>
       
       <div className="mt-1 flex items-center gap-2">
-        <StatusBadge status={item.status} locale={locale} />
+        <StatusBadge status={item.status} locale={locale} item={item} />
       </div>
     </div>
   );

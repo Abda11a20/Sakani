@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLocale } from "next-intl";
+
 import {
   RotateCcw,
   Search,
@@ -13,15 +13,9 @@ import {
   CheckCircle2,
   XCircle,
   User as UserIcon,
-  ShieldAlert,
   Trash2,
   X,
-  Phone,
-  Mail,
-  Copy,
-  Check,
   Eye,
-  MoreVertical,
   AlertTriangle,
 } from "lucide-react";
 import {
@@ -33,8 +27,6 @@ import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export default function AdminAccountLifecyclePage() {
-  const locale = useLocale();
-  const isRtl = locale === "ar";
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<"IN_GRACE_PERIOD" | "RESTORED" | "CANCELLED">("IN_GRACE_PERIOD");
@@ -56,14 +48,11 @@ export default function AdminAccountLifecyclePage() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [purgeTargetUser, setPurgeTargetUser] = useState<any | null>(null);
   const [confirmTypedText, setConfirmTypedText] = useState("");
-  const [copiedPhone, setCopiedPhone] = useState(false);
-
   const usersList = data?.users ?? [];
-  const totalUsers = data?.meta?.total ?? 0;
 
   const formatDate = (d?: string) => {
     if (!d) return "-";
-    return new Date(d).toLocaleDateString(isRtl ? "ar-EG" : "en-US", {
+    return new Date(d).toLocaleDateString("ar-EG", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -76,15 +65,6 @@ export default function AdminAccountLifecyclePage() {
     if (!scheduledDate) return 0;
     const diffMs = new Date(scheduledDate).getTime() - new Date().getTime();
     return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  };
-
-  const handleCopyPhone = (phone?: string) => {
-    if (phone) {
-      navigator.clipboard.writeText(phone);
-      setCopiedPhone(true);
-      setTimeout(() => setCopiedPhone(false), 2000);
-      toast({ type: "success", description: "تم نسخ رقم الهاتف بنجاح" });
-    }
   };
 
   const handleRestoreUserAction = (userId: string) => {
@@ -133,20 +113,20 @@ export default function AdminAccountLifecyclePage() {
   return (
     <div className="h-full flex flex-col font-cairo bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
       {/* Header */}
-      <div className="bg-slate-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+      <div className="bg-[#0F1A2E] text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-2xl bg-status-warning/20 text-status-warning flex items-center justify-center font-bold">
             <RotateCcw size={20} />
           </div>
           <div>
             <h1 className="text-sm font-bold text-white">دورة حياة الحسابات (Account Lifecycle)</h1>
-            <p className="text-[11px] text-slate-400">إدارة طلبات التعطيل الذاتي، فترة السماح، وحالات الاستعادة</p>
+            <p className="text-[11px] text-white/60">إدارة طلبات التعطيل الذاتي، فترة السماح، وحالات الاستعادة</p>
           </div>
         </div>
 
         <button
           onClick={() => refetch()}
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold self-end sm:self-center"
+          className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold self-end sm:self-center"
         >
           <RefreshCcw size={15} className={isLoading ? "animate-spin" : ""} />
           <span>تحديث البيانات</span>
@@ -154,9 +134,9 @@ export default function AdminAccountLifecyclePage() {
       </div>
 
       {/* Tabs & Search */}
-      <div className="bg-slate-50 border-b border-slate-200 p-4 flex flex-col md:flex-row items-center justify-between gap-3 shrink-0">
+      <div className="bg-surface-secondary border-b border-border p-4 flex flex-col md:flex-row items-center justify-between gap-3 shrink-0">
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-200 w-full md:w-auto overflow-x-auto">
+        <div className="flex items-center gap-2 bg-surface p-1 rounded-2xl border border-border w-full md:w-auto overflow-x-auto">
           <button
             onClick={() => {
               setActiveTab("IN_GRACE_PERIOD");
@@ -164,7 +144,7 @@ export default function AdminAccountLifecyclePage() {
             }}
             className={cn(
               "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
-              activeTab === "IN_GRACE_PERIOD" ? "bg-amber-500 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+              activeTab === "IN_GRACE_PERIOD" ? "bg-status-warning text-white shadow-xs" : "text-text-secondary hover:text-text"
             )}
           >
             <Clock size={14} />
@@ -489,25 +469,25 @@ export default function AdminAccountLifecyclePage() {
               </div>
             </div>
 
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-xs text-rose-800 space-y-1.5 leading-relaxed">
+            <div className="bg-status-danger/15 border border-status-danger/30 rounded-xl p-3.5 text-xs text-status-danger space-y-1.5 leading-relaxed">
               <p className="font-bold">
-                أنت على وشك تنفيذ التطهير والتجهيل العام لبيانات <span className="underline font-black">"{purgeTargetUser.name}"</span>.
+                أنت على وشك تنفيذ التطهير والتجهيل العام لبيانات <span className="underline font-black">&quot;{purgeTargetUser.name}&quot;</span>.
               </p>
-              <p className="text-rose-700 text-[11px]">
-                سيتم مسح الأصول وصورة الحساب وتعديل اسمه لـ "مستخدم محذوف". لن تتم إزالة العقود التاريخية لتفادي انكسار السجلات.
+              <p className="text-status-danger text-[11px]">
+                سيتم مسح الأصول وصورة الحساب وتعديل اسمه لـ &quot;مستخدم محذوف&quot;. لن تتم إزالة العقود التاريخية لتفادي انكسار السجلات.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                اكتب كلمة <span className="font-black text-rose-600 dir-ltr">"DELETE"</span> للموافقة قسراً:
+              <label className="block text-xs font-bold text-text mb-1">
+                اكتب كلمة <span className="font-black text-status-danger dir-ltr">&quot;DELETE&quot;</span> للموافقة قسراً:
               </label>
               <input
                 type="text"
                 value={confirmTypedText}
                 onChange={(e) => setConfirmTypedText(e.target.value)}
                 placeholder='اكتب "DELETE" هنا...'
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-rose-500"
+                className="w-full bg-surface-secondary border border-border rounded-xl p-2.5 text-xs font-bold text-text focus:outline-none focus:border-status-danger"
               />
             </div>
 

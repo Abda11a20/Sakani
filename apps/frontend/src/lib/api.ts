@@ -4,6 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
   type AxiosResponse,
 } from "axios";
+import { ErrorCode } from "./constants/error-codes";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
@@ -42,7 +43,16 @@ const clearAuth = () => {
 
 const redirectToLogin = () => {
   if (typeof window === "undefined") return;
-  const pathParts = window.location.pathname.split("/");
+  const pathname = window.location.pathname;
+  if (
+    pathname.includes("/login") ||
+    pathname.includes("/register") ||
+    pathname.includes("/restore-account") ||
+    pathname.includes("/forgot-password")
+  ) {
+    return;
+  }
+  const pathParts = pathname.split("/");
   const locale = ["ar", "en"].includes(pathParts[1]) ? pathParts[1] : "ar";
   window.location.href = `/${locale}/login`;
 };
@@ -127,8 +137,14 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
+    const isTokenExpiredErr =
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      ((error.response?.data as any)?.code === ErrorCode.AUTH_TOKEN_EXPIRED ||
+        !(error.response?.data as any)?.code);
+
     // ── 401 → try to refresh token ────────────────────────────────────────────
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (isTokenExpiredErr) {
       const refreshToken = getRefreshToken();
 
       if (!refreshToken) {

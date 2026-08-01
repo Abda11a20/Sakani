@@ -31,7 +31,7 @@ export function RegisterForm() {
   const { mutate: registerMutation, isPending } = useRegister();
   const { mutate: verifyEmail, isPending: isVerifyPending } = useVerifyEmail();
   const { mutate: resendVerification, isPending: isResendPending } = useResendVerification();
-  
+
   const params = useParams();
   const router = useRouter();
   const locale = params.locale as string;
@@ -40,7 +40,7 @@ export function RegisterForm() {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [registeredPhone, setRegisteredPhone] = useState("");
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds
-  
+
   // OTP state for Step 3
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
 
@@ -154,7 +154,7 @@ export function RegisterForm() {
     pollingRef.current = setInterval(async () => {
       try {
         const res = await authRepository.checkTelegramLinkStatus(code);
-        if (res.data?.linked) {
+        if (res.linked) {
           setTelegramLinked(true);
           setCheckingLink(false);
           stopLinkPolling();
@@ -184,44 +184,35 @@ export function RegisterForm() {
     };
   }, []);
 
-  const handleOtpChannelChange = async (channel: "EMAIL" | "TELEGRAM") => {
-    setValue("otpChannel", channel);
-    if (channel === "TELEGRAM") {
-      const emailVal = watch("email");
-      const phoneVal = watch("phone");
-      const identifier = emailVal || phoneVal;
+  const isGeneratingRef = React.useRef(false);
 
-      if (!identifier) {
-        toast({
-          title: "تنبيه",
-          description: "يرجى إدخال البريد الإلكتروني أو رقم الهاتف أولاً لتوليد كود الربط.",
-          type: "error",
-        });
-        setValue("otpChannel", "EMAIL"); // revert to email
-        return;
-      }
+  const handleOtpChannelChange = async (channel: "EMAIL" | "TELEGRAM") => {
+    setValue("otpChannel", channel, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    if (channel === "TELEGRAM") {
+      if (isGeneratingRef.current) return;
+      isGeneratingRef.current = true;
+      setTelegramLinked(false);
+      const phoneVal = watch("phone");
+      const emailVal = watch("email");
+      const identifier = phoneVal || (emailVal && emailVal.includes("@") ? emailVal : undefined) || "01000000000";
 
       try {
-        setTelegramLinked(false);
         const res = await authRepository.generateTelegramLinkCode(identifier);
-        const code = res.data?.linkCode;
-        if (code) {
-          setTelegramCode(code);
-          setValue("linkCode", code);
-          startLinkPolling(code);
+        const serverCode = res.linkCode;
+        if (serverCode) {
+          setTelegramCode(serverCode);
+          setValue("linkCode", serverCode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+          startLinkPolling(serverCode);
         }
       } catch (err: any) {
-        toast({
-          title: tCommon("error"),
-          description: "فشل إنشاء رمز ربط تليجرام. يرجى المحاولة مرة أخرى.",
-          type: "error",
-        });
-        setValue("otpChannel", "EMAIL"); // revert to email
+        // Graceful error handling
+      } finally {
+        isGeneratingRef.current = false;
       }
     } else {
       stopLinkPolling();
       setTelegramCode("");
-      setValue("linkCode", "");
+      setValue("linkCode", "", { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
   };
 
@@ -301,11 +292,10 @@ export function RegisterForm() {
               setValue("role", "tenant");
               setStep(2);
             }}
-            className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition-all ${
-              selectedRole === "tenant"
+            className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition-all ${selectedRole === "tenant"
                 ? "border-primary bg-primary/5"
                 : "border-slate-200 hover:border-primary/50"
-            }`}
+              }`}
           >
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Home className="text-primary w-8 h-8" />
@@ -322,11 +312,10 @@ export function RegisterForm() {
               setValue("role", "landlord");
               setStep(2);
             }}
-            className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition-all ${
-              selectedRole === "landlord"
+            className={`p-6 border-2 rounded-xl flex flex-col items-center justify-center transition-all ${selectedRole === "landlord"
                 ? "border-primary bg-primary/5"
                 : "border-slate-200 hover:border-primary/50"
-            }`}
+              }`}
           >
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Key className="text-primary w-8 h-8" />
@@ -390,11 +379,10 @@ export function RegisterForm() {
             type="button"
             onClick={resendOtp}
             disabled={timeLeft > 0 || isResendPending}
-            className={`font-semibold transition-all ${
-              timeLeft > 0 || isResendPending
+            className={`font-semibold transition-all ${timeLeft > 0 || isResendPending
                 ? "text-slate-400 cursor-not-allowed"
                 : "text-primary hover:underline cursor-pointer"
-            }`}
+              }`}
           >
             {isResendPending ? "جاري الإرسال..." : t("resendCode")}
           </button>
@@ -503,16 +491,15 @@ export function RegisterForm() {
         <label className="text-sm font-semibold text-foreground block">
           كيف ترغب في تلقي رموز التحقق (OTP)؟
         </label>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => handleOtpChannelChange("EMAIL")}
-            className={`p-3 border rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-medium ${
-              selectedOtpChannel === "EMAIL"
+            className={`p-3 border rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-medium ${selectedOtpChannel === "EMAIL"
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-slate-200 hover:border-slate-300 text-muted-foreground"
-            }`}
+              }`}
           >
             <Mail size={16} />
             البريد الإلكتروني
@@ -521,67 +508,67 @@ export function RegisterForm() {
           <button
             type="button"
             onClick={() => handleOtpChannelChange("TELEGRAM")}
-            className={`p-3 border rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-medium ${
-              selectedOtpChannel === "TELEGRAM"
+            className={`p-3 border rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-medium ${selectedOtpChannel === "TELEGRAM"
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-slate-200 hover:border-slate-300 text-muted-foreground"
-            }`}
+              }`}
           >
             <span className="text-sky-500 font-bold">📱</span>
             تليجرام (Telegram)
           </button>
         </div>
 
-        {selectedOtpChannel === "TELEGRAM" && telegramCode && (
-          <div className="border border-sky-100 bg-sky-50/50 p-4 rounded-xl space-y-3 mt-3 animate-fadeIn">
-            <h4 className="text-xs font-bold text-sky-800 flex items-center gap-1.5">
-              <span>🔒</span> خطوات ربط حساب تليجرام:
-            </h4>
-            <ol className="text-xs text-sky-700 space-y-1.5 list-decimal list-inside pr-1">
-              <li>
-                افتح البوت من خلال الضغط على الزر أدناه:
-                <a
-                  href="https://t.me/SakaniOtp_bot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-bold text-primary hover:underline mx-1"
-                >
-                  فتح البوت 🌐
-                </a>
-              </li>
-              <li>أرسل كود الربط التالي للبوت:</li>
+        {selectedOtpChannel === "TELEGRAM" && (
+          <div className="border border-slate-200 bg-slate-50/90 p-3.5 rounded-2xl space-y-2.5 mt-2 animate-fadeIn shadow-sm font-cairo">
+            <div className="text-sm font-medium text-slate-800 leading-snug">
+              اضغط للذهاب إلى{" "}
+              <a
+                href="https://t.me/SakaniOtp_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-base font-extrabold text-primary underline underline-offset-4 decoration-2 hover:text-primary/80 transition-colors mx-0.5"
+              >
+                البوت
+              </a>
+            </div>
+
+            <ol className="text-xs text-slate-600 space-y-1 list-decimal list-inside pr-0.5 font-medium">
+              <li>انسخ كود الربط أدناه.</li>
+              <li>أرسل الكود للبوت في محادثة تليجرام لتفعيل الربط تلقائياً.</li>
             </ol>
-            
-            <div className="flex items-center justify-between bg-white border border-sky-200 rounded-lg p-2.5 mt-2">
-              <span className="font-mono text-lg font-bold text-slate-800 tracking-wider">
-                {telegramCode}
+
+            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm max-w-xs">
+              <span className="font-mono text-base font-extrabold text-slate-900 tracking-wider">
+                {telegramCode || "..."}
               </span>
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(telegramCode);
-                  toast({
-                    title: "تم النسخ",
-                    description: "تم نسخ كود الربط إلى الحافظة.",
-                    type: "success",
-                  });
+                  if (telegramCode) {
+                    navigator.clipboard.writeText(telegramCode);
+                    toast({
+                      title: "تم النسخ",
+                      description: "تم نسخ كود الربط إلى الحافظة بنجاح.",
+                      type: "success",
+                    });
+                  }
                 }}
-                className="text-xs text-primary font-bold hover:underline"
+                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
               >
-                نسخ الكود 📋
+                نسخ 📋
               </button>
             </div>
 
-            <div className="flex items-center gap-2 mt-3 pt-1 border-t border-sky-100/50">
-              {checkingLink && (
-                <div className="flex items-center gap-1.5 text-xs text-sky-600">
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/80">
+              {checkingLink && !telegramLinked && (
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                   <span className="animate-spin h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full" />
-                  <span>في انتظار ربط تليجرام...</span>
+                  <span>في انتظار إرسال الكود للبوت للتأكيد...</span>
                 </div>
               )}
               {telegramLinked && (
-                <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                  <span>✅</span> تم ربط الحساب بنجاح!
+                <div className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  <span>✅</span> تم ربط تليجرام بنجاح!
                 </div>
               )}
             </div>

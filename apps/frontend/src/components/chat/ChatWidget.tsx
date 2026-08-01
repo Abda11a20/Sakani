@@ -11,15 +11,12 @@ import {
   HeadphonesIcon,
   Bot,
   ShieldAlert,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { chatApi } from "@/features/chat";
 import { useAuthStore } from "@/features/auth";
 import { useChatRealtime } from "@/hooks/realtime/useChatRealtime";
 import { cn } from "@/lib/utils";
-
-import { usePathname } from "next/navigation";
 
 interface ChatMessage {
   id: string;
@@ -40,15 +37,10 @@ interface ChatWidgetProps {
 export default function ChatWidget({ conversationId: propConversationId, title }: ChatWidgetProps) {
   const locale = useLocale();
   const isRtl = locale === "ar";
-  const pathname = usePathname();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Do not render floating ChatWidget on Admin Chat Page to avoid UI duplication
-  if (pathname && pathname.includes("/admin/chat") && !propConversationId) {
-    return null;
-  }
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -79,7 +71,7 @@ export default function ChatWidget({ conversationId: propConversationId, title }
 
   // Fetch general unread count for current user
   useEffect(() => {
-    if (!token || !user) return;
+    if (!user) return;
     const fetchUnreadCount = async () => {
       try {
         const data = await chatApi.getUnreadCount();
@@ -89,7 +81,7 @@ export default function ChatWidget({ conversationId: propConversationId, title }
       }
     };
     fetchUnreadCount();
-  }, [token, user, isOpen]);
+  }, [user, isOpen]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -116,7 +108,7 @@ export default function ChatWidget({ conversationId: propConversationId, title }
 
   // Get or Create Support Conversation for User
   useEffect(() => {
-    if (!isOpen || !token || !user || conversationId) return;
+    if (!isOpen || !user || conversationId) return;
 
     const initSupportConversation = async () => {
       try {
@@ -135,11 +127,11 @@ export default function ChatWidget({ conversationId: propConversationId, title }
       }
     };
     initSupportConversation();
-  }, [isOpen, token, user, conversationId]);
+  }, [isOpen, user, conversationId]);
 
   // Load history when conversation ID is available
   useEffect(() => {
-    if (!isOpen || !token || !user || !conversationId) return;
+    if (!isOpen || !user || !conversationId) return;
 
     const loadHistory = async () => {
       try {
@@ -159,11 +151,11 @@ export default function ChatWidget({ conversationId: propConversationId, title }
       }
     };
     loadHistory();
-  }, [isOpen, token, user, conversationId]);
+  }, [isOpen, user, conversationId]);
 
   // Realtime subscription via centralized useChatRealtime hook
   const { isConnected } = useChatRealtime(
-    isOpen && token && user && conversationId ? conversationId : null,
+    isOpen && user && conversationId ? conversationId : null,
     {
       onMessageCreated: (data: any) => {
         if (data.sender.id === user?.id) return;
@@ -382,12 +374,12 @@ export default function ChatWidget({ conversationId: propConversationId, title }
                   value={input}
                   onChange={handleInputChange}
                   placeholder="أكتب رسالتك هنا..."
-                  disabled={isSending || !token}
+                  disabled={isSending}
                   className="flex-1 bg-muted/20 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary disabled:opacity-50 transition-colors"
                 />
                 <button
                   type="submit"
-                  disabled={!input.trim() || isSending || !token}
+                  disabled={!input.trim() || isSending}
                   className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shrink-0"
                 >
                   {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

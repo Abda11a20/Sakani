@@ -83,7 +83,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   return (
     <div ref={containerRef} className={`relative space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 font-cairo">
+        <label htmlFor={inputId} className="block text-sm font-medium text-text-secondary font-cairo">
           {label}
         </label>
       )}
@@ -140,18 +140,18 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
                   }`}
                 >
                   <span>{opt}</span>
-                  {opt === value && <Check size={16} className="text-amber-500 shrink-0" aria-hidden="true" />}
+                  {opt === value && <Check size={16} className="text-primary shrink-0" aria-hidden="true" />}
                 </div>
               ))
             ) : (
-              <div className="px-3.5 py-2 text-sm text-slate-400 text-center">لا توجد نتائج مطابقة</div>
+              <div className="px-3.5 py-2 text-sm text-text-tertiary text-center">لا توجد نتائج مطابقة</div>
             )}
           </div>
         )}
       </div>
 
       {error && (
-        <p id={errorId} className="text-xs text-red-500 font-cairo">
+        <p id={errorId} className="text-xs text-status-danger font-cairo">
           {error}
         </p>
       )}

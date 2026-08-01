@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, ContractStatus } from '@prisma/client';
+import { Prisma, ContractStatus, ContractCreatedBy } from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 
 export interface RentalHistoryQuery {
@@ -33,7 +33,18 @@ export class RentalHistoryService {
     };
 
     if (status) {
-      where.status = status;
+      if (status === ContractStatus.expired) {
+        where.status = { in: [ContractStatus.expired, ContractStatus.renewed] };
+      } else if (status === ContractStatus.renewed) {
+        where.OR = [
+          { status: ContractStatus.renewed, listing: { landlordId } },
+          { createdByType: ContractCreatedBy.AUTO_RENEW, listing: { landlordId } },
+          { notes: { contains: 'تجديد', mode: 'insensitive' }, listing: { landlordId } },
+        ];
+        delete where.listing;
+      } else {
+        where.status = status;
+      }
     }
 
     // Date range filter (on createdAt)
@@ -140,7 +151,18 @@ export class RentalHistoryService {
     };
 
     if (status) {
-      where.status = status;
+      if (status === ContractStatus.expired) {
+        where.status = { in: [ContractStatus.expired, ContractStatus.renewed] };
+      } else if (status === ContractStatus.renewed) {
+        where.OR = [
+          { status: ContractStatus.renewed, tenantId },
+          { createdByType: ContractCreatedBy.AUTO_RENEW, tenantId },
+          { notes: { contains: 'تجديد', mode: 'insensitive' }, tenantId },
+        ];
+        delete where.tenantId;
+      } else {
+        where.status = status;
+      }
     }
 
     // Date range filter

@@ -102,7 +102,7 @@ export function ListingOverview({
         </div>
 
         {/* Security Deposit */}
-        <div className="bg-white border border-slate-200 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-xs col-span-3 md:col-span-1">
+        <div className="bg-white border border-slate-200 p-3 rounded-xl flex flex-col items-center text-center shadow-xs">
           <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center mb-1.5 shrink-0">
             <Shield size={16} />
           </div>

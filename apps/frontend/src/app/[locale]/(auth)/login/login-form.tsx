@@ -9,7 +9,7 @@ import { Phone, Mail, Eye, EyeOff, Lock } from "lucide-react";
 import { useLogin } from "@/features/auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 type LoginValues = {
   identifier: string;
@@ -24,6 +24,7 @@ export function LoginForm() {
   const t = useTranslations("auth");
   const { mutate: login, isPending, error } = useLogin();
   const params = useParams();
+  const router = useRouter();
   const locale = params.locale as string;
   const [showPassword, setShowPassword] = useState(false);
 
@@ -54,7 +55,22 @@ export function LoginForm() {
   const IdentifierIcon = isEmail(identifierValue) ? Mail : Phone;
 
   const onSubmit = (data: LoginValues) => {
-    login(data);
+    login(data, {
+      onError: (err: any) => {
+        const dataRes = err?.response?.data;
+        const code = dataRes?.code || err?.code;
+        const msg = typeof dataRes?.message === "string" ? dataRes.message : err?.message || "";
+        const isSoftDeleted = code === "ACCOUNT_SOFT_DELETED" || msg.includes("محذوف") || msg.includes("فترة السماح");
+        const identifier = dataRes?.identifier || data.identifier;
+        const remainingDays = dataRes?.remainingDays || 30;
+
+        if (isSoftDeleted) {
+          router.push(
+            `/${locale}/restore-account?identifier=${encodeURIComponent(identifier)}&remainingDays=${remainingDays}`
+          );
+        }
+      },
+    });
   };
 
   const serverError =

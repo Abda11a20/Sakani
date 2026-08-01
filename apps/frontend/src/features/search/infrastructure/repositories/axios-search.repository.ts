@@ -13,14 +13,14 @@ export class AxiosSearchRepository implements ISearchRepository {
       cleanParams.q = searchQuery.trim();
     }
 
-    // Map unitType (apartment -> APARTMENT, bed -> BED)
+    // Map unitType (lowercase enum for Prisma & DTO validation)
     if (filters.unitType) {
-      cleanParams.unitType = String(filters.unitType).toUpperCase();
+      cleanParams.unitType = String(filters.unitType).toLowerCase();
     }
 
-    // Map genderTarget
+    // Map genderTarget (lowercase enum for Prisma & DTO validation)
     if (filters.genderTarget) {
-      cleanParams.genderTarget = String(filters.genderTarget).toUpperCase();
+      cleanParams.genderTarget = String(filters.genderTarget).toLowerCase();
     }
 
     if (filters.governorate) cleanParams.governorate = filters.governorate;

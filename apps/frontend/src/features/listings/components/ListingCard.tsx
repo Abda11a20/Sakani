@@ -16,7 +16,6 @@ import {
   Heart,
   Calendar,
   Phone,
-  MessageSquare,
   Shield,
   Star,
   Loader2,
@@ -263,16 +262,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
           {/* Price & Location Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-[#1B4F8A]">
+              <span className="text-2xl font-extrabold text-primary">
                 {formattedPrice}
               </span>
-              <span className="text-xs font-bold text-slate-500">
+              <span className="text-xs font-bold text-text-secondary">
                 {isEn ? "EGP / mo" : "ج.م / شهري"}
               </span>
             </div>
 
-            <div className="flex items-center gap-1 text-slate-500 max-w-[50%]">
-              <MapPin size={13} className="shrink-0 text-[#1B4F8A]" />
+            <div className="flex items-center gap-1 text-text-secondary max-w-[50%]">
+              <MapPin size={13} className="shrink-0 text-primary" />
               <span className="text-xs font-semibold truncate">
                 {listing.district || listing.city || listing.governorate}
               </span>
@@ -280,24 +279,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
           </div>
 
           {/* Title */}
-          <h3 className="text-base font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-[#1B4F8A] transition-colors">
+          <h3 className="text-base font-bold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">
             {listing.title}
           </h3>
 
           {/* Beds Stats Box */}
-          <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-surface-secondary border border-border">
             <div className="flex items-center justify-center gap-1.5 text-center">
-              <BedDouble size={14} className="text-[#1B4F8A] shrink-0" />
-              <span className="text-xs font-bold text-slate-800">
+              <BedDouble size={14} className="text-primary shrink-0" />
+              <span className="text-xs font-bold text-text">
                 {totalBeds > 0
                   ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
                   : isBedListing ? (isEn ? "1 Bed" : "1 سرير") : (isEn ? "Apartment" : "شقة")}
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-1 text-center border-r border-l border-slate-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-xs font-bold text-emerald-700">
+            <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border">
+              <span className="h-2 w-2 rounded-full bg-status-success shrink-0" />
+              <span className="text-xs font-bold text-status-success">
                 {availableBedsCount} {isEn ? "Avail" : "متاح"}
               </span>
             </div>

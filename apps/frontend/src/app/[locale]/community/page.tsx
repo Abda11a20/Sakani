@@ -1,30 +1,33 @@
 // apps/frontend/src/app/[locale]/community/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useAuthStore } from "@/features/auth";
 import {
   Search,
-  Filter,
+  SlidersHorizontal,
   Plus,
   Compass,
   MapPin,
+  ChevronDown,
   Calendar,
-  Clock,
   Bell,
-  Star,
   CheckCircle,
   AlertTriangle,
   X,
   ChevronLeft,
   ChevronRight,
   Info,
+  RotateCcw,
+  Check,
 } from "lucide-react";
 import { communityRepository } from "@/features/community";
 import { EGYPTIAN_GOVERNORATES } from "@/lib/constants";
+import { SearchFilterDrawer } from "@/features/search";
+import { Button, Input } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface Category {
@@ -60,6 +63,13 @@ interface Post {
   }>;
 }
 
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function CommunityPage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -79,8 +89,26 @@ export default function CommunityPage() {
   const [cityQuery, setCityQuery] = useState("");
   const [genderPref, setGenderPref] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<"governorate" | "district" | "category" | null>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const limit = 12;
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+      const target = e.target as HTMLElement;
+      if (!target.closest(".modal-dropdown-container")) {
+        setOpenModalDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Alerts states
   const [alertFormOpen, setAlertFormOpen] = useState(false);
@@ -101,9 +129,15 @@ export default function CommunityPage() {
   const [newGov, setNewGov] = useState("");
   const [newCity, setNewCity] = useState("");
   const [newGender, setNewGender] = useState<"ALL" | "MALES_ONLY" | "FEMALES_ONLY">("ALL");
-  const [newMaxPart, setNewMaxPart] = useState(5);
+  const [newMaxPart, setNewMaxPart] = useState<number | "">("");
   const [newEventDate, setNewEventDate] = useState("");
-  const [newTimeSlot, setNewTimeSlot] = useState("");
+  const [timeHour, setTimeHour] = useState("07");
+  const [timeMinute, setTimeMinute] = useState("00");
+  const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("PM");
+  const [openModalDropdown, setOpenModalDropdown] = useState<string | null>(null);
+  const [catSearch, setCatSearch] = useState("");
+  const [govSearch, setGovSearch] = useState("");
+  const [genderSearch, setGenderSearch] = useState("");
 
   // Load categories
   useEffect(() => {
@@ -149,8 +183,52 @@ export default function CommunityPage() {
     setCreateError("");
     setCreateSuccess(false);
 
-    if (!newTitle.trim() || !newDesc.trim() || !newCat || !newGov || !newCity || !newEventDate || !newTimeSlot) {
-      setCreateError(isRtl ? "برجاء تعبئة كافة الحقول المطلوبة." : "Please fill out all required fields.");
+    const parsedMaxPart = Number(newMaxPart);
+
+    if (
+      !newTitle.trim() ||
+      !newDesc.trim() ||
+      !newCat ||
+      !newGov ||
+      !newCity ||
+      !newEventDate ||
+      !newMaxPart ||
+      isNaN(parsedMaxPart) ||
+      parsedMaxPart < 2
+    ) {
+      setCreateError(
+        isRtl
+          ? "الحد الأقصى للمشاركين يجب أن يكون شخصين على الأقل (2 أو أكثر) لتنظيم فعالية مجتمعية."
+          : "Maximum participants must be at least 2 people to organize a community event."
+      );
+      return;
+    }
+
+    // Format 12h time (hour, minute, period AM/PM) into 24h string (HH:mm)
+    let h = parseInt(timeHour || "12", 10);
+    const m = (timeMinute || "00").padStart(2, "0");
+    if (isNaN(h)) h = 12;
+    if (h > 12) h = 12;
+    if (h < 1) h = 1;
+
+    if (timePeriod === "PM" && h < 12) {
+      h += 12;
+    } else if (timePeriod === "AM" && h === 12) {
+      h = 0;
+    }
+
+    const formattedTimeSlot = `${h.toString().padStart(2, "0")}:${m}`;
+
+    // Combine eventDate & formattedTimeSlot into exact DateTime and validate future status
+    const [evYear, evMonth, evDay] = newEventDate.split('-').map(Number);
+    const combinedEventDateTime = new Date(evYear, evMonth - 1, evDay, h, parseInt(m, 10), 0, 0);
+
+    if (combinedEventDateTime < new Date()) {
+      setCreateError(
+        isRtl
+          ? "توقيت الفعالية (التاريخ والوقت) لا يمكن أن يكون في الماضي."
+          : "The activity date and time cannot be in the past."
+      );
       return;
     }
 
@@ -162,9 +240,9 @@ export default function CommunityPage() {
         governorateId: newGov,
         cityId: newCity,
         genderPreference: newGender,
-        maxParticipants: Number(newMaxPart),
+        maxParticipants: parsedMaxPart,
         eventDate: newEventDate,
-        timeSlot: newTimeSlot,
+        timeSlot: formattedTimeSlot,
       });
 
       setCreateSuccess(true);
@@ -174,19 +252,31 @@ export default function CommunityPage() {
       setNewGov("");
       setNewCity("");
       setNewGender("ALL");
-      setNewMaxPart(5);
+      setNewMaxPart("");
       setNewEventDate("");
-      setNewTimeSlot("");
+      setTimeHour("07");
+      setTimeMinute("00");
+      setTimePeriod("PM");
       setTimeout(() => {
         setCreateModalOpen(false);
         setCreateSuccess(false);
         fetchPosts();
       }, 1500);
     } catch (err: any) {
-      setCreateError(
-        err.response?.data?.message ||
-        (isRtl ? "حدث خطأ أثناء إنشاء النشاط." : "An error occurred while creating the activity.")
-      );
+      const rawMsg = err.response?.data?.message;
+      let userFriendlyMsg = isRtl ? "حدث خطأ أثناء إنشاء النشاط." : "An error occurred while creating the activity.";
+
+      if (Array.isArray(rawMsg)) {
+        userFriendlyMsg = rawMsg.join(", ");
+      } else if (typeof rawMsg === "string") {
+        if (rawMsg.includes("maxParticipants must not be less than 2")) {
+          userFriendlyMsg = isRtl ? "الحد الأقصى للمشاركين يجب أن يكون شخصين على الأقل (2 أو أكثر)." : "Max participants must be at least 2.";
+        } else {
+          userFriendlyMsg = rawMsg;
+        }
+      }
+
+      setCreateError(userFriendlyMsg);
     }
   };
 
@@ -250,8 +340,8 @@ export default function CommunityPage() {
           <div className="flex flex-wrap items-center gap-3">
             {isAuthenticated && (
               <button
-                onClick={() => setAlertFormOpen(true)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-xl font-semibold transition-all text-sm font-cairo"
+                onClick={() => router.push(`/${locale}/dashboard/tenant/alerts?type=community`)}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-xl font-semibold transition-all text-sm font-cairo cursor-pointer"
               >
                 <Bell size={18} className="text-amber-400" />
                 {isRtl ? "تنبيه ذكي بالأنشطة" : "Smart Activity Alerts"}
@@ -275,153 +365,309 @@ export default function CommunityPage() {
       </div>
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Filter size={18} className="text-blue-600" />
-              <h2 className="font-bold text-slate-950 font-cairo">
-                {isRtl ? "تصفية الأنشطة" : "Filter Activities"}
-              </h2>
-            </div>
-
-            {/* Search Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
-                {isRtl ? "البحث بالاسم والوصف" : "Search Title / Desc"}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder={isRtl ? "ابحث..." : "Search..."}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 pl-9 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+        {/* Search Header Container - Matching /search layout & SearchHeader UI component exactly */}
+        <div ref={filterRef} className="bg-surface border border-border rounded-2xl p-4 shadow-xs space-y-3 font-cairo z-30 relative">
+          {/* Top Row: Search Input + Filters Button */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 relative flex items-center">
+              <div className="absolute start-3 pointer-events-none text-text-tertiary flex items-center justify-center">
+                <Search size={16} />
               </div>
-            </div>
-
-            {/* Categories Select */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
-                {isRtl ? "التصنيف" : "Category"}
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
-              >
-                <option value="">{isRtl ? "كل التصنيفات" : "All Categories"}</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {isRtl ? cat.nameAr : cat.nameEn}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Governorate Select */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
-                {isRtl ? "المحافظة" : "Governorate"}
-              </label>
-              <select
-                value={selectedGov}
-                onChange={(e) => {
-                  setSelectedGov(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
-              >
-                <option value="">{isRtl ? "كل المحافظات" : "All Governorates"}</option>
-                {EGYPTIAN_GOVERNORATES.map((gov) => (
-                  <option key={gov} value={gov}>
-                    {gov}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* City / District */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
-                {isRtl ? "المدينة / الحي" : "City / District"}
-              </label>
               <input
                 type="text"
-                placeholder={isRtl ? "مثال: مدينة نصر" : "e.g. Heliopolis"}
-                value={cityQuery}
+                aria-label="البحث بالمنطقة أو الوصف"
+                placeholder={isRtl ? "ابحث بالمنطقة، أو التفاصيل، أو اسم الفعالية..." : "Search by region, details, or title..."}
+                value={searchQuery}
                 onChange={(e) => {
-                  setCityQuery(e.target.value);
+                  setSearchQuery(e.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+                className="w-full bg-surface-secondary focus:bg-surface border border-border rounded-xl py-2.5 ps-9 pe-8 text-xs sm:text-sm font-semibold text-text placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 font-cairo transition-all"
               />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute end-2 h-6 w-6 p-0 text-text-tertiary hover:text-text"
+                >
+                  <X size={14} />
+                </Button>
+              )}
             </div>
 
-            {/* Gender Preference */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
+            {/* More Filters Trigger Button */}
+            <Button
+              type="button"
+              variant={(genderPref || selectedDate) ? "primary" : "outline"}
+              size="md"
+              onClick={() => setFilterDrawerOpen(true)}
+              aria-label="فتح فلاتر المجتمع المتقدمة"
+              leftIcon={<SlidersHorizontal size={16} />}
+              className="shrink-0 text-xs font-bold rounded-xl"
+            >
+              الفلاتر
+              {(genderPref || selectedDate) && (
+                <span className="ms-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-text">
+                  {(genderPref ? 1 : 0) + (selectedDate ? 1 : 0)}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          {/* Quick Filters Strip - 3 Equal Compact Primary Pill Buttons */}
+          <div className="flex items-center gap-2 text-xs font-semibold font-cairo z-40 relative flex-nowrap">
+            {/* 1. Governorate Pill */}
+            <div className="relative">
+              <Button
+                type="button"
+                variant={selectedGov ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setOpenDropdown((prev) => (prev === "governorate" ? null : "governorate"))}
+                leftIcon={<MapPin size={13} />}
+                rightIcon={<ChevronDown size={13} />}
+                className="rounded-full text-xs font-bold whitespace-nowrap"
+              >
+                {selectedGov || (isRtl ? "المحافظة" : "Governorate")}
+              </Button>
+
+              {openDropdown === "governorate" && (
+                <div className="absolute start-0 top-full mt-1.5 w-44 bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                  <Button
+                    type="button"
+                    variant={!selectedGov ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedGov("");
+                      setPage(1);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full justify-start text-xs rounded-lg font-cairo"
+                  >
+                    {isRtl ? "كل المحافظات" : "All Governorates"}
+                  </Button>
+                  {EGYPTIAN_GOVERNORATES.map((gov) => (
+                    <Button
+                      key={gov}
+                      type="button"
+                      variant={selectedGov === gov ? "primary" : "ghost"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedGov(gov);
+                        setPage(1);
+                        setOpenDropdown(null);
+                      }}
+                      className="w-full justify-start text-xs rounded-lg mt-0.5 font-cairo"
+                    >
+                      {gov}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. City Pill */}
+            <div className="relative">
+              <Button
+                type="button"
+                variant={cityQuery ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setOpenDropdown((prev) => (prev === "district" ? null : "district"))}
+                leftIcon={<MapPin size={13} />}
+                rightIcon={<ChevronDown size={13} />}
+                className="rounded-full text-xs font-bold whitespace-nowrap"
+              >
+                {cityQuery || (isRtl ? "المدينة" : "City")}
+              </Button>
+
+              {openDropdown === "district" && (
+                <div className="absolute start-0 top-full mt-1.5 w-56 bg-surface rounded-2xl shadow-xl border border-border p-3 z-50 animate-in fade-in zoom-in-95 duration-150 font-cairo space-y-2.5">
+                  <Input
+                    type="text"
+                    placeholder={isRtl ? "ابحث عن مدينة أو حي..." : "Search city or district..."}
+                    value={cityQuery}
+                    onChange={(e) => {
+                      setCityQuery(e.target.value);
+                      setPage(1);
+                    }}
+                    className="text-xs font-semibold py-1.5 px-2.5 h-8"
+                  />
+                  <div className="flex justify-between items-center pt-1.5 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCityQuery("");
+                        setPage(1);
+                        setOpenDropdown(null);
+                      }}
+                      className="text-[10px] text-text-secondary hover:text-text p-1 h-auto"
+                      leftIcon={<RotateCcw size={10} />}
+                    >
+                      مسح
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setOpenDropdown(null)}
+                      className="text-[11px] font-bold px-3 py-1 h-7 rounded-lg"
+                      leftIcon={<Check size={12} />}
+                    >
+                      تطبيق
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Activity Type / Category Pill */}
+            <div className="relative">
+              <Button
+                type="button"
+                variant={selectedCategory ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setOpenDropdown((prev) => (prev === "category" ? null : "category"))}
+                leftIcon={<Compass size={13} />}
+                rightIcon={<ChevronDown size={13} />}
+                className="rounded-full text-xs font-bold whitespace-nowrap"
+              >
+                {categories.find(c => c.id === selectedCategory)?.[isRtl ? "nameAr" : "nameEn"] || (isRtl ? "نوع النشاط" : "Activity Type")}
+              </Button>
+
+              {openDropdown === "category" && (
+                <div className="absolute start-0 top-full mt-1.5 w-52 bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                  <Button
+                    type="button"
+                    variant={!selectedCategory ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCategory("");
+                      setPage(1);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full justify-start text-xs rounded-lg font-cairo"
+                  >
+                    {isRtl ? "كل الأنشطة والتصنيفات" : "All Activities"}
+                  </Button>
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat.id}
+                      type="button"
+                      variant={selectedCategory === cat.id ? "primary" : "ghost"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setPage(1);
+                        setOpenDropdown(null);
+                      }}
+                      className="w-full justify-start text-xs rounded-lg mt-0.5 font-cairo"
+                    >
+                      <span className="me-1.5">{cat.icon}</span>
+                      {isRtl ? cat.nameAr : cat.nameEn}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Results Bar Header - Matching /search count style */}
+        <div className="flex items-center justify-between font-cairo px-1">
+          <h2 className="text-sm sm:text-base font-extrabold text-text">
+            {isRtl ? `عُثر على ${totalCount} نتيجة` : `Found ${totalCount} results`}
+          </h2>
+        </div>
+
+        {/* Reusing SearchFilterDrawer for Non-Duplicated Additional Community Filters */}
+        <SearchFilterDrawer
+          open={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          title={isRtl ? "فلاتر المجتمع التفصيلية" : "Detailed Community Filters"}
+          subtitle={isRtl ? "تخصيص نتائج الأنشطة والتجمعات المجتمعية" : "Filter activities and community events"}
+          totalCount={totalCount}
+          onApply={() => {
+            setFilterDrawerOpen(false);
+            fetchPosts();
+          }}
+          onReset={() => {
+            setGenderPref("");
+            setSelectedDate("");
+            setPage(1);
+          }}
+        >
+          <div className="space-y-4 font-cairo">
+            {/* Target Gender Filter - Custom Popover Dropdown */}
+            <div className="space-y-1 relative font-cairo">
+              <label className="text-xs font-semibold text-text-secondary block">
                 {isRtl ? "الجنس المستهدف" : "Target Gender"}
               </label>
-              <select
-                value={genderPref}
-                onChange={(e) => {
-                  setGenderPref(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-cairo"
+              <button
+                type="button"
+                onClick={() => setOpenModalDropdown(openModalDropdown === "drawerGender" ? null : "drawerGender")}
+                className="w-full bg-surface-secondary border border-border rounded-xl py-2 px-3 text-xs text-text font-cairo flex items-center justify-between hover:bg-surface-tertiary transition-all font-semibold cursor-pointer"
               >
-                <option value="">{isRtl ? "الجميع" : "All"}</option>
-                <option value="MALES_ONLY">{isRtl ? "ذكور فقط" : "Males Only"}</option>
-                <option value="FEMALES_ONLY">{isRtl ? "إناث فقط" : "Females Only"}</option>
-                <option value="ALL">{isRtl ? "مفتوح للكل" : "Mixed"}</option>
-              </select>
+                <span className="truncate font-cairo text-start">
+                  {genderPref === "MALES_ONLY"
+                    ? (isRtl ? "ذكور فقط" : "Males Only")
+                    : genderPref === "FEMALES_ONLY"
+                    ? (isRtl ? "إناث فقط" : "Females Only")
+                    : (isRtl ? "الجميع (مفتوح للكل)" : "All")}
+                </span>
+                <ChevronDown size={14} className="text-text-tertiary shrink-0 ms-1" />
+              </button>
+
+              {openModalDropdown === "drawerGender" && (
+                <div className="absolute start-0 top-full mt-1.5 w-full bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                  {[
+                    { value: "", label: isRtl ? "الجميع (مفتوح للكل)" : "All" },
+                    { value: "MALES_ONLY", label: isRtl ? "ذكور فقط" : "Males Only" },
+                    { value: "FEMALES_ONLY", label: isRtl ? "إناث فقط" : "Females Only" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setGenderPref(opt.value);
+                        setOpenModalDropdown(null);
+                      }}
+                      className={cn(
+                        "w-full text-start px-3 py-2 text-xs font-bold rounded-xl transition-colors font-cairo flex items-center justify-between cursor-pointer my-0.5",
+                        genderPref === opt.value
+                          ? "bg-primary/10 text-primary font-extrabold"
+                          : "text-text-secondary hover:bg-surface-secondary"
+                      )}
+                    >
+                      <span className="font-cairo">{opt.label}</span>
+                      {genderPref === opt.value && <Check size={14} className="text-blue-600 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Datepicker */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 font-cairo">
-                {isRtl ? "التاريخ" : "Date"}
+            {/* Event Date Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-600 block">
+                {isRtl ? "تاريخ الفعالية" : "Event Date"}
               </label>
               <input
                 type="date"
+                min={getLocalDateString()}
                 value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900"
               />
             </div>
-
-            {/* Clear Button */}
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("");
-                setSelectedGov("");
-                setCityQuery("");
-                setGenderPref("");
-                setSelectedDate("");
-                setPage(1);
-              }}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all font-cairo"
-            >
-              {isRtl ? "إعادة تعيين الفلاتر" : "Reset Filters"}
-            </button>
           </div>
+        </SearchFilterDrawer>
 
           {/* Posts List Section */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="space-y-6">
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[...Array(6)].map((_, i) => (
@@ -445,7 +691,7 @@ export default function CommunityPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                   {posts.map((post) => {
                     const acceptedParticipantsCount = post.participants?.filter(
                       (p) => p.status === "ACCEPTED"
@@ -453,94 +699,52 @@ export default function CommunityPage() {
                     const isFull = acceptedParticipantsCount >= post.maxParticipants;
 
                     return (
-                      <div
+                      <Link
                         key={post.id}
-                        className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm relative group"
+                        href={`/${locale}/community/${post.id}`}
+                        className="group bg-surface border border-border rounded-xl p-3 sm:p-4 hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between relative cursor-pointer"
                       >
-                        {/* Top Category Badge */}
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-bold font-cairo">
+                        {/* Top Category & Capacity Badges */}
+                        <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
+                          <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold font-cairo">
                             <span>{post.category.icon}</span>
-                            <span>{isRtl ? post.category.nameAr : post.category.nameEn}</span>
+                            <span className="truncate max-w-[80px] sm:max-w-[120px]">{isRtl ? post.category.nameAr : post.category.nameEn}</span>
                           </span>
 
                           <span
-                            className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold font-cairo ${
+                            className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] sm:text-xs font-bold font-cairo ${
                               isFull
-                                ? "bg-red-50 text-red-600"
-                                : "bg-emerald-50 text-emerald-600"
+                                ? "bg-status-danger/15 text-status-danger"
+                                : "bg-status-success/15 text-status-success"
                             }`}
                           >
-                            {isFull ? (isRtl ? "مكتمل العدد" : "Full") : `${acceptedParticipantsCount} / ${post.maxParticipants} ${isRtl ? "أماكن" : "places"}`}
+                            {isFull ? (isRtl ? "مكتمل" : "Full") : `${acceptedParticipantsCount}/${post.maxParticipants}`}
                           </span>
                         </div>
 
-                        {/* Host / Organizer Trust Rating */}
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="relative w-8 h-8 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200">
-                            {post.user.avatarUrl ? (
-                              <Image
-                                src={post.user.avatarUrl}
-                                alt={post.user.name}
-                                fill
-                                sizes="32px"
-                                className="object-cover"
-                                unoptimized={post.user.avatarUrl.includes('api.dicebear.com')}
-                              />
-                            ) : (
-                              <span className="text-xs font-bold text-slate-500">{post.user.name[0]}</span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-800 font-cairo">
-                              {post.user.name}
-                            </p>
-                            <div className="flex items-center gap-1 text-[10px] text-amber-500 font-semibold">
-                              <Star size={10} fill="currentColor" />
-                              <span>{post.user.communityRatingAvg ? post.user.communityRatingAvg.toFixed(1) : "0.0"}</span>
-                              <span className="text-slate-400">({post.user.communityReviewsCount})</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Info details */}
-                        <div className="space-y-1 mb-4 flex-1">
-                          <h3 className="font-bold text-slate-900 line-clamp-1 text-base font-cairo">
+                        {/* Title & Location */}
+                        <div className="space-y-1 my-1 flex-1">
+                          <h3 className="font-bold text-text line-clamp-1 text-xs sm:text-sm font-cairo group-hover:text-primary transition-colors">
                             {post.title}
                           </h3>
-                          <p className="text-xs text-slate-500 line-clamp-2 font-cairo">
-                            {post.description}
-                          </p>
-                        </div>
-
-                        {/* Meta info footer inside card */}
-                        <div className="border-t border-slate-100 pt-3 mt-auto space-y-2 text-xs text-slate-500 font-cairo">
-                          <div className="flex items-center justify-between gap-1 flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} className="text-blue-500" />
-                              <span>{post.governorateId}، {post.cityId}</span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar size={12} className="text-blue-500" />
-                              <span>{new Date(post.eventDate).toLocaleDateString(locale)}</span>
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="flex items-center gap-1 font-semibold text-slate-600">
-                              <Clock size={12} />
-                              <span>{post.timeSlot}</span>
-                            </span>
-
-                            <Link
-                              href={`/${locale}/community/${post.id}`}
-                              className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-0.5"
-                            >
-                              {isRtl ? "عرض التفاصيل ←" : "View Details →"}
-                            </Link>
+                          <div className="flex items-center gap-1 text-[11px] text-text-secondary font-cairo">
+                            <MapPin size={11} className="text-primary shrink-0" />
+                            <span className="truncate">{post.governorateId}، {post.cityId}</span>
                           </div>
                         </div>
-                      </div>
+
+                        {/* Card Footer Link */}
+                        <div className="border-t border-border/50 pt-2 mt-2 flex items-center justify-between text-[10px] sm:text-xs text-text-tertiary font-cairo">
+                          <span className="flex items-center gap-1">
+                            <Calendar size={11} />
+                            <span>{new Date(post.eventDate).toLocaleDateString(locale)}</span>
+                          </span>
+
+                          <span className="font-bold text-primary group-hover:underline">
+                            {isRtl ? "التفاصيل ←" : "Details →"}
+                          </span>
+                        </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -571,7 +775,6 @@ export default function CommunityPage() {
             )}
           </div>
         </div>
-      </div>
 
       {/* CREATE ALERT MODAL */}
       {alertFormOpen && (
@@ -724,7 +927,7 @@ export default function CommunityPage() {
                       placeholder={isRtl ? "مثال: نلعب كورة قدم في الجيزة" : "e.g. Football match"}
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
                       required
                     />
                   </div>
@@ -738,30 +941,75 @@ export default function CommunityPage() {
                       value={newDesc}
                       onChange={(e) => setNewDesc(e.target.value)}
                       rows={3}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 font-cairo">
+                  {/* 1. Category Searchable Combobox */}
+                  <div className="space-y-1 relative font-cairo modal-dropdown-container">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo block">
                       {isRtl ? "التصنيف" : "Category"} *
                     </label>
-                    <select
-                      value={newCat}
-                      onChange={(e) => setNewCat(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
-                      required
-                    >
-                      <option value="">{isRtl ? "اختر..." : "Choose..."}</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.icon} {isRtl ? c.nameAr : c.nameEn}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={isRtl ? "ابحث أو اختر..." : "Search or choose..."}
+                        value={
+                          openModalDropdown === "modalCategory"
+                            ? catSearch
+                            : (categories.find(c => c.id === newCat)?.[isRtl ? "nameAr" : "nameEn"] || catSearch)
+                        }
+                        onFocus={() => {
+                          setOpenModalDropdown("modalCategory");
+                          setCatSearch("");
+                        }}
+                        onChange={(e) => {
+                          setCatSearch(e.target.value);
+                          if (openModalDropdown !== "modalCategory") setOpenModalDropdown("modalCategory");
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 ps-3 pe-8 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
+                      />
+                      <ChevronDown size={16} className="absolute end-2.5 text-slate-400 pointer-events-none shrink-0" />
+                    </div>
+
+                    {openModalDropdown === "modalCategory" && (
+                      <div className="absolute start-0 top-full mt-1.5 w-full bg-white rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-52 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                        {categories
+                          .filter(c => (isRtl ? c.nameAr : c.nameEn).toLowerCase().includes(catSearch.toLowerCase()))
+                          .map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => {
+                                setNewCat(c.id);
+                                setCatSearch(isRtl ? c.nameAr : c.nameEn);
+                                setOpenModalDropdown(null);
+                              }}
+                              className={cn(
+                                "w-full text-start px-3 py-2 text-xs font-bold rounded-xl transition-colors font-cairo flex items-center justify-between cursor-pointer my-0.5",
+                                newCat === c.id
+                                  ? "bg-blue-50 text-blue-600 font-extrabold"
+                                  : "text-slate-700 hover:bg-slate-100"
+                              )}
+                            >
+                              <span className="flex items-center gap-1.5 font-cairo">
+                                <span>{c.icon}</span>
+                                {isRtl ? c.nameAr : c.nameEn}
+                              </span>
+                              {newCat === c.id && <Check size={14} className="text-blue-600 shrink-0" />}
+                            </button>
+                          ))}
+                        {categories.filter(c => (isRtl ? c.nameAr : c.nameEn).toLowerCase().includes(catSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2.5 text-xs text-slate-400 font-cairo text-center">
+                            {isRtl ? "لا توجد نتائج مطابقة" : "No results found"}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
+                  {/* 2. Max Participants */}
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "الحد الأقصى للمشاركين" : "Max Participants"} *
@@ -770,32 +1018,75 @@ export default function CommunityPage() {
                       type="number"
                       min={2}
                       max={100}
+                      placeholder={isRtl ? "ادخل العدد (شخصين أو أكثر)" : "e.g. 5"}
                       value={newMaxPart}
-                      onChange={(e) => setNewMaxPart(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900"
+                      onChange={(e) => setNewMaxPart(e.target.value === "" ? "" : Math.max(2, Number(e.target.value)))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 font-cairo">
+                  {/* 3. Governorate Searchable Combobox */}
+                  <div className="space-y-1 relative font-cairo modal-dropdown-container">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo block">
                       {isRtl ? "المحافظة" : "Governorate"} *
                     </label>
-                    <select
-                      value={newGov}
-                      onChange={(e) => setNewGov(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
-                      required
-                    >
-                      <option value="">{isRtl ? "اختر..." : "Choose..."}</option>
-                      {EGYPTIAN_GOVERNORATES.map((g) => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={isRtl ? "ابحث أو اختر..." : "Search or choose..."}
+                        value={
+                          openModalDropdown === "modalGov"
+                            ? govSearch
+                            : (newGov || govSearch)
+                        }
+                        onFocus={() => {
+                          setOpenModalDropdown("modalGov");
+                          setGovSearch("");
+                        }}
+                        onChange={(e) => {
+                          setGovSearch(e.target.value);
+                          if (openModalDropdown !== "modalGov") setOpenModalDropdown("modalGov");
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 ps-3 pe-8 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
+                      />
+                      <ChevronDown size={16} className="absolute end-2.5 text-slate-400 pointer-events-none shrink-0" />
+                    </div>
+
+                    {openModalDropdown === "modalGov" && (
+                      <div className="absolute start-0 top-full mt-1.5 w-full bg-white rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-52 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                        {EGYPTIAN_GOVERNORATES
+                          .filter(g => g.toLowerCase().includes(govSearch.toLowerCase()))
+                          .map((g) => (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={() => {
+                                setNewGov(g);
+                                setGovSearch(g);
+                                setOpenModalDropdown(null);
+                              }}
+                              className={cn(
+                                "w-full text-start px-3 py-2 text-xs font-bold rounded-xl transition-colors font-cairo flex items-center justify-between cursor-pointer my-0.5",
+                                newGov === g
+                                  ? "bg-blue-50 text-blue-600 font-extrabold"
+                                  : "text-slate-700 hover:bg-slate-100"
+                              )}
+                            >
+                              <span className="font-cairo">{g}</span>
+                              {newGov === g && <Check size={14} className="text-blue-600 shrink-0" />}
+                            </button>
+                          ))}
+                        {EGYPTIAN_GOVERNORATES.filter(g => g.toLowerCase().includes(govSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2.5 text-xs text-slate-400 font-cairo text-center">
+                            {isRtl ? "لا توجد نتائج مطابقة" : "No results found"}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
+                  {/* 4. City / District Input */}
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "المدينة أو الحي" : "City / District"} *
@@ -805,51 +1096,191 @@ export default function CommunityPage() {
                       placeholder={isRtl ? "مثال: مدينة نصر" : "e.g. Heliopolis"}
                       value={newCity}
                       onChange={(e) => setNewCity(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
                       required
                     />
                   </div>
 
+                  {/* Date & Target Gender side-by-side */}
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-500 font-cairo">
                       {isRtl ? "التاريخ" : "Date"} *
                     </label>
                     <input
                       type="date"
+                      min={getLocalDateString()}
                       value={newEventDate}
                       onChange={(e) => setNewEventDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 px-3 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all cursor-pointer"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500 font-cairo">
-                      {isRtl ? "توقيت التجمع" : "Time Slot"} *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={isRtl ? "مثال: 07:00 مساءً" : "e.g. 07:00 PM"}
-                      value={newTimeSlot}
-                      onChange={(e) => setNewTimeSlot(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-xs font-semibold text-slate-500 font-cairo">
+                  {/* 5. Target Gender Searchable Combobox */}
+                  <div className="space-y-1 relative font-cairo modal-dropdown-container">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo block">
                       {isRtl ? "تفضيل الجنس" : "Target Gender"}
                     </label>
-                    <select
-                      value={newGender}
-                      onChange={(e) => setNewGender(e.target.value as any)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm text-slate-900 font-cairo"
-                    >
-                      <option value="ALL">{isRtl ? "مفتوح للجميع" : "All"}</option>
-                      <option value="MALES_ONLY">{isRtl ? "ذكور فقط" : "Males Only"}</option>
-                      <option value="FEMALES_ONLY">{isRtl ? "إناث فقط" : "Females Only"}</option>
-                    </select>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={isRtl ? "ابحث أو اختر..." : "Search or choose..."}
+                        value={
+                          openModalDropdown === "modalGender"
+                            ? genderSearch
+                            : (newGender === "MALES_ONLY"
+                                ? (isRtl ? "ذكور فقط" : "Males Only")
+                                : newGender === "FEMALES_ONLY"
+                                ? (isRtl ? "إناث فقط" : "Females Only")
+                                : (isRtl ? "مفتوح للجميع" : "All"))
+                        }
+                        onFocus={() => {
+                          setOpenModalDropdown("modalGender");
+                          setGenderSearch("");
+                        }}
+                        onChange={(e) => {
+                          setGenderSearch(e.target.value);
+                          if (openModalDropdown !== "modalGender") setOpenModalDropdown("modalGender");
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 ps-3 pe-8 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-cairo transition-all"
+                      />
+                      <ChevronDown size={16} className="absolute end-2.5 text-slate-400 pointer-events-none shrink-0" />
+                    </div>
+
+                    {openModalDropdown === "modalGender" && (
+                      <div className="absolute start-0 top-full mt-1.5 w-full bg-white rounded-2xl shadow-xl border border-border p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                        {[
+                          { value: "ALL", label: isRtl ? "مفتوح للجميع" : "All" },
+                          { value: "MALES_ONLY", label: isRtl ? "ذكور فقط" : "Males Only" },
+                          { value: "FEMALES_ONLY", label: isRtl ? "إناث فقط" : "Females Only" },
+                        ]
+                          .filter(opt => opt.label.toLowerCase().includes(genderSearch.toLowerCase()))
+                          .map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => {
+                                setNewGender(opt.value as any);
+                                setGenderSearch(opt.label);
+                                setOpenModalDropdown(null);
+                              }}
+                              className={cn(
+                                "w-full text-start px-3 py-2 text-xs font-bold rounded-xl transition-colors font-cairo flex items-center justify-between cursor-pointer my-0.5",
+                                newGender === opt.value
+                                  ? "bg-blue-50 text-blue-600 font-extrabold"
+                                  : "text-slate-700 hover:bg-slate-100"
+                              )}
+                            >
+                              <span className="font-cairo">{opt.label}</span>
+                              {newGender === opt.value && <Check size={14} className="text-blue-600 shrink-0" />}
+                            </button>
+                          ))}
+                        {[
+                          { value: "ALL", label: isRtl ? "مفتوح للجميع" : "All" },
+                          { value: "MALES_ONLY", label: isRtl ? "ذكور فقط" : "Males Only" },
+                          { value: "FEMALES_ONLY", label: isRtl ? "إناث فقط" : "Females Only" },
+                        ].filter(opt => opt.label.toLowerCase().includes(genderSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2.5 text-xs text-slate-400 font-cairo text-center">
+                            {isRtl ? "لا توجد نتائج مطابقة" : "No results found"}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Event Time Full-Width Row underneath */}
+                  <div className="space-y-1 col-span-2 pt-1 border-t border-slate-100">
+                    <label className="text-xs font-semibold text-slate-500 font-cairo block">
+                      {isRtl ? "توقيت الفعالية" : "Event Time"} *
+                    </label>
+                    <div className="flex items-start gap-3 font-cairo bg-slate-50/70 p-3 rounded-2xl border border-slate-200/80">
+                      {/* 1. Minutes Column (أول حاجة على اليمين) */}
+                      <div className="flex flex-col items-center gap-1">
+                        <input
+                          type="text"
+                          maxLength={2}
+                          value={timeMinute}
+                          onFocus={(e) => e.target.select()}
+                          onBlur={() => {
+                            if (timeMinute === "") setTimeMinute("00");
+                            else {
+                              const num = parseInt(timeMinute, 10);
+                              if (isNaN(num) || num < 0) setTimeMinute("00");
+                              else if (num > 59) setTimeMinute("59");
+                              else setTimeMinute(num.toString().padStart(2, "0"));
+                            }
+                          }}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setTimeMinute(val);
+                          }}
+                          className="w-16 bg-white border border-slate-200 rounded-xl py-2 px-1 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 text-center font-cairo shadow-xs"
+                          required
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 font-cairo">
+                          {isRtl ? "دقيقة" : "Minute"}
+                        </span>
+                      </div>
+
+                      {/* 2. Colon Separator */}
+                      <span className="text-slate-400 font-extrabold text-base pt-2.5">:</span>
+
+                      {/* 3. Hours Column (الساعات) */}
+                      <div className="flex flex-col items-center gap-1">
+                        <input
+                          type="text"
+                          maxLength={2}
+                          value={timeHour}
+                          onFocus={(e) => e.target.select()}
+                          onBlur={() => {
+                            if (!timeHour) setTimeHour("07");
+                            else {
+                              const num = parseInt(timeHour, 10);
+                              if (isNaN(num) || num < 1) setTimeHour("01");
+                              else if (num > 12) setTimeHour("12");
+                              else setTimeHour(num.toString().padStart(2, "0"));
+                            }
+                          }}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setTimeHour(val);
+                          }}
+                          className="w-16 bg-white border border-slate-200 rounded-xl py-2 px-1 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 text-center font-cairo shadow-xs"
+                          required
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 font-cairo">
+                          {isRtl ? "ساعة" : "Hour"}
+                        </span>
+                      </div>
+
+                      {/* 4. AM / PM (ص / م) Toggle */}
+                      <div className="flex flex-col gap-1 bg-white p-1 rounded-xl border border-slate-200 shrink-0 shadow-xs ms-1">
+                        <button
+                          type="button"
+                          onClick={() => setTimePeriod("AM")}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer font-cairo leading-none min-w-[42px] text-center",
+                            timePeriod === "AM"
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          )}
+                        >
+                          {isRtl ? "ص" : "AM"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTimePeriod("PM")}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer font-cairo leading-none min-w-[42px] text-center",
+                            timePeriod === "PM"
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          )}
+                        >
+                          {isRtl ? "م" : "PM"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

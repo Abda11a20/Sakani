@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { User as UserIcon, Ban, ShieldAlert, History, Copy, Check } from "lucide-react";
+import { User as UserIcon, Ban, ShieldAlert } from "lucide-react";
 import { BlockedConversationActions } from "./BlockedConversationActions";
 import { BLOCK_REASON_LABELS } from "./BlockedConversationFilters";
 
@@ -108,7 +108,7 @@ export const BlockedConversationsTable: React.FC<BlockedConversationsTableProps>
 
                   {/* Reason */}
                   <td className="py-3 px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-700 font-bold text-[11px]">
+                    <span title={reasonNote || reasonLabel} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-[11px]">
                       <ShieldAlert size={12} />
                       <span className="truncate max-w-[140px]">{reasonLabel}</span>
                     </span>
