@@ -62,5 +62,5 @@ export class ListingQueryDto {
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  limit: number = 12;
+  limit: number = 10;
 }

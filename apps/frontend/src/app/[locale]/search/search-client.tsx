@@ -47,7 +47,7 @@ function buildSearchKey(filters: SearchFilters) {
     (filters.amenities ?? []).join(","),
     filters.sortBy ?? "newest",
     filters.page ?? 1,
-    filters.limit ?? 12,
+    filters.limit ?? 10,
   ];
 }
 
@@ -68,7 +68,6 @@ export function SearchPageClient({
     const maxP = initialFilters.maxPrice;
     const furn = initialFilters.isFurnished;
     const page = initialFilters.page;
-    const limit = initialFilters.limit;
 
     return {
       query: initialFilters.query || initialFilters.q || undefined,
@@ -83,7 +82,7 @@ export function SearchPageClient({
       amenities: initialFilters.amenities?.split(",").filter(Boolean) || undefined,
       sortBy: (initialFilters.sortBy as any) || "newest",
       page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 12,
+      limit: 10,
     };
   };
 
@@ -130,15 +129,15 @@ export function SearchPageClient({
           query: debouncedFilters.query,
         },
         debouncedFilters.page || 1,
-        12
+        10
       );
       return {
         items: data.listings.map((l) => l.toJSON()),
         meta: {
           total: data.total,
           page: debouncedFilters.page || 1,
-          limit: 12,
-          lastPage: Math.ceil(data.total / 12) || 1,
+          limit: 10,
+          lastPage: Math.ceil(data.total / 10) || 1,
         },
       };
     },
@@ -146,7 +145,7 @@ export function SearchPageClient({
     placeholderData: (prev) => prev,
   });
 
-  const result = queryResult ?? { items: [], meta: { total: 0, page: 1, limit: 12, lastPage: 0 } };
+  const result = queryResult ?? { items: [], meta: { total: 0, page: 1, limit: 10, lastPage: 0 } };
 
   // Calculate count of active extra filters (excluding basic query & defaults)
   const activeExtraFiltersCount = [
@@ -175,7 +174,7 @@ export function SearchPageClient({
   };
 
   const handleReset = () => {
-    const empty: SearchFilters = { sortBy: "newest", page: 1, limit: 12 };
+    const empty: SearchFilters = { sortBy: "newest", page: 1, limit: 10 };
     setFilters(empty);
     setPendingFilters(empty);
     setDebouncedFilters(empty);

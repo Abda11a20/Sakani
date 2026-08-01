@@ -1,7 +1,7 @@
 // apps/frontend/src/lib/seo.ts
 import type { Metadata } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
 
 interface GeneratePageMetadataOptions {
   locale: string;

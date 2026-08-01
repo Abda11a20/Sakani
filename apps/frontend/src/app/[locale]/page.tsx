@@ -17,12 +17,22 @@ interface HomePageProps {
   params: Promise<{ locale: string }>;
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
+
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home" });
   return {
     title: t("metaTitle"),
     description: t("metaDescription"),
+    alternates: {
+      canonical: `${siteUrl}/${locale}`,
+      languages: {
+        ar: `${siteUrl}/ar`,
+        en: `${siteUrl}/en`,
+        "x-default": `${siteUrl}/ar`,
+      },
+    },
   };
 }
 
@@ -38,8 +48,26 @@ async function getFeaturedListings(): Promise<Listing[]> {
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home" });
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app";
   const ArrowIcon = locale === "ar" ? ArrowLeft : ArrowRight;
+  const seoContent = locale === "ar"
+    ? {
+        title: "سكني: منصة تأجير الشقق والغرف والأسِرّة في مصر",
+        paragraphs: [
+          "سكني منصة سكن وتأجير مصرية تساعدك على العثور على شقق وغرف وأسِرّة للإيجار بثقة. نعرض تفاصيل واضحة وصورًا ومعلومات عن الموقع والسعر لتتمكن من مقارنة خيارات السكن المناسبة لاحتياجاتك وميزانيتك قبل اتخاذ قرارك.",
+          "سواء كنت طالبًا تبحث عن سكن جامعي، أو موظفًا ترغب في غرفة خاصة، أو أسرة تحتاج إلى شقة، يمكنك استخدام البحث والتصفية حسب المدينة والمنطقة ونوع السكن والسعر. كما يمكنك استعراض تفاصيل الإعلان وطلب معاينة في الموعد المناسب لك.",
+          "ولأصحاب العقارات، يوفر سكني طريقة منظمة للوصول إلى المستأجرين وعرض الوحدات والغرف والأسِرّة المتاحة. تساعد المراجعة وطلبات المعاينة على جعل تجربة التأجير أوضح وأكثر أمانًا للطرفين في مختلف مناطق مصر.",
+        ],
+        link: "تصفح العقارات المتاحة للإيجار في مصر",
+      }
+    : {
+        title: "Sakani: Apartments, Rooms and Shared Beds for Rent in Egypt",
+        paragraphs: [
+          "Sakani is a premium housing and rental platform in Egypt that helps people find apartments, private rooms and shared beds with confidence. Each listing presents clear details, photos, location information and pricing so renters can compare suitable housing options before making a decision.",
+          "Whether you are a student looking for university housing, a professional searching for a private room, or a family needing an apartment, you can filter rentals by city, area, property type and budget. Review listing details, then request a viewing at a time that works for you.",
+          "For landlords, Sakani provides an organized way to reach prospective tenants and advertise available properties, rooms and beds. Listing reviews and viewing requests help create a clearer, safer rental experience for both sides across Egypt.",
+        ],
+        link: "Browse rentals available across Egypt",
+      };
 
   const featuredListings = await getFeaturedListings();
 
@@ -47,7 +75,7 @@ export default async function HomePage({ params }: HomePageProps) {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": locale === "en" ? "Sakani" : "سكني — Sakani",
-    "url": `${baseUrl}/${locale}`,
+    "url": `${siteUrl}/${locale}`,
   };
 
   return (
@@ -80,7 +108,11 @@ export default async function HomePage({ params }: HomePageProps) {
           {featuredListings.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {featuredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  imageSizes="(max-width: 1023px) 50vw, 25vw"
+                />
               ))}
             </div>
           ) : (
@@ -110,6 +142,25 @@ export default async function HomePage({ params }: HomePageProps) {
               </Button>
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="bg-surface px-4 py-12 md:py-16" aria-labelledby="home-seo-title">
+        <div className="container mx-auto max-w-4xl">
+          <h2 id="home-seo-title" className="text-2xl font-bold text-text md:text-3xl">
+            {seoContent.title}
+          </h2>
+          <div className="mt-5 space-y-4 text-sm leading-7 text-text-secondary md:text-base">
+            {seoContent.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <Link
+            href={`/${locale}/search`}
+            className="mt-6 inline-flex font-bold text-primary transition-colors hover:text-primary-dark"
+          >
+            {seoContent.link}
+          </Link>
         </div>
       </section>
 

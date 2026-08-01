@@ -120,7 +120,7 @@ export class ListingsService {
   async findAll(query: ListingQueryDto) {
     const {
       page = 1,
-      limit = 12,
+      limit: requestedLimit = 10,
       unitType,
       governorate,
       district,
@@ -131,6 +131,8 @@ export class ListingsService {
       verifiedOnly,
     } = query;
 
+    // Keep public listing searches bounded even when callers supply a larger limit.
+    const limit = Math.min(Math.max(requestedLimit, 1), 10);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ListingWhereInput = {
@@ -338,6 +340,66 @@ export class ListingsService {
         },
       },
     });
+  }
+
+  async getMyListingsPaginated(
+    landlordId: string,
+    page: number = 1,
+    requestedLimit: number = 10,
+    status?: string,
+    search?: string,
+  ) {
+    const limit = Math.min(Math.max(requestedLimit, 1), 10);
+    const safePage = Math.max(page, 1);
+    const where: Prisma.ListingWhereInput = {
+      landlordId,
+      isDeleted: false,
+    };
+
+    if (status) {
+      if (!Object.values(ListingStatus).includes(status as ListingStatus)) {
+        throw new BadRequestException('حالة الإعلان غير صالحة');
+      }
+      where.status = status as ListingStatus;
+    }
+
+    const normalizedSearch = search?.trim();
+    if (normalizedSearch) {
+      where.OR = [
+        { title: { contains: normalizedSearch, mode: 'insensitive' } },
+        { district: { contains: normalizedSearch, mode: 'insensitive' } },
+        { governorate: { contains: normalizedSearch, mode: 'insensitive' } },
+      ];
+    }
+
+    const [listings, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where,
+        skip: (safePage - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          images: {
+            orderBy: { order: 'asc' },
+            take: 1,
+          },
+          currentTenant: {
+            select: userPublicSelect,
+          },
+        },
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+
+    return {
+      listings,
+      meta: {
+        total,
+        page: safePage,
+        limit,
+        lastPage: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
   }
 
   // ── 6.1. إعادة نشر الإعلان المتوقف ──────────────────────────────────────────

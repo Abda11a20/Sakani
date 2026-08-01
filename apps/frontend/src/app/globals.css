@@ -1,7 +1,5 @@
 /* apps/frontend/src/app/globals.css */
 
-/* ── Google Fonts ── */
-@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap");
 @import "leaflet/dist/leaflet.css";
 
 @tailwind base;
@@ -98,7 +96,7 @@
     background-color: var(--background);
     color: var(--foreground);
     /* Cairo للـ RTL، Inter للـ LTR */
-    font-family: "Cairo", sans-serif;
+    font-family: var(--font-cairo), sans-serif;
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
@@ -109,7 +107,7 @@
 
   /* عندما تكون اللغة إنجليزية (LTR) */
   [dir="ltr"] body {
-    font-family: "Inter", sans-serif;
+    font-family: var(--font-inter), sans-serif;
   }
 
   /* scrollbar مخصص */

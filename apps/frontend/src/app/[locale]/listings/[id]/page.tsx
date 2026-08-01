@@ -13,7 +13,7 @@ interface ListingPageProps {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
-const APP_BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app";
+const APP_BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
 
 async function getListing(id: string): Promise<Listing | null> {
   try {
@@ -87,9 +87,48 @@ export default async function ListingPage({ params }: ListingPageProps) {
   if (!listing) notFound();
 
   // ── JSON-LD Structured Data ────────────────────────────────────────────────
+  const listingUrl = `${APP_BASE}/${locale}/listings/${listing.id}`;
+  const latitude = listing.lat ?? listing.latitude;
+  const longitude = listing.lng ?? listing.longitude;
+  const hasExactCoordinates =
+    listing.hasExactLocation === true &&
+    typeof latitude === "number" &&
+    Number.isFinite(latitude) &&
+    typeof longitude === "number" &&
+    Number.isFinite(longitude);
+  const locationName = [listing.district, listing.city, listing.governorate]
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(", ");
+
+  const propertyLocation = {
+    "@type": "Place",
+    "name": locationName || listing.title,
+    "address": {
+      "@type": "PostalAddress",
+      ...(listing.address ? { "streetAddress": listing.address } : {}),
+      ...(listing.district || listing.city
+        ? { "addressLocality": listing.district || listing.city }
+        : {}),
+      ...(listing.governorate ? { "addressRegion": listing.governorate } : {}),
+      "addressCountry": "EG",
+    },
+    ...(hasExactCoordinates
+      ? {
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": latitude,
+            "longitude": longitude,
+          },
+        }
+      : {}),
+  };
+
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${listingUrl}#rental`,
+    "url": listingUrl,
     "name": listing.title,
     "description": listing.description || `${listing.type === "apartment" ? "شقة" : "سرير"} للإيجار في ${listing.district || ""}`,
     "image": (listing.images || []).map((img) =>
@@ -99,10 +138,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
       "@type": "Offer",
       "price": listing.price,
       "priceCurrency": "EGP",
+      "priceSpecification": {
+        "@type": "UnitPriceSpecification",
+        "price": listing.price,
+        "priceCurrency": "EGP",
+        "unitCode": "MON",
+      },
       "availability":
         listing.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "url": `${APP_BASE}/${locale}/listings/${listing.id}`,
+      "url": listingUrl,
     },
+    "location": propertyLocation,
   };
 
   const breadcrumbSchema = {

@@ -10,6 +10,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ListingsService } from './listings.service';
@@ -49,6 +51,26 @@ export class ListingsController {
   @Roles(UserRole.landlord)
   async getMyListings(@CurrentUser() user: SafeUser) {
     return this.listingsService.getMyListings(user.id);
+  }
+
+  @ApiBearerAuth()
+  @Get('my/paginated')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.landlord)
+  async getMyListingsPaginated(
+    @CurrentUser() user: SafeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.listingsService.getMyListingsPaginated(
+      user.id,
+      page,
+      limit,
+      status,
+      search,
+    );
   }
 
   // ── 3. بحث وجلب الإعلانات (للعامة) ────────────────────────────────────────

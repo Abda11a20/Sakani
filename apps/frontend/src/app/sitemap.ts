@@ -2,7 +2,7 @@
 import { MetadataRoute } from "next";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
@@ -34,16 +34,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/ar/login`,
+      url: `${BASE_URL}/ar/how-it-works`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.5,
+      priority: 0.7,
     },
     {
-      url: `${BASE_URL}/ar/register`,
+      url: `${BASE_URL}/en/how-it-works`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.5,
+      priority: 0.7,
     },
   ];
 

@@ -1,11 +1,11 @@
 // apps/frontend/src/app/[locale]/dashboard/landlord/advertisements/page.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useDeferredValue, useState } from "react";
 import LandlordLayout from "@/components/layout/LandlordLayout";
 import { useLocale } from "next-intl";
 import Link from "next/link";
-import { useMyListings, useDeleteListing } from "@/hooks/useListings";
+import { useMyPaginatedListings, useDeleteListing } from "@/hooks/useListings";
 import { Spinner, Modal, useToast } from "@/components/ui";
 import { getImageUrl } from "@/lib/utils";
 import {
@@ -25,6 +25,7 @@ type FilterStatus = "all" | "active" | "pending_review" | "rented" | "paused";
 
 import { useRepublishListing } from "@/hooks/useListings";
 import { RefreshCw } from "lucide-react";
+import { SearchPagination } from "@/features/search";
 
 // ── Status Badge Helper ───────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -181,14 +182,21 @@ export default function LandlordAdvertisements() {
   const isRtl = locale === "ar";
   const { toast } = useToast();
 
-  const { data: rawListings = [], isLoading, refetch } = useMyListings();
-  const listings = rawListings || [];
   const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
   const { mutate: republishListing } = useRepublishListing();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const { data, isLoading, refetch } = useMyPaginatedListings({
+    page,
+    status: activeFilter === "all" ? undefined : activeFilter,
+    search: deferredSearchTerm.trim() || undefined,
+  });
+  const listings = data?.listings ?? [];
+  const pagination = data?.meta ?? { total: 0, page: 1, limit: 10, lastPage: 1 };
 
   const handleRepublish = (id: string) => {
     republishListing(id, {
@@ -211,24 +219,6 @@ export default function LandlordAdvertisements() {
       },
     });
   };
-
-  // Filter listings
-  const filteredListings = useMemo(() => {
-    let result = [...listings];
-    if (activeFilter !== "all") {
-      result = result.filter((item) => item.status === activeFilter);
-    }
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.title?.toLowerCase().includes(term) ||
-          item.district?.toLowerCase().includes(term) ||
-          item.city?.toLowerCase().includes(term)
-      );
-    }
-    return result;
-  }, [listings, activeFilter, searchTerm]);
 
   const handleDelete = () => {
     if (!deleteId) return;
@@ -283,7 +273,10 @@ export default function LandlordAdvertisements() {
               type="text"
               placeholder={isRtl ? "بحث بالإعلان..." : "Search advertisements..."}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
               className="w-full ps-9 pe-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A847]/20 focus:border-[#D4A847] font-cairo"
             />
           </div>
@@ -300,7 +293,10 @@ export default function LandlordAdvertisements() {
             ).map((filter) => (
               <button
                 key={filter.key}
-                onClick={() => setActiveFilter(filter.key)}
+                onClick={() => {
+                  setActiveFilter(filter.key);
+                  setPage(1);
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all whitespace-nowrap ${
                   activeFilter === filter.key
                     ? "bg-white shadow-sm text-slate-900"
@@ -314,9 +310,9 @@ export default function LandlordAdvertisements() {
         </div>
 
         {/* Count */}
-        {!isLoading && filteredListings.length > 0 && (
+        {!isLoading && pagination.total > 0 && (
           <p className="text-xs text-slate-400 font-cairo font-medium px-1">
-            {isRtl ? `${filteredListings.length} إعلان` : `${filteredListings.length} advertisements`}
+            {isRtl ? `${pagination.total} إعلان` : `${pagination.total} advertisements`}
           </p>
         )}
 
@@ -325,7 +321,7 @@ export default function LandlordAdvertisements() {
           <div className="flex justify-center items-center py-24">
             <Spinner size="lg" />
           </div>
-        ) : filteredListings.length === 0 ? (
+        ) : listings.length === 0 ? (
           <div className="text-center py-24 bg-white border border-dashed border-slate-200 rounded-3xl font-cairo">
             <Megaphone size={44} className="mx-auto mb-4 text-slate-300" />
             <h3 className="text-base font-bold text-slate-800">
@@ -337,7 +333,7 @@ export default function LandlordAdvertisements() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredListings.map((item) => (
+            {listings.map((item) => (
               <AdCard
                 key={item.id}
                 item={item}
@@ -347,6 +343,14 @@ export default function LandlordAdvertisements() {
               />
             ))}
           </div>
+        )}
+
+        {!isLoading && (
+          <SearchPagination
+            page={pagination.page}
+            lastPage={pagination.lastPage}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

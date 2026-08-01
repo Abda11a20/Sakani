@@ -71,6 +71,7 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   // PWA manifest يُضاف عبر <link> في الـ layout — لا نحتاج مكتبة خارجية
   transpilePackages: ["leaflet", "react-leaflet"],
   experimental: {

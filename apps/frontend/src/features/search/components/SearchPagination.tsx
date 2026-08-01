@@ -11,8 +11,29 @@ interface SearchPaginationProps {
   onPageChange: (page: number) => void;
 }
 
+function getPageItems(page: number, lastPage: number): Array<number | "ellipsis"> {
+  if (lastPage <= 7) {
+    return Array.from({ length: lastPage }, (_, index) => index + 1);
+  }
+
+  const items: Array<number | "ellipsis"> = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(lastPage - 1, page + 1);
+
+  if (start > 2) items.push("ellipsis");
+  for (let pageNumber = start; pageNumber <= end; pageNumber += 1) {
+    items.push(pageNumber);
+  }
+  if (end < lastPage - 1) items.push("ellipsis");
+  items.push(lastPage);
+
+  return items;
+}
+
 export function SearchPagination({ page, lastPage, onPageChange }: SearchPaginationProps) {
   if (lastPage <= 1) return null;
+
+  const pageItems = getPageItems(page, lastPage);
 
   return (
     <div className="flex items-center justify-center gap-2 mt-10 font-cairo">
@@ -28,13 +49,16 @@ export function SearchPagination({ page, lastPage, onPageChange }: SearchPaginat
         <ChevronRight size={18} />
       </Button>
 
-      {Array.from({ length: Math.min(lastPage, 7) }, (_, i) => {
-        let pageNum = i + 1;
-        if (lastPage > 7) {
-          if (page <= 4) pageNum = i + 1;
-          else if (page >= lastPage - 3) pageNum = lastPage - 6 + i;
-          else pageNum = page - 3 + i;
+      {pageItems.map((item, index) => {
+        if (item === "ellipsis") {
+          return (
+            <span key={`ellipsis-${index}`} className="flex h-9 w-5 items-center justify-center text-sm font-bold text-text-tertiary">
+              …
+            </span>
+          );
         }
+
+        const pageNum = item;
         return (
           <Button
             key={pageNum}
@@ -43,6 +67,7 @@ export function SearchPagination({ page, lastPage, onPageChange }: SearchPaginat
             size="sm"
             onClick={() => onPageChange(pageNum)}
             className="w-9 h-9 p-0 rounded-xl text-sm font-semibold"
+            aria-current={page === pageNum ? "page" : undefined}
           >
             {pageNum}
           </Button>

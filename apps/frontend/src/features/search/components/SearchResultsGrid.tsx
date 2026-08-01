@@ -61,7 +61,7 @@ export function SearchResultsGrid({
       {/* Grid Content */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
-          {Array.from({ length: 12 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <ListingCardSkeleton key={i} />
           ))}
         </div>

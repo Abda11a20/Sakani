@@ -46,6 +46,7 @@ interface ListingCardProps {
   className?: string;
   rating?: number;
   matchingAlert?: any;
+  imageSizes?: string;
 }
 
 // ── Smart Amenity Resolver with Locale Support ─────────────────────────────────
@@ -125,7 +126,13 @@ function getGenderTargetLabel(target: string | undefined, isEn: boolean): string
   return "الجميع";
 }
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, rating, matchingAlert }) => {
+export const ListingCard: React.FC<ListingCardProps> = ({
+  listing,
+  className,
+  rating,
+  matchingAlert,
+  imageSizes = "(max-width: 768px) 100vw, 400px",
+}) => {
   const locale = useLocale();
   const isEn = locale === "en";
   const [showPreview, setShowPreview] = useState(false);
@@ -179,7 +186,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, className, ra
               src={getImageUrl(listing.images[0])}
               alt={listing.title}
               fill
-              sizes="(max-width: 768px) 100vw, 400px"
+              sizes={imageSizes}
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (

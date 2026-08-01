@@ -5,6 +5,35 @@ import { listingRepository, getListingByIdUseCase, createListingUseCase } from "
 import { useAuthStore } from "@/features/auth";
 import type { Listing } from "@/types";
 
+interface MyListingsPageResponse {
+  listings: Listing[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    lastPage: number;
+  };
+}
+
+interface MyListingsPageParams {
+  page: number;
+  status?: string;
+  search?: string;
+}
+
+export const useMyPaginatedListings = ({ page, status, search }: MyListingsPageParams) => {
+  return useQuery<MyListingsPageResponse>({
+    queryKey: ["listings", "my", "paginated", page, status ?? "all", search ?? ""],
+    queryFn: async () => {
+      const res = await api.get<MyListingsPageResponse>("/listings/my/paginated", {
+        params: { page, limit: 10, status, search },
+      });
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+};
+
 export const useMyListings = () => {
   const token = useAuthStore((s) => s.token);
 
