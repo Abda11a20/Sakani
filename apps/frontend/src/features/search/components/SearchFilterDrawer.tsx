@@ -74,7 +74,7 @@ export function SearchFilterDrawer({
       />
 
       {/* Modal Container — Centered & Elevated Card Dialog */}
-      <div className="relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-border z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl flex flex-col max-h-[85vh] border border-border z-10 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Sticky Header */}
         <div className="sticky top-0 bg-surface flex items-center justify-between px-4 py-2.5 border-b border-divider shrink-0 z-10">
@@ -106,7 +106,7 @@ export function SearchFilterDrawer({
         </div>
 
         {/* Scrollable Filter Content */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+        <div className="flex-1 p-3 sm:p-4 overflow-visible">
           {children ? (
             children
           ) : (
