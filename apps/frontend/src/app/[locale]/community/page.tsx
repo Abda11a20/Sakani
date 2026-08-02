@@ -417,8 +417,8 @@ export default function CommunityPage() {
             </Button>
           </div>
 
-          {/* Quick Filters Strip - 3 Equal Compact Primary Pill Buttons */}
-          <div className="flex items-center gap-2 text-xs font-semibold font-cairo z-40 relative flex-nowrap">
+          {/* Quick Filters Strip - Scrollable container matching SearchHeader */}
+          <div ref={filterRef} className="flex items-center gap-2 text-xs font-semibold font-cairo z-40 relative overflow-x-auto no-scrollbar py-1">
             {/* 1. Governorate Pill */}
             <div className="relative">
               <Button
@@ -539,7 +539,7 @@ export default function CommunityPage() {
               </Button>
 
               {openDropdown === "category" && (
-                <div className="absolute start-0 top-full mt-1.5 w-52 bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
+                <div className="absolute end-0 top-full mt-1.5 w-52 bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-50 max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 font-cairo">
                   <Button
                     type="button"
                     variant={!selectedCategory ? "primary" : "ghost"}
