@@ -375,7 +375,7 @@ export class ConversationService {
   async blockConversation(
     conversationId: string,
     adminId: string,
-    reason?: ChatBlockReason | string,
+    reason?: string,
     note?: string,
   ) {
     const conversation = await this.prisma.conversation.findUnique({

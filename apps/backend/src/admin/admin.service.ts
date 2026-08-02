@@ -208,7 +208,9 @@ export class AdminService {
         },
       });
       await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
-    } catch {}
+    } catch {
+      // Notification delivery is best-effort; the listing action has completed.
+    }
 
     return { message: 'تم حذف الإعلان بنجاح' };
   }
@@ -271,7 +273,9 @@ export class AdminService {
         },
       });
       await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
-    } catch {}
+    } catch {
+      // Notification delivery is best-effort; the listing action has completed.
+    }
 
     return { message: 'تم استرجاع الإعلان بنجاح', restoredStatus };
   }
@@ -807,7 +811,9 @@ export class AdminService {
               },
             });
             await this.notificationService.sendRealtimeNotification(user.id, notif);
-          } catch {}
+          } catch {
+            // Notification delivery is best-effort; unbanning must still succeed.
+          }
         }
       }
     }
