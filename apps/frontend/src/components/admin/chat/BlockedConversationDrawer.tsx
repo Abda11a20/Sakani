@@ -3,6 +3,7 @@
 
 import React from "react";
 import { X, User as UserIcon, ShieldAlert, History, MessageSquare, Unlock, Copy, Check } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { BLOCK_REASON_LABELS } from "./BlockedConversationFilters";
 
 interface BlockedConversationDrawerProps {
@@ -79,13 +80,7 @@ export const BlockedConversationDrawer: React.FC<BlockedConversationDrawerProps>
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Client Identity Card */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 font-bold text-lg text-slate-700 overflow-hidden shadow-xs">
-              {client?.avatarUrl ? (
-                <img src={client.avatarUrl} alt={client.name} className="w-full h-full object-cover" />
-              ) : (
-                <UserIcon size={24} className="text-slate-400" />
-              )}
-            </div>
+            <Avatar src={client?.avatarUrl} name={client?.name || ""} size="lg" />
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-bold text-slate-900 truncate mb-1">
                 {client?.name || "عميل غير معروف"}

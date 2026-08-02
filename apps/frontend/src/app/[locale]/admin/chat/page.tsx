@@ -21,6 +21,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useAdminSupport, useBlockConversation, useUnblockConversation, SupportConversation } from "@/hooks/useAdmin";
+import { Avatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/features/auth";
 import { api } from "@/lib/api";
 import { chatApi } from "@/features/chat";
@@ -441,13 +442,7 @@ export default function AdminChatPage() {
                         isConvBlocked && "bg-rose-50/40"
                       )}
                     >
-                      <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 font-bold text-sm text-slate-700 overflow-hidden">
-                        {conv.clientUser?.avatarUrl ? (
-                          <img src={conv.clientUser.avatarUrl} alt={conv.clientUser.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon size={18} className="text-slate-400" />
-                        )}
-                      </div>
+                      <Avatar src={conv.clientUser?.avatarUrl} name={conv.clientUser?.name || ""} size="md" />
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1 mb-0.5">
@@ -489,13 +484,7 @@ export default function AdminChatPage() {
                     <BackIcon size={18} />
                   </button>
 
-                  <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold text-sm overflow-hidden">
-                    {selectedConv.clientUser?.avatarUrl ? (
-                      <img src={selectedConv.clientUser.avatarUrl} alt={selectedConv.clientUser.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon size={18} />
-                    )}
-                  </div>
+                  <Avatar src={selectedConv.clientUser?.avatarUrl} name={selectedConv.clientUser?.name || ""} size="sm" />
                   <div>
                     <h3 className="text-xs font-bold text-slate-900">
                       {selectedConv.clientUser?.name || "عميل غير معروف"}

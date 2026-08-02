@@ -3,6 +3,7 @@
 
 import React from "react";
 import { User as UserIcon, Ban, ShieldAlert } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { BlockedConversationActions } from "./BlockedConversationActions";
 import { BLOCK_REASON_LABELS } from "./BlockedConversationFilters";
 
@@ -88,13 +89,7 @@ export const BlockedConversationsTable: React.FC<BlockedConversationsTableProps>
                   {/* Client Info */}
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
-                        {client?.avatarUrl ? (
-                          <img src={client.avatarUrl} alt={client.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon size={18} className="text-slate-400" />
-                        )}
-                      </div>
+                      <Avatar src={client?.avatarUrl} name={client?.name || ""} size="sm" />
                       <span className="font-bold text-slate-900 truncate max-w-[150px]">
                         {client?.name || "عميل غير معروف"}
                       </span>
@@ -163,13 +158,7 @@ export const BlockedConversationsTable: React.FC<BlockedConversationsTableProps>
             <div key={conv.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
-                    {client?.avatarUrl ? (
-                      <img src={client.avatarUrl} alt={client.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon size={18} className="text-slate-400" />
-                    )}
-                  </div>
+                  <Avatar src={client?.avatarUrl} name={client?.name || ""} size="md" />
                   <div>
                     <h4 className="font-bold text-xs text-slate-900">{client?.name || "عميل غير معروف"}</h4>
                     <span className="text-[11px] font-semibold text-slate-500 dir-ltr">{client?.phone || "-"}</span>

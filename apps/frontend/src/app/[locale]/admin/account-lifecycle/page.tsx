@@ -23,7 +23,7 @@ import {
   useRestoreAccount,
   usePurgeAccount,
 } from "@/hooks/useAdmin";
-import { useToast } from "@/components/ui/toast";
+import { Avatar, useToast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 export default function AdminAccountLifecyclePage() {
@@ -239,13 +239,7 @@ export default function AdminAccountLifecyclePage() {
                       <tr key={usr.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden font-bold text-slate-600">
-                              {usr.avatarUrl ? (
-                                <img src={usr.avatarUrl} alt={usr.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <UserIcon size={18} className="text-slate-400" />
-                              )}
-                            </div>
+                            <Avatar src={usr.avatarUrl} name={usr.name} size="sm" />
                             <div>
                               <h4 className="font-bold text-slate-900 truncate max-w-[150px]">{usr.name}</h4>
                               <span className="text-[10px] text-slate-400 font-semibold">{usr.role}</span>
@@ -331,13 +325,7 @@ export default function AdminAccountLifecyclePage() {
                   <div key={usr.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
-                          {usr.avatarUrl ? (
-                            <img src={usr.avatarUrl} alt={usr.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <UserIcon size={18} className="text-slate-400" />
-                          )}
-                        </div>
+                        <Avatar src={usr.avatarUrl} name={usr.name} size="md" />
                         <div>
                           <h4 className="font-bold text-xs text-slate-900">{usr.name}</h4>
                           <span className="text-[11px] font-semibold text-slate-500 dir-ltr">{usr.phone || "-"}</span>
@@ -397,13 +385,7 @@ export default function AdminAccountLifecyclePage() {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* User Identity */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 font-bold text-lg text-slate-700 overflow-hidden shadow-xs">
-                  {selectedUser.avatarUrl ? (
-                    <img src={selectedUser.avatarUrl} alt={selectedUser.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon size={24} className="text-slate-400" />
-                  )}
-                </div>
+                <Avatar src={selectedUser.avatarUrl} name={selectedUser.name} size="lg" />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold text-slate-900 truncate mb-1">{selectedUser.name}</h4>
                   <p className="text-xs font-medium text-slate-500 dir-ltr text-start mb-1">{selectedUser.email || "لا يوجد إيميل"}</p>

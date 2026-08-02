@@ -23,6 +23,7 @@ import {
   Input,
   PasswordInput,
   useToast,
+  Avatar,
 } from "@/components/ui";
 import {
   User as UserIcon,
@@ -333,18 +334,12 @@ export default function ProfilePage() {
               <div className="p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5">
                 {/* Avatar */}
                 <div className="relative shrink-0 group">
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center border border-slate-200 shadow-sm">
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-black text-blue-600">{getInitials(user.name)}</span>
-                    )}
-                    {isUploadingAvatar && (
-                      <div className="absolute inset-0 bg-slate-950/50 rounded-2xl flex items-center justify-center">
-                        <Spinner size="sm" className="text-white" />
-                      </div>
-                    )}
-                  </div>
+                  <Avatar src={user.avatarUrl} name={user.name} size="xl" className="border border-slate-200 shadow-sm" />
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-slate-950/50 rounded-full flex items-center justify-center z-10">
+                      <Spinner size="sm" className="text-white" />
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
