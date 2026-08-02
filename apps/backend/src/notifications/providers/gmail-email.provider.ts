@@ -1,5 +1,5 @@
 // apps/backend/src/notifications/providers/gmail-email.provider.ts
-// مزود البريد عبر Gmail API (OAuth2 / HTTPS) — بديل SMTP المحظور على Hugging Face
+// مزود البريد عبر Gmail API (OAuth2 / HTTPS)
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

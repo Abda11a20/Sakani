@@ -1,10 +1,9 @@
 import path from "node:path";
 import { defineConfig, env } from "prisma/config";
 
-// prisma.config.ts لـ HuggingFace و local development
+// prisma.config.ts للتطوير المحلي وبيئات النشر
 // __dirname = المجلد الذي يحتوي هذا الملف
-// في HuggingFace (subtree): /app  →  prisma/schema.prisma موجود في /app/prisma/
-// في local (monorepo):      apps/backend  →  prisma/schema.prisma موجود في apps/backend/prisma/
+// schema.prisma موجود بجانب هذا الملف داخل apps/backend/prisma/
 
 export default defineConfig({
   schema: path.join(__dirname, "prisma", "schema.prisma"),
