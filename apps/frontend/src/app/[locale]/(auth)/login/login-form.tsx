@@ -73,10 +73,15 @@ export function LoginForm() {
     });
   };
 
-  const serverError =
-    error && "friendlyMessage" in error
-      ? (error as any).friendlyMessage
-      : error?.message || null;
+  const serverError = (() => {
+    if (!error) return null;
+    if ("friendlyMessage" in error) return (error as any).friendlyMessage;
+    const status = (error as any)?.response?.status;
+    if (status === 401) return locale === "ar" ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password";
+    if (status === 404) return locale === "ar" ? "لم يتم العثور على حساب بهذا البريد أو الهاتف" : "No account found with this email or phone";
+    if (status === 429) return locale === "ar" ? "محاولات كثيرة، يرجى الانتظار قليلاً" : "Too many attempts, please wait a moment";
+    return locale === "ar" ? "حدث خطأ، يرجى المحاولة مجدداً" : "Something went wrong, please try again";
+  })();
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md">

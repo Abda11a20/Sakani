@@ -32,22 +32,22 @@ interface ListingDetailClientProps {
 }
 
 const AMENITY_ICON_MAP: Record<string, React.ReactNode> = {
-  wifi:         <Wifi size={14} />,
-  ac:           <Wind size={14} />,
-  elevator:     <ArrowUpDown size={14} />,
-  washer:       <WashingMachine size={14} />,
-  tv:           <Tv size={14} />,
-  fan:          <Wind size={14} />,
-  stove:        <Flame size={14} />,
-  fridge:       <Zap size={14} />,
+  wifi: <Wifi size={14} />,
+  ac: <Wind size={14} />,
+  elevator: <ArrowUpDown size={14} />,
+  washer: <WashingMachine size={14} />,
+  tv: <Tv size={14} />,
+  fan: <Wind size={14} />,
+  stove: <Flame size={14} />,
+  fridge: <Zap size={14} />,
   water_heater: <Droplets size={14} />,
   water_filter: <Filter size={14} />,
-  natural_gas:  <Flame size={14} />,
-  gas:          <Flame size={14} />,
-  furnished:    <Home size={14} />,
-  security:     <Shield size={14} />,
-  balcony:      <Home size={14} />,
-  parking:      <Car size={14} />,
+  natural_gas: <Flame size={14} />,
+  gas: <Flame size={14} />,
+  furnished: <Home size={14} />,
+  security: <Shield size={14} />,
+  balcony: <Home size={14} />,
+  parking: <Car size={14} />,
 };
 
 const AMENITY_CONFIG: Record<string, { icon: React.ReactNode; labelAr: string; labelEn: string }> = Object.fromEntries(
