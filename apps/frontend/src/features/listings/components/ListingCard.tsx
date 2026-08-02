@@ -271,21 +271,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
         {/* ── Body Container ── */}
         <div className="flex flex-1 flex-col p-4 gap-2.5">
-          {/* Price & Location Header */}
+          {/* Price Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-primary">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-extrabold text-primary">
                 {formattedPrice}
               </span>
               <span className="text-xs font-bold text-text-secondary">
                 {isEn ? "EGP / mo" : "ج.م / شهري"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 text-text-secondary max-w-[50%]">
-              <MapPin size={13} className="shrink-0 text-primary" />
-              <span className="text-xs font-semibold truncate">
-                {listing.district || listing.city || listing.governorate}
               </span>
             </div>
           </div>
@@ -297,26 +290,26 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
           {/* Bed availability is meaningful only for bed listings. */}
           {isBedListing && (
-            <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-surface-secondary border border-border">
-              <div className="flex items-center justify-center gap-1.5 text-center">
-                <BedDouble size={14} className="text-primary shrink-0" />
-                <span className="text-xs font-bold text-text">
+            <div className="grid grid-cols-3 gap-0.5 py-2 px-1.5 rounded-xl bg-surface-secondary border border-border w-full">
+              <div className="flex items-center justify-center gap-1 text-center w-full px-1">
+                <BedDouble size={13} className="text-primary shrink-0" />
+                <span className="text-xs font-bold text-text truncate">
                   {totalBeds > 0
                     ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
                     : (isEn ? "1 Bed" : "1 سرير")}
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border">
+              <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border w-full px-1">
                 <span className="h-2 w-2 rounded-full bg-status-success shrink-0" />
-                <span className="text-xs font-bold text-status-success">
+                <span className="text-xs font-bold text-status-success truncate">
                   {availableBedsCount} {isEn ? "Avail" : "متاح"}
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-1 text-center">
+              <div className="flex items-center justify-center gap-1 text-center w-full px-1">
                 <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-                <span className="text-xs font-bold text-rose-700">
+                <span className="text-xs font-bold text-rose-700 truncate">
                   {bookedBedsCount} {isEn ? "Booked" : "محجوز"}
                 </span>
               </div>

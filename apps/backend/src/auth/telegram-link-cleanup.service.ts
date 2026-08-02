@@ -33,4 +33,30 @@ export class TelegramLinkCleanupService {
       );
     }
   }
+
+  /**
+   * تنظيف الحسابات غير المفعلة التي تجاوزت 24 ساعة كل ساعة
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanExpiredUnverifiedUsers(): Promise<void> {
+    try {
+      const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const result = await this.prisma.user.deleteMany({
+        where: {
+          emailVerifiedAt: null,
+          createdAt: { lt: cutoff24h },
+        },
+      });
+
+      if (result.count > 0) {
+        this.logger.log(
+          `🧹 تم تنظيف ${result.count} من الحسابات غير المفعلة المنتهية الصلاحية (24 ساعة).`,
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(
+        `❌ فشل تنظيف الحسابات غير المفعلة المنتهية الصلاحية: ${error.message}`,
+      );
+    }
+  }
 }

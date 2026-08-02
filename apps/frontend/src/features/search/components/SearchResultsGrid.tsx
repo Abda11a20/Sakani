@@ -8,12 +8,7 @@ import { SearchListingCardWrapper } from "./SearchListingCardWrapper";
 import type { Listing, SearchFilters } from "@/types";
 import { Button, Select } from "@/components/ui";
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "الأحدث" },
-  { value: "cheapest", label: "الأرخص" },
-  { value: "expensive", label: "الأغلى" },
-  { value: "popular", label: "الأكثر مشاهدة" },
-];
+import { useLocale } from "next-intl";
 
 interface SearchResultsGridProps {
   items: Listing[];
@@ -34,6 +29,16 @@ export function SearchResultsGrid({
   onSortChange,
   onResetFilters,
 }: SearchResultsGridProps) {
+  const locale = useLocale();
+  const isEn = locale === "en";
+
+  const sortOptions = [
+    { value: "newest", label: isEn ? "Newest" : "الأحدث" },
+    { value: "cheapest", label: isEn ? "Lowest Price" : "الأرخص" },
+    { value: "expensive", label: isEn ? "Highest Price" : "الأغلى" },
+    { value: "popular", label: isEn ? "Most Viewed" : "الأكثر مشاهدة" },
+  ];
+
   return (
     <div className="flex-1 min-w-0 font-cairo">
       {/* Result count & sort */}
@@ -41,7 +46,13 @@ export function SearchResultsGrid({
         <div>
           <h1 className="text-lg font-bold text-text">
             {loading ? (
-              <span className="text-text-secondary">جارٍ البحث...</span>
+              <span className="text-text-secondary">
+                {isEn ? "Searching..." : "جارٍ البحث..."}
+              </span>
+            ) : isEn ? (
+              <>
+                Found <span className="text-primary">{total}</span> {total === 1 ? "result" : "results"}
+              </>
             ) : (
               <>
                 عُثر على <span className="text-primary">{total}</span> نتيجة
@@ -53,7 +64,7 @@ export function SearchResultsGrid({
           <Select
             value={sortBy ?? "newest"}
             onValueChange={(val) => onSortChange(val as SearchFilters["sortBy"])}
-            options={SORT_OPTIONS}
+            options={sortOptions}
           />
         </div>
       </div>
@@ -70,8 +81,12 @@ export function SearchResultsGrid({
           <div className="w-20 h-20 rounded-full bg-surface-tertiary flex items-center justify-center mb-5">
             <Search size={32} className="text-text-tertiary" />
           </div>
-          <h2 className="text-xl font-bold text-text mb-2">لا توجد نتائج</h2>
-          <p className="text-text-secondary mb-6">جرب تعديل الفلاتر أو تغيير كلمة البحث</p>
+          <h2 className="text-xl font-bold text-text mb-2">
+            {isEn ? "No results found" : "لا توجد نتائج"}
+          </h2>
+          <p className="text-text-secondary mb-6">
+            {isEn ? "Try adjusting your filters or search keyword" : "جرب تعديل الفلاتر أو تغيير كلمة البحث"}
+          </p>
           <Button
             type="button"
             variant="primary"
@@ -79,7 +94,7 @@ export function SearchResultsGrid({
             onClick={onResetFilters}
             className="px-6 py-2.5 font-semibold rounded-xl"
           >
-            مسح الفلاتر
+            {isEn ? "Clear filters" : "مسح الفلاتر"}
           </Button>
         </div>
       ) : (

@@ -134,29 +134,69 @@ export class AuthService {
       );
     }
 
-    // التحقق من عدم تكرار الهاتف أو الإيميل
-    const [existingPhone, existingEmail] = await Promise.all([
-      this.prisma.user.findUnique({ where: { phone: dto.phone } }),
-      email
-        ? this.prisma.user.findUnique({ where: { email } })
-        : Promise.resolve(null),
-    ]);
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    if (existingPhone) throw new ConflictException('رقم الموبايل مسجل مسبقاً');
-    if (email && existingEmail)
-      throw new ConflictException('البريد الإلكتروني مسجل مسبقاً');
+    // 1. البحث عن البريد الإلكتروني ورقم الهاتف
+    let existingEmail = email
+      ? await this.prisma.user.findUnique({ where: { email } })
+      : null;
+    let existingPhone = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
 
-    // التحقق من عدم تكرار الرقم القومي
+    let deleteEmailId: string | null = null;
+    let deletePhoneId: string | null = null;
+
+    // 2. معالجة البريد الإلكتروني بحسب شجرة القرارات
+    if (existingEmail) {
+      if (existingEmail.emailVerifiedAt !== null) {
+        throw new ConflictException(
+          'البريد الإلكتروني مسجل وموثق مسبقاً، يرجى تسجيل الدخول',
+        );
+      }
+      if (existingEmail.createdAt < cutoff24h) {
+        deleteEmailId = existingEmail.id;
+        existingEmail = null;
+      } else if (existingEmail.phone !== dto.phone) {
+        // حماية: إذا اختلف رقم الهاتف عن طلب التفعيل النشط، يرفض لحماية ملكية البريد
+        throw new ConflictException(
+          'البريد الإلكتروني قيد التفعيل حالياً برقم هاتف آخر. يرجى التأكد من البريد أو إكمال التفعيل بالهاتف المسجل',
+        );
+      }
+    }
+
+    // 3. معالجة رقم الهاتف
+    if (existingPhone) {
+      if (existingPhone.emailVerifiedAt !== null) {
+        throw new ConflictException('رقم الموبايل مسجل وموثق مسبقاً');
+      }
+      if (!existingEmail || existingEmail.id !== existingPhone.id) {
+        if (existingPhone.createdAt < cutoff24h) {
+          deletePhoneId = existingPhone.id;
+          existingPhone = null;
+        } else {
+          throw new ConflictException(
+            'رقم الموبايل قيد التفعيل حالياً في حساب آخر',
+          );
+        }
+      }
+    }
+
+    // 4. التحقق من عدم تكرار الرقم القومي لحسابات موثقة
     const nationalIdHash = hashNationalId(dto.nationalId);
     const existingNationalId = await this.prisma.user.findFirst({
-      where: { nationalIdEnc: { startsWith: nationalIdHash } },
+      where: {
+        nationalIdEnc: { startsWith: nationalIdHash },
+        emailVerifiedAt: { not: null },
+      },
     });
-    if (existingNationalId)
-      throw new ConflictException('الرقم القومي مسجل مسبقاً');
+    if (existingNationalId) {
+      throw new ConflictException('الرقم القومي مسجل وموثق مسبقاً');
+    }
 
     // تشفير البيانات الحساسة
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const nationalIdEncrypted = encryptAES(dto.nationalId); // يرمي InternalServerErrorException لو ENCRYPTION_KEY مش موجود
+    const nationalIdEncrypted = encryptAES(dto.nationalId);
     const nationalIdEnc = `${nationalIdHash}:${nationalIdEncrypted}`;
 
     const role: UserRole =
@@ -190,27 +230,57 @@ export class AuthService {
       telegramChatId = pending.chatId;
     }
 
-    // إنشاء المستخدم في Transaction منفصلة (بدون إرسال OTP)
-    // فصل OTP عن التransaction يمنع rollback المستخدم لو فشل إرسال الإيميل
+    // 5. معاملة الذرية (Atomic Transaction): حذف المنتهي أولاً ثم التحديث أو الإنشاء
     let userId: string;
+    const targetUserId = existingEmail?.id;
+
     await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name: dto.name,
-          email: email as any,
-          phone: dto.phone,
-          passwordHash,
-          nationalIdEnc,
-          role,
-          emailVerifiedAt: null,
-          otpChannel:
-            dto.otpChannel === 'TELEGRAM'
-              ? OtpChannel.TELEGRAM
-              : OtpChannel.EMAIL,
-          telegramChatId,
-        },
-      });
-      userId = user.id;
+      if (deleteEmailId) {
+        await tx.user.delete({ where: { id: deleteEmailId } }).catch(() => {});
+      }
+      if (deletePhoneId && deletePhoneId !== deleteEmailId) {
+        await tx.user.delete({ where: { id: deletePhoneId } }).catch(() => {});
+      }
+
+      if (targetUserId) {
+        // تحديث الحساب الموجود غير المفعل بنفس الهاتف
+        const updatedUser = await tx.user.update({
+          where: { id: targetUserId },
+          data: {
+            name: dto.name,
+            phone: dto.phone,
+            passwordHash,
+            nationalIdEnc,
+            role,
+            otpChannel:
+              dto.otpChannel === 'TELEGRAM'
+                ? OtpChannel.TELEGRAM
+                : OtpChannel.EMAIL,
+            telegramChatId,
+            createdAt: new Date(), // تجديد مهلة الـ 24 ساعة
+          },
+        });
+        userId = updatedUser.id;
+      } else {
+        // إنشاء حساب جديد بصفة PENDING
+        const user = await tx.user.create({
+          data: {
+            name: dto.name,
+            email: email as any,
+            phone: dto.phone,
+            passwordHash,
+            nationalIdEnc,
+            role,
+            emailVerifiedAt: null,
+            otpChannel:
+              dto.otpChannel === 'TELEGRAM'
+                ? OtpChannel.TELEGRAM
+                : OtpChannel.EMAIL,
+            telegramChatId,
+          },
+        });
+        userId = user.id;
+      }
 
       if (dto.otpChannel === 'TELEGRAM' && dto.linkCode) {
         await tx.pendingTelegramLink.update({
@@ -220,8 +290,7 @@ export class AuthService {
       }
     });
 
-    // إرسال OTP خارج الـ Transaction حتى لا يؤدي فشل الإرسال إلى حذف المستخدم
-    // لو فشل الإرسال، المستخدم موجود ويقدر يستخدم "إعادة إرسال الكود"
+    // 6. إرسال/إعادة توليد OTP وإرساله للمستخدم
     try {
       await this.sendVerificationCode(
         userId!,
@@ -232,7 +301,6 @@ export class AuthService {
       this.logger.error(
         `[register] فشل إرسال OTP للمستخدم ${userId!}: ${err?.message}`,
       );
-      // لا نرمي error - المستخدم اتنشأ بنجاح ويقدر يطلب إعادة إرسال
     }
 
     const channelMsg =

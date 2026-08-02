@@ -13,6 +13,7 @@ import {
   Check,
   RotateCcw,
 } from "lucide-react";
+import { useLocale } from "next-intl";
 import { EGYPTIAN_GOVERNORATES } from "@/lib/constants";
 import type { SearchFilters, UnitType } from "@/types";
 import { Button, Input } from "@/components/ui";
@@ -36,6 +37,9 @@ export function SearchHeader({
   onChange,
   activeExtraFiltersCount = 0,
 }: SearchHeaderProps) {
+  const locale = useLocale();
+  const isEn = locale === "en";
+
   const [openDropdown, setOpenDropdown] = useState<"governorate" | "unitType" | "price" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +69,8 @@ export function SearchHeader({
           <div className="flex-1 relative">
             <Input
               type="text"
-              aria-label="البحث بالمنطقة، المدينة، أو الوصف"
-              placeholder="ابحث بالمنطقة، المدينة، الحي، أو الوصف..."
+              aria-label={isEn ? "Search by region, city, or description" : "البحث بالمنطقة، المدينة، أو الوصف"}
+              placeholder={isEn ? "Search by region, city, district, or description..." : "ابحث بالمنطقة، المدينة، الحي، أو الوصف..."}
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               leftIcon={<Search size={18} className="text-text-tertiary" />}
@@ -91,12 +95,12 @@ export function SearchHeader({
             variant={activeExtraFiltersCount > 0 ? "primary" : "outline"}
             size="md"
             onClick={onOpenMobileFilters}
-            aria-label="فتح فلاتر البحث المتقدمة"
+            aria-label={isEn ? "Open advanced search filters" : "فتح فلاتر البحث المتقدمة"}
             aria-expanded={isFilterOpen}
             leftIcon={<SlidersHorizontal size={16} />}
             className="shrink-0 text-xs font-bold rounded-xl"
           >
-            الفلاتر
+            {isEn ? "Filters" : "الفلاتر"}
             {activeExtraFiltersCount > 0 && (
               <span className="ms-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-text">
                 {activeExtraFiltersCount}
@@ -119,7 +123,7 @@ export function SearchHeader({
               rightIcon={<ChevronDown size={13} />}
               className="rounded-full text-xs font-bold whitespace-nowrap"
             >
-              {filters.governorate || "المحافظة"}
+              {filters.governorate || (isEn ? "Governorate" : "المحافظة")}
             </Button>
 
             {openDropdown === "governorate" && (
@@ -134,7 +138,7 @@ export function SearchHeader({
                   }}
                   className="w-full justify-start text-xs rounded-lg"
                 >
-                  كل المحافظات
+                  {isEn ? "All Governorates" : "كل المحافظات"}
                 </Button>
                 {EGYPTIAN_GOVERNORATES.map((gov) => (
                   <Button
@@ -167,18 +171,18 @@ export function SearchHeader({
               className="rounded-full text-xs font-bold whitespace-nowrap"
             >
               {filters.unitType === "apartment"
-                ? "شقة كاملة"
+                ? (isEn ? "Full Apartment" : "شقة كاملة")
                 : filters.unitType === "bed"
-                ? "سرير / غرفة"
-                : "نوع الوحدة"}
+                ? (isEn ? "Bed / Room" : "سرير / غرفة")
+                : (isEn ? "Unit Type" : "نوع الوحدة")}
             </Button>
 
             {openDropdown === "unitType" && (
               <div className="absolute start-0 top-full mt-1 w-36 bg-surface rounded-2xl shadow-xl border border-border p-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
                 {[
-                  { value: undefined, label: "جميع الوحدات" },
-                  { value: "apartment", label: "شقة بالكامل" },
-                  { value: "bed", label: "سرير / غرفة" },
+                  { value: undefined, label: isEn ? "All Units" : "جميع الوحدات" },
+                  { value: "apartment", label: isEn ? "Full Apartment" : "شقة بالكامل" },
+                  { value: "bed", label: isEn ? "Bed / Room" : "سرير / غرفة" },
                 ].map((option) => (
                   <Button
                     key={String(option.value)}
@@ -210,18 +214,20 @@ export function SearchHeader({
               className="rounded-full text-xs font-bold whitespace-nowrap"
             >
               {filters.minPrice && filters.maxPrice
-                ? `${filters.minPrice} - ${filters.maxPrice} ج.م`
+                ? `${filters.minPrice} - ${filters.maxPrice} ${isEn ? "EGP" : "ج.م"}`
                 : filters.minPrice
-                ? `من ${filters.minPrice} ج.م`
+                ? `${isEn ? "From" : "من"} ${filters.minPrice} ${isEn ? "EGP" : "ج.م"}`
                 : filters.maxPrice
-                ? `حتى ${filters.maxPrice} ج.م`
-                : "السعر"}
+                ? `${isEn ? "Up to" : "حتى"} ${filters.maxPrice} ${isEn ? "EGP" : "ج.م"}`
+                : (isEn ? "Price" : "السعر")}
             </Button>
 
             {openDropdown === "price" && (
               <div className="absolute end-0 top-full mt-1 w-56 bg-surface rounded-2xl shadow-xl border border-border p-3 z-40 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
                 <div className="flex items-center justify-between border-b border-divider pb-1.5">
-                  <span className="text-[11px] font-bold text-text">السعر الشهري (جنيه)</span>
+                  <span className="text-[11px] font-bold text-text">
+                    {isEn ? "Monthly Price (EGP)" : "السعر الشهري (جنيه)"}
+                  </span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -246,7 +252,7 @@ export function SearchHeader({
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
-                      placeholder="من"
+                      placeholder={isEn ? "From" : "من"}
                       value={filters.minPrice ?? ""}
                       onChange={(e) => onChange({ minPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
                       className="text-xs font-semibold py-1 px-2 h-8"
@@ -255,7 +261,7 @@ export function SearchHeader({
                     <span className="text-text-tertiary text-xs">—</span>
                     <Input
                       type="number"
-                      placeholder="إلى"
+                      placeholder={isEn ? "To" : "إلى"}
                       value={filters.maxPrice ?? ""}
                       onChange={(e) => onChange({ maxPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
                       className="text-xs font-semibold py-1 px-2 h-8"
@@ -273,7 +279,7 @@ export function SearchHeader({
                     className="text-[10px] text-text-secondary hover:text-text p-1 h-auto"
                     leftIcon={<RotateCcw size={10} />}
                   >
-                    مسح
+                    {isEn ? "Reset" : "مسح"}
                   </Button>
                   <Button
                     type="button"
@@ -283,7 +289,7 @@ export function SearchHeader({
                     className="text-[11px] font-bold px-3 py-1 h-7 rounded-lg"
                     leftIcon={<Check size={12} />}
                   >
-                    تطبيق
+                    {isEn ? "Apply" : "تطبيق"}
                   </Button>
                 </div>
               </div>

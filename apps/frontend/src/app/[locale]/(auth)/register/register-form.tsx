@@ -518,6 +518,27 @@ export function RegisterForm() {
           </button>
         </div>
 
+        {selectedOtpChannel === "EMAIL" && (
+          <div className="border border-slate-200 bg-slate-50/90 p-3 rounded-2xl space-y-1.5 mt-2 animate-fadeIn shadow-sm font-cairo">
+            <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+              <span>📩</span>
+              <span>
+                {locale === "en"
+                  ? "Verification code (OTP) will be sent to your email."
+                  : "سيصلك كود التفعيل على البريد الإلكتروني."}
+              </span>
+            </div>
+            <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 leading-snug">
+              <span>💡</span>
+              <span>
+                {locale === "en"
+                  ? "Please check your Spam / Junk folder if it doesn't appear."
+                  : "يرجى تفقد مجلد الرسائل غير المرغوب فيها (Spam) في حال عدم ظهوره."}
+              </span>
+            </p>
+          </div>
+        )}
+
         {selectedOtpChannel === "TELEGRAM" && (
           <div className="border border-slate-200 bg-slate-50/90 p-3.5 rounded-2xl space-y-2.5 mt-2 animate-fadeIn shadow-sm font-cairo">
             <div className="text-sm font-medium text-slate-800 leading-snug">
@@ -583,7 +604,9 @@ export function RegisterForm() {
         disabled={selectedOtpChannel === "TELEGRAM" && !telegramLinked}
         className="mt-6"
       >
-        {selectedOtpChannel === "TELEGRAM" && !telegramLinked ? "في انتظار ربط تليجرام..." : t("register")}
+        {selectedOtpChannel === "TELEGRAM" && !telegramLinked
+          ? (locale === "en" ? "Waiting for Telegram link..." : "في انتظار ربط تليجرام...")
+          : t("register")}
       </Button>
     </form>
   );
