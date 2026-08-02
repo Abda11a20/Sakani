@@ -137,15 +137,18 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const isEn = locale === "en";
   const [showPreview, setShowPreview] = useState(false);
 
-  // Bed stats
+  const isBedListing = listing.unitType === "bed" || listing.type === "bed";
+
+  // Bed stats: only bed listings carry bed availability. Clamp the display as
+  // a defensive guard while the backend keeps the stored counter in sync.
   const totalBeds = listing.totalBeds ?? (listing.beds ? listing.beds.length : 0);
-  const availableBedsCount = listing.availableBeds ?? (
+  const rawAvailableBedsCount = listing.availableBeds ?? (
     listing.beds ? listing.beds.filter((b) => b.isAvailable || (b as any).status === "available").length : 0
   );
+  const availableBedsCount = Math.min(Math.max(0, rawAvailableBedsCount), totalBeds);
   const bookedBedsCount = Math.max(0, totalBeds - availableBedsCount);
 
   const formattedPrice = new Intl.NumberFormat(isEn ? "en-US" : "ar-EG").format(listing.price);
-  const isBedListing = listing.unitType === "bed" || listing.type === "bed";
 
   // Favorite / Wishlist
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -290,31 +293,33 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             {listing.title}
           </h3>
 
-          {/* Beds Stats Box */}
-          <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-surface-secondary border border-border">
-            <div className="flex items-center justify-center gap-1.5 text-center">
-              <BedDouble size={14} className="text-primary shrink-0" />
-              <span className="text-xs font-bold text-text">
-                {totalBeds > 0
-                  ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
-                  : isBedListing ? (isEn ? "1 Bed" : "1 سرير") : (isEn ? "Apartment" : "شقة")}
-              </span>
-            </div>
+          {/* Bed availability is meaningful only for bed listings. */}
+          {isBedListing && (
+            <div className="grid grid-cols-3 gap-1 py-2 px-3 rounded-xl bg-surface-secondary border border-border">
+              <div className="flex items-center justify-center gap-1.5 text-center">
+                <BedDouble size={14} className="text-primary shrink-0" />
+                <span className="text-xs font-bold text-text">
+                  {totalBeds > 0
+                    ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
+                    : (isEn ? "1 Bed" : "1 سرير")}
+                </span>
+              </div>
 
-            <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border">
-              <span className="h-2 w-2 rounded-full bg-status-success shrink-0" />
-              <span className="text-xs font-bold text-status-success">
-                {availableBedsCount} {isEn ? "Avail" : "متاح"}
-              </span>
-            </div>
+              <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border">
+                <span className="h-2 w-2 rounded-full bg-status-success shrink-0" />
+                <span className="text-xs font-bold text-status-success">
+                  {availableBedsCount} {isEn ? "Avail" : "متاح"}
+                </span>
+              </div>
 
-            <div className="flex items-center justify-center gap-1 text-center">
-              <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-              <span className="text-xs font-bold text-rose-700">
-                {bookedBedsCount} {isEn ? "Booked" : "محجوز"}
-              </span>
+              <div className="flex items-center justify-center gap-1 text-center">
+                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                <span className="text-xs font-bold text-rose-700">
+                  {bookedBedsCount} {isEn ? "Booked" : "محجوز"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Amenities Chips */}
           {listing.amenities && listing.amenities.length > 0 && (

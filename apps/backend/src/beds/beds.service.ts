@@ -126,11 +126,11 @@ export class BedsService {
         },
       });
 
-      // 3. تحديث availableBeds في الإعلان
-      const newAvailableBeds = Math.max(
-        0,
-        (bed.listing.availableBeds ?? 0) - 1,
-      );
+      // 3. إعادة حساب الأسرّة المتاحة من حالة الأسرّة الفعلية، بدلاً من
+      // زيادة/نقصان قيمة مخزنة قديمة قد تكون غير متزامنة.
+      const newAvailableBeds = await tx.listingBed.count({
+        where: { listingId: bed.listingId, status: BedStatus.available },
+      });
 
       const listingUpdateData: any = {
         availableBeds: newAvailableBeds,
@@ -219,8 +219,10 @@ export class BedsService {
         },
       });
 
-      // 2. تحديث availableBeds في الإعلان
-      const newAvailableBeds = (bed.listing.availableBeds ?? 0) + 1;
+      // 2. إعادة حساب الأسرّة المتاحة من حالة الأسرّة الفعلية.
+      const newAvailableBeds = await tx.listingBed.count({
+        where: { listingId: bed.listingId, status: BedStatus.available },
+      });
 
       const listingUpdateData: any = {
         availableBeds: newAvailableBeds,
@@ -269,8 +271,10 @@ export class BedsService {
       },
     });
 
-    // 2. تحديث availableBeds في الإعلان
-    const newAvailableBeds = (bed.listing.availableBeds ?? 0) + 1;
+    // 2. إعادة حساب الأسرّة المتاحة من حالة الأسرّة الفعلية.
+    const newAvailableBeds = await client.listingBed.count({
+      where: { listingId: bed.listingId, status: BedStatus.available },
+    });
     const listingUpdateData: any = {
       availableBeds: newAvailableBeds,
     };
