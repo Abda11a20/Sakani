@@ -73,25 +73,25 @@ export default function LandlordPropertiesPage() {
               <p className="sm:hidden text-[11px] text-text-secondary font-cairo">
                 {isRtl ? "إدارة الشقق" : "Manage apartments"}
               </p>
-              <div className="hidden sm:grid sm:grid-cols-5 gap-2">
-                <div className="text-center bg-surface-secondary rounded-xl py-2 px-1 border border-border">
-                  <span className="block text-lg font-bold text-text font-sans">{aptTotal}</span>
+              <div className="mt-3 grid grid-cols-1 gap-1.5 sm:mt-0 sm:grid-cols-5 sm:gap-2">
+                <div className="flex items-center justify-between bg-surface-secondary rounded-lg py-1.5 px-2 border border-border sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-text font-sans sm:block sm:text-lg">{aptTotal}</span>
                   <span className="text-[10px] text-text-tertiary font-cairo">{isRtl ? "المجموع" : "Total"}</span>
                 </div>
-                <div className="text-center bg-status-success/15 rounded-xl py-2 px-1 border border-status-success/30">
-                  <span className="block text-lg font-bold text-status-success font-sans">{aptActive}</span>
+                <div className="flex items-center justify-between bg-status-success/15 rounded-lg py-1.5 px-2 border border-status-success/30 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-status-success font-sans sm:block sm:text-lg">{aptActive}</span>
                   <span className="text-[10px] text-status-success font-cairo">{isRtl ? "نشط" : "Active"}</span>
                 </div>
-                <div className="text-center bg-status-warning/15 rounded-xl py-2 px-1 border border-status-warning/30">
-                  <span className="block text-lg font-bold text-status-warning font-sans">{aptRented}</span>
+                <div className="flex items-center justify-between bg-status-warning/15 rounded-lg py-1.5 px-2 border border-status-warning/30 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-status-warning font-sans sm:block sm:text-lg">{aptRented}</span>
                   <span className="text-[10px] text-status-warning font-cairo">{isRtl ? "مؤجر" : "Rented"}</span>
                 </div>
-                <div className="text-center bg-status-info/15 rounded-xl py-2 px-1 border border-status-info/30">
-                  <span className="block text-lg font-bold text-status-info font-sans">{aptPending}</span>
+                <div className="flex items-center justify-between bg-status-info/15 rounded-lg py-1.5 px-2 border border-status-info/30 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-status-info font-sans sm:block sm:text-lg">{aptPending}</span>
                   <span className="text-[10px] text-status-info font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
                 </div>
-                <div className="text-center bg-rose-50 rounded-xl py-2 px-1 border border-rose-200">
-                  <span className="block text-lg font-bold text-rose-600 font-sans">{aptRejected}</span>
+                <div className="flex items-center justify-between bg-rose-50 rounded-lg py-1.5 px-2 border border-rose-200 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-rose-600 font-sans sm:block sm:text-lg">{aptRejected}</span>
                   <span className="text-[10px] text-rose-600 font-cairo">{isRtl ? "مرفوض" : "Rejected"}</span>
                 </div>
               </div>
@@ -119,25 +119,25 @@ export default function LandlordPropertiesPage() {
               <p className="sm:hidden text-[11px] text-text-secondary font-cairo">
                 {isRtl ? "إدارة الأسرّة" : "Manage beds"}
               </p>
-              <div className="hidden sm:grid sm:grid-cols-5 gap-2">
-                <div className="text-center bg-slate-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-slate-800 font-sans">{bedTotal}</span>
+              <div className="mt-3 grid grid-cols-1 gap-1.5 sm:mt-0 sm:grid-cols-5 sm:gap-2">
+                <div className="flex items-center justify-between bg-slate-50 rounded-lg py-1.5 px-2 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-slate-800 font-sans sm:block sm:text-lg">{bedTotal}</span>
                   <span className="text-[10px] text-slate-500 font-cairo">{isRtl ? "المجموع" : "Total"}</span>
                 </div>
-                <div className="text-center bg-green-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-green-600 font-sans">{bedActive}</span>
+                <div className="flex items-center justify-between bg-green-50 rounded-lg py-1.5 px-2 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-green-600 font-sans sm:block sm:text-lg">{bedActive}</span>
                   <span className="text-[10px] text-green-600 font-cairo">{isRtl ? "نشط" : "Active"}</span>
                 </div>
-                <div className="text-center bg-amber-50 rounded-xl py-2 px-1">
-                  <span className="block text-lg font-bold text-amber-600 font-sans">{bedRented}</span>
+                <div className="flex items-center justify-between bg-amber-50 rounded-lg py-1.5 px-2 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-amber-600 font-sans sm:block sm:text-lg">{bedRented}</span>
                   <span className="text-[10px] text-amber-600 font-cairo">{isRtl ? "مؤجر" : "Rented"}</span>
                 </div>
-                <div className="text-center bg-status-info/15 rounded-xl py-2 px-1 border border-status-info/30">
-                  <span className="block text-lg font-bold text-status-info font-sans">{bedPending}</span>
+                <div className="flex items-center justify-between bg-status-info/15 rounded-lg py-1.5 px-2 border border-status-info/30 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-status-info font-sans sm:block sm:text-lg">{bedPending}</span>
                   <span className="text-[10px] text-status-info font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
                 </div>
-                <div className="text-center bg-rose-50 rounded-xl py-2 px-1 border border-rose-200">
-                  <span className="block text-lg font-bold text-rose-600 font-sans">{bedRejected}</span>
+                <div className="flex items-center justify-between bg-rose-50 rounded-lg py-1.5 px-2 border border-rose-200 sm:block sm:rounded-xl sm:py-2 sm:px-1 sm:text-center">
+                  <span className="text-sm font-bold text-rose-600 font-sans sm:block sm:text-lg">{bedRejected}</span>
                   <span className="text-[10px] text-rose-600 font-cairo">{isRtl ? "مرفوض" : "Rejected"}</span>
                 </div>
               </div>
