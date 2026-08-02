@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Home, Search, Plus, LogOut, User, LayoutDashboard, KeyRound, Download, Menu, X, Compass } from "lucide-react";
@@ -59,10 +60,13 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2.5 flex-shrink-0"
             style={{ direction: "ltr" }}
           >
-            <img
+            <Image
               src="/icon-192.png"
               alt="سكني"
-              className="h-9 w-9 object-contain rounded-xl shadow-xs"
+              width={36}
+              height={36}
+              className="object-contain rounded-xl shadow-xs"
+              priority
             />
           </Link>
 
@@ -220,10 +224,12 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2.5"
                 onClick={() => setMobileOpen(false)}
               >
-                <img
+                <Image
                   src="/icon-192.png"
                   alt="سكني"
-                  className="h-8 w-8 object-contain rounded-xl shadow-sm"
+                  width={32}
+                  height={32}
+                  className="object-contain rounded-xl shadow-sm"
                 />
                 <span className="text-sm font-black text-gray-800">سكني</span>
               </Link>

@@ -208,6 +208,7 @@ export class AdminService {
         },
       });
       await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
+      // eslint-disable-next-line no-empty
     } catch {
       // Notification delivery is best-effort; the listing action has completed.
     }
@@ -273,6 +274,7 @@ export class AdminService {
         },
       });
       await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
+      // eslint-disable-next-line no-empty
     } catch {
       // Notification delivery is best-effort; the listing action has completed.
     }
@@ -811,6 +813,7 @@ export class AdminService {
               },
             });
             await this.notificationService.sendRealtimeNotification(user.id, notif);
+          // eslint-disable-next-line no-empty
           } catch {
             // Notification delivery is best-effort; unbanning must still succeed.
           }

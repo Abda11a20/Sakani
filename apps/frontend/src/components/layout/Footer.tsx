@@ -1,6 +1,7 @@
 // apps/frontend/src/components/layout/Footer.tsx
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Share2, Camera, MessageCircle, Phone, Mail } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { getWhatsAppLink } from "@/lib/whatsapp";
@@ -24,7 +25,7 @@ export const Footer: React.FC = () => {
           {/* Column 1: Logo + description + social */}
           <div className="space-y-3">
             <div className="flex items-center gap-2" style={{ direction: "ltr" }}>
-              <img src="/icon-192.png" alt="سكني" className="h-8 w-8 object-contain rounded-lg" />
+              <Image src="/icon-192.png" alt="سكني" width={32} height={32} className="object-contain rounded-lg" priority />
               <span className="font-cairo font-bold text-lg text-white">سكني</span>
             </div>
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
