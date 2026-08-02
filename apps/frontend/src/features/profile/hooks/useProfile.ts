@@ -52,7 +52,7 @@ export const useUploadAvatar = () => {
 
   return useMutation<{ avatarUrl: string }, Error, File | FormData>({
     mutationFn: async (input): Promise<{ avatarUrl: string }> => {
-      const formData = input instanceof FormData ? input : (() => { const fd = new FormData(); fd.append("file", input); return fd; })();
+      const formData = input instanceof FormData ? input : (() => { const fd = new FormData(); fd.append("avatar", input); return fd; })();
       const response = await uploadsApi.avatar(formData);
       return response.data as { avatarUrl: string };
     },

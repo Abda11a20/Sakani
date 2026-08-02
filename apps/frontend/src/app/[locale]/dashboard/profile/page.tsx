@@ -271,7 +271,7 @@ export default function ProfilePage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast({ title: "حجم الملف كبير", description: "الحد الأقصى 2 ميجابايت.", type: "error" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "حجم الملف كبير", description: "الحد الأقصى 5 ميجابايت.", type: "error" }); return; }
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { toast({ title: "صيغة غير مدعومة", description: "يرجى اختيار JPEG أو PNG أو WEBP.", type: "error" }); return; }
     uploadAvatar(file, {
       onSuccess: () => toast({ title: "تم رفع الصورة", description: "تم تحديث صورتك الشخصية.", type: "success" }),

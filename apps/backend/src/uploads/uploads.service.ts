@@ -49,14 +49,19 @@ export class UploadsService {
     file: Express.Multer.File,
     folder: string,
     type: 'upload' | 'authenticated',
+    transformation?: any,
   ): Promise<{ url: string; publicId: string }> {
     return new Promise((resolve, reject) => {
+      const uploadOptions: any = {
+        folder,
+        type,
+        resource_type: 'auto',
+      };
+      if (transformation) {
+        uploadOptions.transformation = transformation;
+      }
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          type,
-          resource_type: 'auto',
-        },
+        uploadOptions,
         (error, result) => {
           if (error || !result) {
             return reject(
@@ -339,6 +344,14 @@ export class UploadsService {
         file,
         'sakany/avatars',
         'upload',
+        {
+          width: 500,
+          height: 500,
+          crop: 'fill',
+          gravity: 'face',
+          quality: 'auto',
+          fetch_format: 'auto',
+        },
       );
       key = res.publicId;
       url = res.url;

@@ -111,7 +111,7 @@ export class UploadsController {
     @Req() req: RequestWithUser,
     @UploadedFile(
       new FileValidationPipe({
-        maxSize: 2 * 1024 * 1024, // 2MB
+        maxSize: 5 * 1024 * 1024, // 5MB
         allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
       }),
     )
