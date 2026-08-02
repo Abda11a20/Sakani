@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { User as UserIcon, Ban, ShieldAlert } from "lucide-react";
+import { Ban, ShieldAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { BlockedConversationActions } from "./BlockedConversationActions";
 import { BLOCK_REASON_LABELS } from "./BlockedConversationFilters";

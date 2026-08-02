@@ -13,7 +13,6 @@ import {
   Search,
   Image as ImageIcon,
   X,
-  User as UserIcon,
   Headphones,
   Paperclip,
   ChevronRight,
