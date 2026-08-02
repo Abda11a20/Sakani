@@ -15,14 +15,16 @@ import "../globals.css";
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   variable: "--font-cairo",
-  display: "swap",
+  // Avoid a late font swap changing text height and shifting the page layout.
+  display: "optional",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
+  // Keep first paint stable when the font is not immediately available.
+  display: "optional",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 

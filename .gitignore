@@ -81,6 +81,9 @@ tmp/
 temp/
 .cache/
 
+# Local diagnostic scripts (may contain one-off connection details)
+apps/backend/src/scratch/
+
 # ==========================
 # Certificates & Keys
 # ==========================
