@@ -418,7 +418,7 @@ export default function CommunityPage() {
           </div>
 
           {/* Quick Filters Strip - Scrollable container matching SearchHeader */}
-          <div ref={filterRef} className="flex items-center gap-2 text-xs font-semibold font-cairo z-40 relative overflow-x-auto no-scrollbar py-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold font-cairo z-40 relative py-1">
             {/* 1. Governorate Pill */}
             <div className="relative">
               <Button
