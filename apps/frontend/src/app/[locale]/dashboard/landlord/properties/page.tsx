@@ -28,6 +28,8 @@ export default function LandlordPropertiesPage() {
   const bedTotal = bedListings.length;
   const bedActive = bedListings.filter((l) => l.status === "active").length;
   const bedRented = bedListings.filter((l) => l.status === "rented").length;
+  const bedPending = bedListings.filter((l) => l.status === "pending_review").length;
+  const bedRejected = bedListings.filter((l) => l.status === "rejected").length;
 
   return (
     <LandlordLayout>
@@ -109,7 +111,7 @@ export default function LandlordPropertiesPage() {
               <p className="text-xs text-slate-500 font-cairo mb-5">
                 {isRtl ? "ادارة الغرف المشتركة والاسرة الفردية للطلاب" : "Manage shared rooms & individual beds for students"}
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <div className="text-center bg-slate-50 rounded-xl py-2 px-1">
                   <span className="block text-lg font-bold text-slate-800 font-sans">{bedTotal}</span>
                   <span className="text-[10px] text-slate-500 font-cairo">{isRtl ? "المجموع" : "Total"}</span>
@@ -121,6 +123,14 @@ export default function LandlordPropertiesPage() {
                 <div className="text-center bg-amber-50 rounded-xl py-2 px-1">
                   <span className="block text-lg font-bold text-amber-600 font-sans">{bedRented}</span>
                   <span className="text-[10px] text-amber-600 font-cairo">{isRtl ? "مؤجر" : "Rented"}</span>
+                </div>
+                <div className="text-center bg-status-info/15 rounded-xl py-2 px-1 border border-status-info/30">
+                  <span className="block text-lg font-bold text-status-info font-sans">{bedPending}</span>
+                  <span className="text-[10px] text-status-info font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
+                </div>
+                <div className="text-center bg-rose-50 rounded-xl py-2 px-1 border border-rose-200">
+                  <span className="block text-lg font-bold text-rose-600 font-sans">{bedRejected}</span>
+                  <span className="text-[10px] text-rose-600 font-cairo">{isRtl ? "مرفوض" : "Rejected"}</span>
                 </div>
               </div>
             </Link>
