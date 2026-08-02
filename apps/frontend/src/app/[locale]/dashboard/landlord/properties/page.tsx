@@ -22,6 +22,7 @@ export default function LandlordPropertiesPage() {
   const aptActive = apartments.filter((l) => l.status === "active").length;
   const aptRented = apartments.filter((l) => l.status === "rented").length;
   const aptPending = apartments.filter((l) => l.status === "pending_review").length;
+  const aptRejected = apartments.filter((l) => l.status === "rejected").length;
 
   const bedListings = listings.filter((l) => (l.type || l.unitType) === "bed");
   const bedTotal = bedListings.length;
@@ -66,7 +67,7 @@ export default function LandlordPropertiesPage() {
               <p className="text-xs text-text-secondary font-cairo mb-5">
                 {isRtl ? "الإشغال، المستأجر الحالي، وتاريخ الإيجارات" : "Occupancy, current tenant & rental history"}
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <div className="text-center bg-surface-secondary rounded-xl py-2 px-1 border border-border">
                   <span className="block text-lg font-bold text-text font-sans">{aptTotal}</span>
                   <span className="text-[10px] text-text-tertiary font-cairo">{isRtl ? "المجموع" : "Total"}</span>
@@ -82,6 +83,10 @@ export default function LandlordPropertiesPage() {
                 <div className="text-center bg-status-info/15 rounded-xl py-2 px-1 border border-status-info/30">
                   <span className="block text-lg font-bold text-status-info font-sans">{aptPending}</span>
                   <span className="text-[10px] text-status-info font-cairo">{isRtl ? "مراجعة" : "Pending"}</span>
+                </div>
+                <div className="text-center bg-rose-50 rounded-xl py-2 px-1 border border-rose-200">
+                  <span className="block text-lg font-bold text-rose-600 font-sans">{aptRejected}</span>
+                  <span className="text-[10px] text-rose-600 font-cairo">{isRtl ? "مرفوض" : "Rejected"}</span>
                 </div>
               </div>
             </Link>

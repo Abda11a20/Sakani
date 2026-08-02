@@ -70,4 +70,5 @@ export interface Listing {
   deletedByRole?: string | null;
   deletedReason?: string | null;
   statusBeforeDelete?: string | null;
+  rejectionReason?: string | null;
 }

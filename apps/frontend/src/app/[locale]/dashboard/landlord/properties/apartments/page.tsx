@@ -9,7 +9,7 @@ import { useMyListings } from "@/hooks/useListings";
 import { Spinner, Button, Badge } from "@/components/ui";
 import { Building2, Search, MapPin, Eye, ArrowUpDown, ChevronRight, User } from "lucide-react";
 
-type OccupancyFilter = "all" | "vacant" | "rented";
+type OccupancyFilter = "all" | "vacant" | "rented" | "pending_review" | "rejected";
 type SortOption = "newest" | "price-asc" | "price-desc";
 
 export default function LandlordApartmentsPage() {
@@ -46,9 +46,13 @@ export default function LandlordApartmentsPage() {
 
     // Occupancy filter
     if (occupancyFilter === "vacant") {
-      result = result.filter((apt) => apt.status !== "rented");
+      result = result.filter((apt) => apt.status === "active" && !apt.currentTenantId);
     } else if (occupancyFilter === "rented") {
-      result = result.filter((apt) => apt.status === "rented");
+      result = result.filter((apt) => apt.status === "rented" || Boolean(apt.currentTenantId));
+    } else if (occupancyFilter === "pending_review") {
+      result = result.filter((apt) => apt.status === "pending_review");
+    } else if (occupancyFilter === "rejected") {
+      result = result.filter((apt) => apt.status === "rejected");
     }
 
     // Sort
@@ -142,6 +146,26 @@ export default function LandlordApartmentsPage() {
               >
                 {isRtl ? "مؤجرة" : "Rented"}
               </button>
+              <button
+                onClick={() => setOccupancyFilter("pending_review")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all ${
+                  occupancyFilter === "pending_review"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {isRtl ? "مراجعة" : "Pending"}
+              </button>
+              <button
+                onClick={() => setOccupancyFilter("rejected")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-cairo transition-all ${
+                  occupancyFilter === "rejected"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {isRtl ? "مرفوضة" : "Rejected"}
+              </button>
             </div>
 
             {/* Sort Filter */}
@@ -181,6 +205,8 @@ export default function LandlordApartmentsPage() {
           <div className="space-y-4">
             {filteredApartments.map((apt) => {
               const isRented = apt.status === "rented" || Boolean(apt.currentTenantId);
+              const isRejected = apt.status === "rejected";
+              const isPendingReview = apt.status === "pending_review";
 
               return (
                 <div
@@ -212,13 +238,26 @@ export default function LandlordApartmentsPage() {
                           </span>
                         </div>
                       )}
+                      {isRejected && apt.rejectionReason && (
+                        <p className="mt-2 text-xs font-cairo text-rose-600">
+                          {isRtl ? "سبب الرفض: " : "Rejection reason: "}{apt.rejectionReason}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   {/* Middle Section: Status / Price */}
                   <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
                     <div className="flex items-center gap-2">
-                      {isRented ? (
+                      {isRejected ? (
+                        <Badge className="bg-rose-100 text-rose-700 font-cairo">
+                          {isRtl ? "مرفوض" : "Rejected"}
+                        </Badge>
+                      ) : isPendingReview ? (
+                        <Badge className="bg-sky-100 text-sky-700 font-cairo">
+                          {isRtl ? "قيد المراجعة" : "Pending review"}
+                        </Badge>
+                      ) : isRented ? (
                         <Badge className="bg-emerald-100 text-emerald-800 font-cairo">
                           {isRtl ? "مؤجرة" : "Rented"}
                         </Badge>
