@@ -236,14 +236,14 @@ export class AuthService {
 
     await this.prisma.$transaction(async (tx) => {
       if (deleteEmailId) {
-        await tx.user.delete({ where: { id: deleteEmailId } }).catch(() => {});
+        await tx.user.delete({ where: { id: deleteEmailId } });
       }
       if (deletePhoneId && deletePhoneId !== deleteEmailId) {
-        await tx.user.delete({ where: { id: deletePhoneId } }).catch(() => {});
+        await tx.user.delete({ where: { id: deletePhoneId } });
       }
 
       if (targetUserId) {
-        // تحديث الحساب الموجود غير المفعل بنفس الهاتف
+        // تحديث الحساب الموجود غير المفعل بنفس الهاتف (بدون تعديل createdAt الأولي)
         const updatedUser = await tx.user.update({
           where: { id: targetUserId },
           data: {
@@ -257,7 +257,6 @@ export class AuthService {
                 ? OtpChannel.TELEGRAM
                 : OtpChannel.EMAIL,
             telegramChatId,
-            createdAt: new Date(), // تجديد مهلة الـ 24 ساعة
           },
         });
         userId = updatedUser.id;

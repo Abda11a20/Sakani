@@ -289,26 +289,26 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
           {/* Bed availability is meaningful only for bed listings. */}
           {isBedListing && (
-            <div className="grid grid-cols-3 gap-0.5 py-2 px-1.5 rounded-xl bg-surface-secondary border border-border w-full">
-              <div className="flex items-center justify-center gap-1 text-center w-full px-1">
+            <div className="grid grid-cols-3 gap-1 py-2 px-2.5 -mx-4 my-0.5 bg-surface-secondary border-y border-border text-center">
+              <div className="flex items-center justify-center gap-1">
                 <BedDouble size={13} className="text-primary shrink-0" />
-                <span className="text-xs font-bold text-text truncate">
+                <span className="text-[11px] sm:text-xs font-bold text-text whitespace-nowrap">
                   {totalBeds > 0
                     ? isEn ? `${totalBeds} Beds` : `${totalBeds} أسِرّة`
                     : (isEn ? "1 Bed" : "1 سرير")}
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-1 text-center border-r border-l border-border w-full px-1">
-                <span className="h-2 w-2 rounded-full bg-status-success shrink-0" />
-                <span className="text-xs font-bold text-status-success truncate">
+              <div className="flex items-center justify-center gap-1 border-r border-l border-border">
+                <span className="h-1.5 w-1.5 rounded-full bg-status-success shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold text-status-success whitespace-nowrap">
                   {availableBedsCount} {isEn ? "Avail" : "متاح"}
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-1 text-center w-full px-1">
-                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-                <span className="text-xs font-bold text-rose-700 truncate">
+              <div className="flex items-center justify-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold text-rose-700 whitespace-nowrap">
                   {bookedBedsCount} {isEn ? "Booked" : "محجوز"}
                 </span>
               </div>
