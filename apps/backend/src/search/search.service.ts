@@ -37,14 +37,35 @@ export class SearchService {
       isDeleted: false,
     };
 
-    // Full-text search across multiple fields
+    // Full-text search across multiple fields with smart English/Arabic transliteration
     if (q) {
-      where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-        { district: { contains: q, mode: 'insensitive' } },
-        { governorate: { contains: q, mode: 'insensitive' } },
-      ];
+      const lowerQ = q.toLowerCase().trim();
+      const cityMap: Record<string, string[]> = {
+        menia: ['المنيا', 'Menia', 'Minya'],
+        minya: ['المنيا', 'Menia', 'Minya'],
+        alex: ['الإسكندرية', 'Alexandria', 'Alex'],
+        alexandria: ['الإسكندرية', 'Alexandria', 'Alex'],
+        cairo: ['القاهرة', 'Cairo'],
+        giza: ['الجيزة', 'Giza'],
+        luxor: ['الأقصر', 'Luxor'],
+        aswan: ['أسوان', 'Aswan'],
+        mansoura: ['المنصورة', 'Mansoura'],
+        ismailia: ['الإسماعيلية', 'Ismailia'],
+        suez: ['السويس', 'Suez'],
+        fayoum: ['الفيوم', 'Fayoum'],
+        sohag: ['سوهاج', 'Sohag'],
+        qena: ['قنا', 'Qena'],
+        tanta: ['طنطا', 'Tanta'],
+      };
+
+      const searchTerms = Array.from(new Set([q.trim(), ...(cityMap[lowerQ] || [])]));
+
+      where.OR = searchTerms.flatMap((term) => [
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { district: { contains: term, mode: 'insensitive' } },
+        { governorate: { contains: term, mode: 'insensitive' } },
+      ]);
     }
 
     if (unitType) {

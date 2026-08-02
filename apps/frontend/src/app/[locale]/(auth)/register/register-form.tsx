@@ -489,7 +489,7 @@ export function RegisterForm() {
       {/* ── قناة استقبال كود التفعيل (OTP) ── */}
       <div className="space-y-3 pt-2">
         <label className="text-sm font-semibold text-foreground block">
-          كيف ترغب في تلقي رموز التحقق (OTP)؟
+          {locale === "en" ? "How would you like to receive verification codes (OTP)?" : "كيف ترغب في تلقي رموز التحقق (OTP)؟"}
         </label>
 
         <div className="grid grid-cols-2 gap-4">
@@ -502,7 +502,7 @@ export function RegisterForm() {
               }`}
           >
             <Mail size={16} />
-            البريد الإلكتروني
+            {locale === "en" ? "Email" : "البريد الإلكتروني"}
           </button>
 
           <button
@@ -514,27 +514,27 @@ export function RegisterForm() {
               }`}
           >
             <span className="text-sky-500 font-bold">📱</span>
-            تليجرام (Telegram)
+            {locale === "en" ? "Telegram" : "تليجرام (Telegram)"}
           </button>
         </div>
 
         {selectedOtpChannel === "TELEGRAM" && (
           <div className="border border-slate-200 bg-slate-50/90 p-3.5 rounded-2xl space-y-2.5 mt-2 animate-fadeIn shadow-sm font-cairo">
             <div className="text-sm font-medium text-slate-800 leading-snug">
-              اضغط للذهاب إلى{" "}
+              {locale === "en" ? "Click to open " : "اضغط للذهاب إلى "}
               <a
                 href="https://t.me/SakaniOtp_bot"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-base font-extrabold text-primary underline underline-offset-4 decoration-2 hover:text-primary/80 transition-colors mx-0.5"
               >
-                البوت
+                {locale === "en" ? "the Bot" : "البوت"}
               </a>
             </div>
 
             <ol className="text-xs text-slate-600 space-y-1 list-decimal list-inside pr-0.5 font-medium">
-              <li>انسخ كود الربط أدناه.</li>
-              <li>أرسل الكود للبوت في محادثة تليجرام لتفعيل الربط تلقائياً.</li>
+              <li>{locale === "en" ? "Copy the linking code below." : "انسخ كود الربط أدناه."}</li>
+              <li>{locale === "en" ? "Send the code to the bot in Telegram chat to activate linking." : "أرسل الكود للبوت في محادثة تليجرام لتفعيل الربط تلقائياً."}</li>
             </ol>
 
             <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm max-w-xs">
@@ -547,15 +547,15 @@ export function RegisterForm() {
                   if (telegramCode) {
                     navigator.clipboard.writeText(telegramCode);
                     toast({
-                      title: "تم النسخ",
-                      description: "تم نسخ كود الربط إلى الحافظة بنجاح.",
+                      title: locale === "en" ? "Copied" : "تم النسخ",
+                      description: locale === "en" ? "Code copied to clipboard successfully." : "تم نسخ كود الربط إلى الحافظة بنجاح.",
                       type: "success",
                     });
                   }
                 }}
                 className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
               >
-                نسخ 📋
+                {locale === "en" ? "Copy 📋" : "نسخ 📋"}
               </button>
             </div>
 
@@ -563,12 +563,12 @@ export function RegisterForm() {
               {checkingLink && !telegramLinked && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                   <span className="animate-spin h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full" />
-                  <span>في انتظار إرسال الكود للبوت للتأكيد...</span>
+                  <span>{locale === "en" ? "Waiting for code to be sent to the bot..." : "في انتظار إرسال الكود للبوت للتأكيد..."}</span>
                 </div>
               )}
               {telegramLinked && (
                 <div className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                  <span>✅</span> تم ربط تليجرام بنجاح!
+                  <span>✅</span> {locale === "en" ? "Telegram linked successfully!" : "تم ربط تليجرام بنجاح!"}
                 </div>
               )}
             </div>

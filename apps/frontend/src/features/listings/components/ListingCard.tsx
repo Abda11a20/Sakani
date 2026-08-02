@@ -54,6 +54,7 @@ const AMENITY_MAP: Record<string, { icon: React.ReactNode; labelAr: string; labe
   wifi:            { icon: <Wifi size={13} />, labelAr: "واي فاي / إنترنت", labelEn: "Wi-Fi / Internet" },
   ac:              { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
   air_conditioner: { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
+  air_conditioning: { icon: <Wind size={13} />, labelAr: "تكييف", labelEn: "Air Conditioning" },
   elevator:        { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير", labelEn: "Elevator" },
   lift:            { icon: <ArrowUpDown size={13} />, labelAr: "أسانسير", labelEn: "Elevator" },
   washer:          { icon: <WashingMachine size={13} />, labelAr: "غسالة ملابس", labelEn: "Washing Machine" },
@@ -89,8 +90,9 @@ function getAmenityDetails(rawKey: string, isEn: boolean): { icon: React.ReactNo
   if (!rawKey) return { icon: <CheckCircle size={13} />, label: "" };
   const trimmed = rawKey.trim();
   const lower = trimmed.toLowerCase();
+  const normalizedKey = lower.replace(/[\s-]+/g, "_");
 
-  const mapped = AMENITY_MAP[trimmed] || AMENITY_MAP[lower];
+  const mapped = AMENITY_MAP[trimmed] || AMENITY_MAP[lower] || AMENITY_MAP[normalizedKey];
   if (mapped) return { icon: mapped.icon, label: isEn ? mapped.labelEn : mapped.labelAr };
 
   return { icon: <CheckCircle size={13} />, label: trimmed };
