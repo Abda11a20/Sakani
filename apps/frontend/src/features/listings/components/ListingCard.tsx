@@ -9,7 +9,6 @@ import {
   Building2,
   Bed,
   Users,
-  MapPin,
   Sparkles,
   CheckCircle,
   Clock,
