@@ -50,26 +50,30 @@ export default function LandlordPropertiesPage() {
             <Spinner size="lg" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+          <div className="grid grid-cols-2 gap-4 sm:gap-8 max-w-4xl">
             <Link
               href={`/${locale}/dashboard/landlord/properties/apartments`}
-              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-8 shadow-xs hover:shadow-md hover:border-primary/50 transition-all duration-300"
+              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-4 sm:p-8 shadow-xs hover:shadow-md hover:border-primary/50 transition-all duration-300"
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
-                  <Building2 size={28} />
+              <div className="flex items-start justify-between mb-3 sm:mb-6">
+                <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
+                  <Building2 size={22} className="sm:hidden" />
+                  <Building2 size={28} className="hidden sm:block" />
                 </div>
                 <div className="text-text-tertiary transition-colors group-hover:text-primary">
                   <ArrowIcon size={20} />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-text font-cairo mb-1">
+              <h2 className="text-base sm:text-xl font-bold text-text font-cairo mb-1">
                 {isRtl ? "الشقق" : "Apartments"}
               </h2>
-              <p className="text-xs text-text-secondary font-cairo mb-5">
+              <p className="hidden sm:block text-xs text-text-secondary font-cairo mb-5">
                 {isRtl ? "الإشغال، المستأجر الحالي، وتاريخ الإيجارات" : "Occupancy, current tenant & rental history"}
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <p className="sm:hidden text-[11px] text-text-secondary font-cairo">
+                {isRtl ? "إدارة الشقق" : "Manage apartments"}
+              </p>
+              <div className="hidden sm:grid sm:grid-cols-5 gap-2">
                 <div className="text-center bg-surface-secondary rounded-xl py-2 px-1 border border-border">
                   <span className="block text-lg font-bold text-text font-sans">{aptTotal}</span>
                   <span className="text-[10px] text-text-tertiary font-cairo">{isRtl ? "المجموع" : "Total"}</span>
@@ -95,23 +99,27 @@ export default function LandlordPropertiesPage() {
 
             <Link
               href={`/${locale}/dashboard/landlord/beds`}
-              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-8 shadow-xs hover:shadow-md hover:border-accent transition-all duration-300"
+              className="group block relative overflow-hidden rounded-2xl bg-surface border border-border p-4 sm:p-8 shadow-xs hover:shadow-md hover:border-accent transition-all duration-300"
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-accent/15 text-accent flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
-                  <Bed size={28} />
+              <div className="flex items-start justify-between mb-3 sm:mb-6">
+                <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-accent/15 text-accent flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
+                  <Bed size={22} className="sm:hidden" />
+                  <Bed size={28} className="hidden sm:block" />
                 </div>
                 <div className="text-text-tertiary transition-colors group-hover:text-accent">
                   <ArrowIcon size={20} />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 font-cairo mb-1">
+              <h2 className="text-base sm:text-xl font-bold text-slate-900 font-cairo mb-1">
                 {isRtl ? "الاسرة (سكن مشترك)" : "Beds (Shared Lodging)"}
               </h2>
-              <p className="text-xs text-slate-500 font-cairo mb-5">
+              <p className="hidden sm:block text-xs text-slate-500 font-cairo mb-5">
                 {isRtl ? "ادارة الغرف المشتركة والاسرة الفردية للطلاب" : "Manage shared rooms & individual beds for students"}
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <p className="sm:hidden text-[11px] text-text-secondary font-cairo">
+                {isRtl ? "إدارة الأسرّة" : "Manage beds"}
+              </p>
+              <div className="hidden sm:grid sm:grid-cols-5 gap-2">
                 <div className="text-center bg-slate-50 rounded-xl py-2 px-1">
                   <span className="block text-lg font-bold text-slate-800 font-sans">{bedTotal}</span>
                   <span className="text-[10px] text-slate-500 font-cairo">{isRtl ? "المجموع" : "Total"}</span>
