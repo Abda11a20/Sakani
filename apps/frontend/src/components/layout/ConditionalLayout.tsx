@@ -19,7 +19,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   const pathname = usePathname();
 
   // Admin and Dashboard pages have their own layout — skip global nav/footer
-  const isDashboardOrAdminRoute = pathname ? /(\\/admin|\\/dashboard)($|\\/)/.test(pathname) : false;
+  const isDashboardOrAdminRoute = pathname ? /(\/(admin|dashboard))($|\/)/.test(pathname) : false;
 
   if (isDashboardOrAdminRoute) {
     return <>{children}</>;
