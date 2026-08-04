@@ -42,11 +42,10 @@ jobs:
         run: npm ls @nestjs/swagger --workspace=backend --depth=0
 
       - name: Generate Prisma Client
-        run: npm run db:generate --workspace=backend
+        run: npx prisma generate --schema=apps/backend/prisma/schema.prisma
 
       - name: Lint
         run: npm run lint
 
       - name: Build
         run: npm run build
-
