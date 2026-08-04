@@ -35,7 +35,7 @@ export function useActiveAd(placementKey: string) {
         // Frequency & Session checks on client-side (Only for overlay/popup/fullscreen ads, standard banners always show)
         const isOverlayAd = activeAd.displayType === 'FULLSCREEN' || activeAd.displayType === 'POPUP' || activeAd.displayType === 'FLOATING';
 
-        if (typeof window !== 'undefined' && isOverlayAd) {
+        if (typeof window !== 'undefined' && isOverlayAd && activeAd.perUserFrequency !== 'EVERY_VISIT') {
           // Check Per-Session Max Display Limit
           const sessionKey = `sakany_ad_session_${activeAd.id}`;
           const currentSessionCount = parseInt(sessionStorage.getItem(sessionKey) || '0', 10);
@@ -50,9 +50,25 @@ export function useActiveAd(placementKey: string) {
           const capKey = `sakany_ad_freq_${activeAd.id}`;
           const lastShownTime = localStorage.getItem(capKey);
 
-          if (lastShownTime && activeAd.perUserFrequency === 'EVERY_12_HOURS') {
-            const twelveHoursMs = 12 * 60 * 60 * 1000;
-            if (Date.now() - parseInt(lastShownTime, 10) < twelveHoursMs) {
+          if (lastShownTime) {
+            const elapsedMs = Date.now() - parseInt(lastShownTime, 10);
+            let capMs = 0;
+
+            if (activeAd.perUserFrequency === 'EVERY_12_HOURS') {
+              capMs = 12 * 60 * 60 * 1000;
+            } else if (activeAd.perUserFrequency === 'DAILY') {
+              capMs = 24 * 60 * 60 * 1000;
+            } else if (activeAd.perUserFrequency === 'WEEKLY') {
+              capMs = 7 * 24 * 60 * 60 * 1000;
+            } else if (activeAd.perUserFrequency === 'MONTHLY') {
+              capMs = 30 * 24 * 60 * 60 * 1000;
+            } else if (activeAd.perUserFrequency === 'ONLY_ONCE') {
+              setAd(null);
+              setIsLoading(false);
+              return;
+            }
+
+            if (capMs > 0 && elapsedMs < capMs) {
               setAd(null);
               setIsLoading(false);
               return;
