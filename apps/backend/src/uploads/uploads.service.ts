@@ -148,6 +148,98 @@ export class UploadsService {
     return image;
   }
 
+  /**
+   * Upload public media used by an advertisement. The advertisement record is
+   * deliberately not touched here: the caller only receives a stable URL and
+   * persists it after the rest of the ad form has validated successfully.
+   */
+  async uploadAdvertisementMedia(file: Express.Multer.File) {
+    const provider = this.configService.get<string>('STORAGE_PROVIDER') || 's3';
+
+    try {
+      if (provider === 'cloudinary') {
+        const result = await this.uploadToCloudinary(
+          file,
+          'sakany/ads',
+          'upload',
+        );
+        return { url: result.url, key: result.publicId };
+      }
+
+      const fileName = this.generateFileName(file.originalname);
+      const key = `ads/${fileName}`;
+      const url = await this.s3Service.uploadFile(file, this.publicBucket, key);
+      return { url, key };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to upload advertisement media to ${provider}: ${error?.message || error}`,
+        error?.stack,
+      );
+      throw new InternalServerErrorException('Failed to upload advertisement media');
+    }
+  }
+
+  /**
+   * Moves a small, explicit batch of legacy data-URL ad media to the configured
+   * storage provider. Failed records are left completely unchanged, so this is
+   * safe to run repeatedly after deployment.
+   */
+  async migrateLegacyAdvertisementMedia(limit = 20) {
+    const mediaItems = await this.prisma.adMedia.findMany({
+      where: { url: { startsWith: 'data:' } },
+      orderBy: { createdAt: 'asc' },
+      take: Math.min(Math.max(limit, 1), 50),
+    });
+
+    let migrated = 0;
+    let skipped = 0;
+    const failures: Array<{ id: string; reason: string }> = [];
+
+    for (const media of mediaItems) {
+      const match = /^data:([^;,]+);base64,([\s\S]+)$/.exec(media.url);
+      if (!match) {
+        skipped += 1;
+        continue;
+      }
+
+      const [, mimetype, encoded] = match;
+      if (!['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'].includes(mimetype)) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        const extension = mimetype.split('/')[1] || 'bin';
+        const uploaded = await this.uploadAdvertisementMedia({
+          buffer: Buffer.from(encoded, 'base64'),
+          originalname: `legacy-ad-${media.id}.${extension}`,
+          mimetype,
+          size: Buffer.byteLength(encoded, 'base64'),
+        } as Express.Multer.File);
+
+        // The DB row is changed only after the remote upload has succeeded.
+        await this.prisma.adMedia.update({
+          where: { id: media.id },
+          data: { url: uploaded.url },
+        });
+        migrated += 1;
+      } catch (error: any) {
+        failures.push({
+          id: media.id,
+          reason: error?.message || 'Upload failed',
+        });
+      }
+    }
+
+    return {
+      scanned: mediaItems.length,
+      migrated,
+      skipped,
+      failed: failures.length,
+      failures,
+    };
+  }
+
   async uploadListingImages(
     listingId: string,
     landlordId: string,

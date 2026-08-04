@@ -15,9 +15,24 @@ export const AdSlot: React.FC<Props> = ({ placementKey, className }) => {
   const { ad, isLoading, handleAdClick } = useActiveAd(placementKey);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
 
-  // Progressive Enhancement / Zero Footprint Guard:
-  // If loading, no ad available, or dismissed by user -> return NULL directly.
-  if (isLoading || !ad || isDismissed) {
+  if (isDismissed) {
+    return null;
+  }
+
+  // Progressive Enhancement / Layout Stability Guard:
+  // Reserve space while loading inline banners to eliminate layout shift (CLS)
+  if (isLoading) {
+    if (placementKey === 'INTERSTITIAL' || placementKey === 'POPUP') {
+      return null;
+    }
+    return (
+      <div className={className}>
+        <div className="w-full my-2 h-[160px] sm:h-[190px] rounded-xl bg-surface-secondary/40 animate-pulse border border-border/40" />
+      </div>
+    );
+  }
+
+  if (!ad) {
     return null;
   }
 

@@ -102,6 +102,12 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Resource Hints & Early Connections */}
+        <link rel="preconnect" href="https://sakani-backend-production.up.railway.app" />
+        <link rel="dns-prefetch" href="https://sakani-backend-production.up.railway.app" />
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
         {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />

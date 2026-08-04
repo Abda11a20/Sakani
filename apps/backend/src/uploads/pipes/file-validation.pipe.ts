@@ -11,13 +11,18 @@ const MAGIC_BYTES: Record<string, number[][]> = {
   'image/jpeg': [[0xff, 0xd8, 0xff]],
   'image/png': [[0x89, 0x50, 0x4e, 0x47]],
   'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header for WebP
+  // ISO Base Media files keep the ftyp box marker at byte 4 (MP4/MOV).
+  'video/mp4': [[0x66, 0x74, 0x79, 0x70]],
+  // WebM starts with the EBML header rather than RIFF.
+  'video/webm': [[0x1a, 0x45, 0xdf, 0xa3]],
   'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
 };
 
 function detectRealMime(buffer: Buffer): string | null {
   for (const [mime, signatures] of Object.entries(MAGIC_BYTES)) {
     for (const sig of signatures) {
-      if (sig.every((byte, i) => buffer[i] === byte)) return mime;
+      const offset = mime === 'video/mp4' ? 4 : 0;
+      if (sig.every((byte, i) => buffer[offset + i] === byte)) return mime;
     }
   }
   return null;

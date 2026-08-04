@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { UploadsModule } from '../uploads/uploads.module';
 import { AdsController } from './ads.controller';
 import { AdsAdminController } from './ads-admin.controller';
 import { AdsService } from './ads.service';
@@ -10,7 +11,7 @@ import {
 } from './interfaces/ad-cache.interface';
 
 @Module({
-  imports: [EventEmitterModule.forRoot()],
+  imports: [EventEmitterModule.forRoot(), UploadsModule],
   controllers: [AdsController, AdsAdminController],
   providers: [
     AdsService,

@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/select';
 import { LayoutGrid, CheckSquare, Square, Upload, Link as LinkIcon, X, Sliders } from 'lucide-react';
 import type { Advertisement } from '../../types/ads.types';
 import { compressImageFile } from '@/lib/image-compressor';
+import { adsApi } from '../../api/ads.api';
 
 interface EditAdDialogProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function EditAdDialog({
 }: EditAdDialogProps) {
   const [saving, setSaving] = useState(false);
   const [uploadMode, setUploadMode] = useState<'FILE' | 'URL'>('FILE');
+  const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
   const [selectedPlacements, setSelectedPlacements] = useState<string[]>(
     ad.placementKey ? [ad.placementKey] : ad.placement?.key ? [ad.placement.key] : ['HOME_HERO']
   );
@@ -88,6 +90,7 @@ export function EditAdDialog({
       perUserFrequency: ad.perUserFrequency || 'EVERY_12_HOURS',
       maxDisplayPerSession: ad.maxDisplayPerSession ?? 1,
     });
+    setSelectedMediaFile(null);
   }, [ad]);
 
   const set = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
@@ -105,6 +108,13 @@ export function EditAdDialog({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('حجم ملف الإعلان كبير جداً. يرجى اختيار ملف بحجم 10 ميجابايت كحد أقصى.');
+      return;
+    }
+
+    setSelectedMediaFile(file);
 
     const isVideo = file.type.startsWith('video/');
 
@@ -173,6 +183,9 @@ export function EditAdDialog({
 
     setSaving(true);
     try {
+      const mediaUrl = selectedMediaFile
+        ? (await adsApi.uploadMedia(selectedMediaFile)).url
+        : form.mediaUrl;
       const cleanTargetValue = normalizeTargetValue(form.targetType, form.targetValue);
       const targetPayload: any = { type: form.targetType };
       if (form.targetType === 'WHATSAPP') targetPayload.whatsapp = cleanTargetValue;
@@ -202,7 +215,7 @@ export function EditAdDialog({
         maxDisplayPerSession: form.maxDisplayPerSession,
         mediaItems: [
           {
-            url: form.mediaUrl,
+            url: mediaUrl,
             type: form.mediaType,
             caption: form.caption || form.title,
           },
@@ -361,7 +374,10 @@ export function EditAdDialog({
               </button>
               <button
                 type="button"
-                onClick={() => setUploadMode('URL')}
+                onClick={() => {
+                  setUploadMode('URL');
+                  setSelectedMediaFile(null);
+                }}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all ${
                   uploadMode === 'URL'
                     ? 'bg-primary text-white shadow-xs'
@@ -392,7 +408,10 @@ export function EditAdDialog({
               label="رابط الصورة أو الفيديو *"
               placeholder="https://..."
               value={form.mediaUrl}
-              onChange={(e) => set('mediaUrl', e.target.value)}
+              onChange={(e) => {
+                setSelectedMediaFile(null);
+                set('mediaUrl', e.target.value);
+              }}
             />
           )}
 
@@ -419,7 +438,10 @@ export function EditAdDialog({
               </div>
               <button
                 type="button"
-                onClick={() => set('mediaUrl', '')}
+                onClick={() => {
+                  setSelectedMediaFile(null);
+                  set('mediaUrl', '');
+                }}
                 className="p-1 rounded-lg hover:bg-surface-tertiary text-text-tertiary hover:text-status-danger transition-colors"
                 title="إزالة الوسائط"
               >

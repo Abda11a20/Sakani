@@ -23,6 +23,10 @@ export class AdsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  async clearActiveAdsCache() {
+    await this.cache.reset();
+  }
+
   // ────────────────────────────────────────────────────────
   // PUBLIC ENDPOINTS LOGIC
   // ────────────────────────────────────────────────────────
@@ -152,22 +156,39 @@ export class AdsService {
       }
     }
 
-    // Format output
+    // Format lightweight output
+    const formattedMedia = (selectedAd.mediaItems || []).map((item) => ({
+      id: item.id,
+      type: item.type,
+      url: item.url,
+      caption: item.caption,
+      order: item.order,
+    }));
+
     const result = {
       id: selectedAd.id,
       title: selectedAd.title,
       placementKey: query.placementKey,
       displayType: selectedAd.displayType,
       openMode: selectedAd.openMode,
-      target: selectedAd.target,
-      mediaItems: selectedAd.mediaItems,
+      target: selectedAd.target ? {
+        id: selectedAd.target.id,
+        type: selectedAd.target.type,
+        url: selectedAd.target.url,
+        phone: selectedAd.target.phone,
+        email: selectedAd.target.email,
+        whatsapp: selectedAd.target.whatsapp,
+        internalRoute: selectedAd.target.internalRoute,
+        appDeepLink: selectedAd.target.appDeepLink,
+      } : null,
+      mediaItems: formattedMedia,
       isSkippable: selectedAd.isSkippable,
       isClosable: selectedAd.isClosable,
       skipSeconds: selectedAd.skipSeconds,
       perUserFrequency: selectedAd.perUserFrequency,
       maxDisplayPerSession: selectedAd.maxDisplayPerSession,
-      clientName: selectedAd.campaign.clientName,
-      clientLogo: selectedAd.campaign.clientLogo,
+      clientName: selectedAd.campaign?.clientName || '',
+      clientLogo: selectedAd.campaign?.clientLogo || null,
       utmUrl: (selectedAd as any).finalUtmUrl,
     };
 

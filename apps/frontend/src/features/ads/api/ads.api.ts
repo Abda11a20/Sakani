@@ -2,6 +2,14 @@ import { api } from '@/lib/api';
 import type { Advertisement, CreateAdPayload, AdStatus } from '../types/ads.types';
 
 export const adsApi = {
+  uploadMedia: async (file: File): Promise<{ url: string; key: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await api.post('/admin/ads/media', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
   createAd: async (payload: CreateAdPayload): Promise<Advertisement> => {
     const res = await api.post('/admin/ads', payload);
     return res.data;

@@ -7,9 +7,12 @@ import {
   Body,
   Param,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdsService } from './ads.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { CreateAdDto } from './dto/create-ad.dto';
@@ -19,6 +22,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole, AdStatus } from '@prisma/client';
+import { UploadsService } from '../uploads/uploads.service';
+import { FileValidationPipe } from '../uploads/pipes/file-validation.pipe';
 
 @ApiTags('Admin / Advertisements')
 @ApiBearerAuth()
@@ -26,7 +31,49 @@ import { UserRole, AdStatus } from '@prisma/client';
 @Roles(UserRole.super_admin, UserRole.admin)
 @Controller('admin/ads')
 export class AdsAdminController {
-  constructor(private readonly adsService: AdsService) {}
+  constructor(
+    private readonly adsService: AdsService,
+    private readonly uploadsService: UploadsService,
+  ) {}
+
+  /**
+   * Upload an ad image or video and return its public storage URL. This route
+   * is admin-only so public users cannot turn the storage provider into an
+   * arbitrary file host.
+   */
+  @Post('media')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAdMedia(
+    @UploadedFile(
+      new FileValidationPipe({
+        maxSize: 10 * 1024 * 1024,
+        allowedTypes: [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'video/mp4',
+          'video/webm',
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.uploadsService.uploadAdvertisementMedia(file);
+  }
+
+  /**
+   * Explicit, repeatable migration for old advertisements that stored media as
+   * Base64. It intentionally processes a small batch; it is never run during
+   * application startup or a normal visitor request.
+   */
+  @Post('migrate-legacy-media')
+  async migrateLegacyMedia(@Body('limit') limit?: number) {
+    const result = await this.uploadsService.migrateLegacyAdvertisementMedia(limit);
+    if (result.migrated > 0) {
+      await this.adsService.clearActiveAdsCache();
+    }
+    return result;
+  }
 
   /**
    * GET /api/v1/admin/ads/analytics

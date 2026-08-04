@@ -81,7 +81,12 @@ export function getCloudinaryUrl(
 export function getAvatarUrl(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl) return null;
 
-  // إذا كان رابط كاملاً أو بيانات (data:)، أعده كما هو
+  // إذا كان رابط Cloudinary، طبق الـ Transformations لتصغير الحجم والضغط
+  if (avatarUrl.includes("res.cloudinary.com")) {
+    return getCloudinaryUrl(avatarUrl, { width: 96, height: 96, crop: 'fill' });
+  }
+
+  // إذا كان رابط كاملاً آخر أو بيانات (data:)، أعده كما هو
   if (avatarUrl.startsWith("http") || avatarUrl.startsWith("data:")) {
     return avatarUrl;
   }

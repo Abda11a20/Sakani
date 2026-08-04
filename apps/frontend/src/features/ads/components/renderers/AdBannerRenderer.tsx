@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { ActiveAdResponse } from '../../types/ad.types';
+import { getCloudinaryUrl } from '@/lib/utils';
 
 interface Props {
   ad: ActiveAdResponse;
@@ -14,6 +15,10 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const primaryMedia = ad.mediaItems?.[0];
   const cleanTitle = ad.title?.replace(/\s*\([A-Z0-9_]+\)$/gi, '') || '';
+  const isHeroAd = ad.placementKey === 'HOME_HERO';
+  const mediaUrl = primaryMedia?.type === 'IMAGE'
+    ? getCloudinaryUrl(primaryMedia.url, { width: 960, quality: 'auto' })
+    : primaryMedia?.url;
 
   // Sync muted state directly to HTMLVideoElement DOM instance
   useEffect(() => {
@@ -55,7 +60,7 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
               <>
                 <video
                   ref={videoRef}
-                  src={primaryMedia.url}
+                  src={mediaUrl}
                   autoPlay
                   loop
                   muted={isMuted}
@@ -76,9 +81,12 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
               </>
             ) : (
               <img
-                src={primaryMedia.url}
+                src={mediaUrl}
                 alt={cleanTitle || 'إعلان'}
                 referrerPolicy="no-referrer"
+                loading={isHeroAd ? 'eager' : 'lazy'}
+                fetchPriority={isHeroAd ? 'high' : 'auto'}
+                decoding="async"
                 className="w-full h-32 sm:h-40 object-fill rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
               />
             )}
