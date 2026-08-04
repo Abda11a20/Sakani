@@ -213,7 +213,7 @@ export class AdsService {
   /**
    * Create Campaign
    */
-  async createCampaign(dto: CreateCampaignDto, userId: string | any) {
+  async createCampaign(dto: CreateCampaignDto, userId: string | { id: string; [key: string]: unknown }) {
     const existing = await this.prisma.campaign.findUnique({
       where: { campaignCode: dto.campaignCode },
     });
