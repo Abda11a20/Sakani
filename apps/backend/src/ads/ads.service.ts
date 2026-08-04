@@ -265,8 +265,8 @@ export class AdsService {
       );
     }
 
-    const actualUserId =
-      typeof userId === 'object' && userId?.id ? userId.id : userId;
+    const actualUserId: string =
+      typeof userId === 'object' && userId?.id ? userId.id : (userId as string);
 
     return this.prisma.campaign.create({
       data: {
