@@ -1,452 +1,371 @@
-# Sakani API Documentation
+# Sakany Platform — Enterprise API Reference & Integration Guide
 
-> **Read-Only Reference** — All endpoints are served from `http://localhost:3001/api/v1`
->
-> **Authentication:** Protected routes require a `Bearer` token in the `Authorization` header.
-> Obtain a token from `POST /api/v1/auth/login` or `POST /api/v1/auth/register`.
->
-> **Interactive Docs:** Available at `http://localhost:3001/api/docs` (Swagger UI)
+> **Production API Base URL:** `https://sakani-backend-production.up.railway.app/api/v1`  
+> **Local Development API Base URL:** `http://localhost:3001/api/v1`  
+> **Interactive Swagger Documentation:** `http://localhost:3001/api/docs`  
+> **API Version:** `v1.1 (Production Hardened)`
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
 
-1. [Authentication](#1-authentication)
-2. [Users & Profile](#2-users--profile)
-3. [Listings](#3-listings)
-4. [Beds](#4-beds)
-5. [Requests (Rental Requests)](#5-requests-rental-requests)
-6. [Reviews](#6-reviews)
-7. [Search](#7-search)
-8. [Alerts (Saved Searches)](#8-alerts-saved-searches)
-9. [Uploads](#9-uploads)
-10. [Payments & Subscriptions](#10-payments--subscriptions)
-11. [Chat (Real-time Support)](#11-chat-real-time-support)
-12. [Admin Panel](#12-admin-panel)
-13. [Health Check](#13-health-check)
+1. [Global Architecture & Security Standards](#1-global-architecture--security-standards)
+2. [Authentication & Session Management (`/auth`)](#2-authentication--session-management-auth)
+3. [Users & Profile Management (`/users`)](#3-users--profile-management-users)
+4. [Listings & Properties (`/listings`)](#4-listings--properties-listings)
+5. [Beds & Room Occupancy (`/beds`)](#5-beds--room-occupancy-beds)
+6. [Rental Requests (`/requests`)](#6-rental-requests-requests)
+7. [Rental Contracts & History (`/rental-contracts`, `/rental-history`)](#7-rental-contracts--history-rental-contracts-rental-history)
+8. [Search & Discovery Engine (`/search`)](#8-search--discovery-engine-search)
+9. [Smart Saved Search Alerts (`/alerts`)](#9-smart-saved-search-alerts-alerts)
+10. [Interactive Community System (`/community`, `/admin/community`)](#10-interactive-community-system-community-admincommunity)
+11. [Ad Engine & Campaign System (`/ads`, `/admin/ads`)](#11-ad-engine--campaign-system-ads-adminads)
+12. [Real-time Chat & Support (`/chat`, `/chat/pusher`)](#12-real-time-chat--support-chat-chatpusher)
+13. [Notifications & Webhooks (`/notifications`, `/telegram`)](#13-notifications--webhooks-notifications-telegram)
+14. [Payments, Billing & Subscriptions (`/payments`)](#14-payments-billing--subscriptions-payments)
+15. [Media Uploads & Storage (`/uploads`)](#15-media-uploads--storage-uploads)
+16. [Location Data Services (`/location`)](#16-location-data-services-location)
+17. [Dashboard Analytics (`/dashboard`)](#17-dashboard-analytics-dashboard)
+18. [Admin Panel & Governance (`/admin`)](#18-admin-panel--governance-admin)
+19. [System Health Check (`/health`)](#19-system-health-check-health)
+20. [Error Codes & HTTP Status Matrix](#20-error-codes--http-status-matrix)
 
 ---
 
-## 1. Authentication
+## 1. Global Architecture & Security Standards
+
+### Authentication Header
+Protected endpoints require a standard JSON Web Token (JWT) sent in the HTTP Request Header:
+```http
+Authorization: Bearer <accessToken>
+```
+
+### Dual-Token Lifecycle Architecture
+- **Access Token:** Short-lived JWT (default `15m`). Signed securely using `JWT_SECRET`.
+- **Refresh Token:** High-entropy 64-byte random string stored securely in HTTP-Only Cookies / LocalStorage and hashed (`SHA-256`) in database `DeviceSession` records.
+- **Silent Refresh Interceptor:** When an API request returns `401 Unauthorized`, the frontend interceptor automatically executes `POST /auth/refresh` to obtain a fresh `AccessToken` seamlessly.
+
+### Common Response Schema
+All JSON API endpoints return responses adhering to this standard wrapper:
+```json
+{
+  "message": "Human readable status message",
+  "data": { ... }
+}
+```
+
+---
+
+## 2. Authentication & Session Management (`/auth`)
 
 Base path: `/auth`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/auth/register` | ❌ Public | Register a new user account (sends email OTP) |
-| `POST` | `/auth/verify-email` | ❌ Public | Verify registration OTP and activate account |
-| `POST` | `/auth/login` | ❌ Public | Login and receive a JWT access token |
-| `POST` | `/auth/refresh` | ❌ Public | Refresh access token using current device session |
-| `POST` | `/auth/logout` | ✅ Required | Logout and invalidate the current device session |
-| `GET` | `/auth/me` | ✅ Required | Get the currently authenticated user's profile |
-| `POST` | `/auth/forgot-password` | ❌ Public | Generate and send an OTP to the user's email or WhatsApp |
-| `POST` | `/auth/verify-reset-otp` | ❌ Public | Verify the OTP validity (10-minute expiry window) |
-| `POST` | `/auth/reset-password` | ❌ Public | Reset the password using a valid OTP |
-| `PATCH` | `/auth/change-password` | ✅ Required | Change password while logged in |
-
-### Request Body Examples
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `POST` | `/auth/register` | ❌ Public | Any | Register new account (Tenant or Landlord). Triggers OTP |
+| `POST` | `/auth/verify-email` | ❌ Public | Any | Verify registration OTP code & activate account |
+| `POST` | `/auth/login` | ❌ Public | Any | Authenticate with phone/email & password → returns tokens |
+| `POST` | `/auth/refresh` | ❌ Public | Any | Obtain new `accessToken` using active `refreshToken` |
+| `POST` | `/auth/logout` | ✅ Required | Any | Revoke current `DeviceSession` and clear client tokens |
+| `GET` | `/auth/me` | ✅ Required | Any | Retrieve currently authenticated user context & permissions |
+| `POST` | `/auth/forgot-password` | ❌ Public | Any | Request password reset OTP via Email or WhatsApp |
+| `POST` | `/auth/verify-reset-otp` | ❌ Public | Any | Validate 6-digit reset OTP |
+| `POST` | `/auth/reset-password` | ❌ Public | Any | Execute password update using valid OTP |
+| `PATCH` | `/auth/change-password` | ✅ Required | Any | Change password while authenticated |
 
 <details>
-<summary><code>POST /auth/register</code></summary>
+<summary><code>POST /auth/register</code> Payload Example</summary>
 
 ```json
 {
   "name": "Ahmed Mohamed",
   "phone": "01012345678",
   "email": "ahmed@example.com",
-  "password": "StrongPass123!",
-  "confirmPassword": "StrongPass123!",
+  "password": "Password123!",
+  "confirmPassword": "Password123!",
   "nationalId": "30001011234567",
   "role": "tenant"
 }
 ```
-> `role` accepts: `"tenant"` | `"landlord"`
-</details>
-
-<details>
-<summary><code>POST /auth/login</code></summary>
-
-```json
-{
-  "phone": "01012345678",
-  "password": "StrongPass123!"
-}
-```
-</details>
-
-<details>
-<summary><code>POST /auth/forgot-password</code></summary>
-
-```json
-{
-  "phone": "01012345678",
-  "method": "email"
-}
-```
-> `method` accepts: `"email"` | `"whatsapp"`
-</details>
-
-<details>
-<summary><code>POST /auth/verify-reset-otp</code></summary>
-
-```json
-{
-  "phone": "01012345678",
-  "otp": "483920"
-}
-```
-</details>
-
-<details>
-<summary><code>POST /auth/reset-password</code></summary>
-
-```json
-{
-  "phone": "01012345678",
-  "otp": "483920",
-  "newPassword": "NewPass456!",
-  "confirmPassword": "NewPass456!"
-}
-```
-</details>
-
-<details>
-<summary><code>PATCH /auth/change-password</code></summary>
-
-```json
-{
-  "currentPassword": "OldPass123!",
-  "newPassword": "NewPass456!",
-  "confirmPassword": "NewPass456!"
-}
-```
 </details>
 
 ---
 
-## 2. Users & Profile
+## 3. Users & Profile Management (`/users`)
+
+Base path: `/users`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `GET` | `/users/profile` | ✅ Required | Any | Get the authenticated user's full profile |
-| `PATCH` | `/users/profile` | ✅ Required | Any | Update the authenticated user's profile |
-| `DELETE` | `/users/profile` | ✅ Required | Any (not banned) | Permanently delete own account — **rejected with 403 if account is banned** |
-| `GET` | `/users/:id` | ❌ Public | Any | Get the public profile of any user by ID |
-
-> **Security rule:** Banned (inactive) users cannot self-delete. Only an admin can remove a banned account via `DELETE /admin/users/:id`.
+| `GET` | `/users/profile` | ✅ Required | Any | Get authenticated user's complete profile & stats |
+| `PATCH` | `/users/profile` | ✅ Required | Any | Update bio, avatar, name, or phone number |
+| `DELETE` | `/users/profile` | ✅ Required | Active User | Permanently request self-account deletion (banned users blocked) |
+| `POST` | `/users/restore-account` | ❌ Public | Any | Request restoration of a soft-deleted account |
+| `GET` | `/users/:id` | ❌ Public | Any | View public profile of a user/landlord |
 
 ---
 
-## 3. Listings
+## 4. Listings & Properties (`/listings`)
 
 Base path: `/listings`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
+| `GET` | `/listings` | ❌ Public | Any | Search & filter active approved property listings |
+| `GET` | `/listings/my` | ✅ Required | Landlord | Fetch all properties owned by logged-in landlord |
+| `GET` | `/listings/:id` | ❌ Public | Any | Get detailed view of a property listing |
 | `POST` | `/listings` | ✅ Required | Landlord | Create a new property listing |
-| `GET` | `/listings/my` | ✅ Required | Landlord | Get all listings owned by the authenticated landlord |
-| `GET` | `/listings` | ❌ Public | Any | Browse all approved listings (paginated & filterable) |
-| `GET` | `/listings/:id` | ❌ Public | Any | Get details of a single listing |
-| `PATCH` | `/listings/:id` | ✅ Required | Landlord (Owner) | Update a listing |
-| `DELETE` | `/listings/:id` | ✅ Required | Landlord (Owner) | Delete own listing |
+| `PATCH` | `/listings/:id` | ✅ Required | Landlord (Owner) | Edit listing details |
+| `DELETE` | `/listings/:id` | ✅ Required | Landlord (Owner) | Soft-delete a property listing |
 
 ---
 
-## 4. Beds
+## 5. Beds & Room Occupancy (`/beds`)
 
-> **Inventory Logic:** When all beds in a listing are rented, the listing status automatically switches to `rented` and disappears from search. When a bed is vacated, the listing automatically returns to `active`.
+Base path: `/beds` & `/listings/:listingId/beds`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `GET` | `/listings/:listingId/beds` | ❌ Public | Any | Get available beds in a listing |
-| `GET` | `/listings/:listingId/beds/all` | ✅ Required | Landlord | Get all beds (including rented) |
-| `GET` | `/listings/:listingId/beds/stats` | ✅ Required | Landlord | Get bed occupancy statistics |
-| `GET` | `/beds/:bedId` | ✅ Required | Any | Get details of a specific bed |
-| `PATCH` | `/beds/:bedId/rent` | ✅ Required | Landlord | Mark a bed as rented → auto-updates listing status |
-| `PATCH` | `/beds/:bedId/vacate` | ✅ Required | Landlord | Mark a bed as vacant → auto-restores listing to active |
-| `PATCH` | `/beds/:bedId/type` | ✅ Required | Landlord | Update bed type/details |
+| `GET` | `/listings/:listingId/beds` | ❌ Public | Any | Fetch available bed slots in a listing |
+| `GET` | `/listings/:listingId/beds/all` | ✅ Required | Landlord | Get all beds (occupied + vacant) |
+| `GET` | `/listings/:listingId/beds/stats` | ✅ Required | Landlord | Get bed occupancy percentage & stats |
+| `GET` | `/beds/:bedId` | ✅ Required | Any | Get single bed slot information |
+| `PATCH` | `/beds/:bedId/rent` | ✅ Required | Landlord | Mark bed as occupied → auto-updates property status |
+| `PATCH` | `/beds/:bedId/vacate` | ✅ Required | Landlord | Mark bed as vacant → restores property to search |
+| `PATCH` | `/beds/:bedId/type` | ✅ Required | Landlord | Update bed slot price and specifications |
 
 ---
 
-## 5. Requests (Rental Requests)
+## 6. Rental Requests (`/requests`)
 
 Base path: `/requests`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `POST` | `/requests` | ✅ Required | Tenant | Submit a rental request for a listing |
-| `GET` | `/requests/my/tenant` | ✅ Required | Tenant | Get all requests submitted by the authenticated tenant |
-| `GET` | `/requests/my/landlord` | ✅ Required | Landlord | Get all incoming requests for the landlord's listings |
-| `GET` | `/requests/my/landlord/stats` | ✅ Required | Landlord | Get request statistics |
-| `GET` | `/requests/:id` | ✅ Required | Any | Get details of a specific request |
-| `PATCH` | `/requests/:id/status` | ✅ Required | Landlord | Accept or reject a rental request |
-| `DELETE` | `/requests/:id` | ✅ Required | Tenant | Cancel a pending request |
+| `POST` | `/requests` | ✅ Required | Tenant | Submit rental booking application for a property |
+| `GET` | `/requests/my/tenant` | ✅ Required | Tenant | List all rental applications submitted by tenant |
+| `GET` | `/requests/my/landlord` | ✅ Required | Landlord | List incoming applications for landlord properties |
+| `GET` | `/requests/my/landlord/stats` | ✅ Required | Landlord | Summary stats of pending, accepted, and rejected requests |
+| `GET` | `/requests/:id` | ✅ Required | Any Party | Get details of a single rental request |
+| `PATCH` | `/requests/:id/status` | ✅ Required | Landlord | Accept or Reject a rental application |
+| `DELETE` | `/requests/:id` | ✅ Required | Tenant | Cancel a pending rental application |
 
 ---
 
-## 6. Reviews
-
-Base path: `/reviews`
+## 7. Rental Contracts & History (`/rental-contracts`, `/rental-history`)
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `POST` | `/reviews` | ✅ Required | Tenant | Submit a review for a listing or landlord |
-| `GET` | `/reviews/listing/:listingId` | ❌ Public | Any | Get all reviews for a specific listing |
-| `GET` | `/reviews/landlord/:landlordId` | ❌ Public | Any | Get all reviews for a specific landlord |
-| `GET` | `/reviews/landlord/:landlordId/rating` | ❌ Public | Any | Get the aggregate rating of a landlord |
-| `DELETE` | `/reviews/:id` | ✅ Required | Tenant (Author) | Delete a review |
+| `GET` | `/rental-contracts/my` | ✅ Required | Tenant/Landlord | Fetch active rental agreements |
+| `PATCH` | `/rental-contracts/:id/sign` | ✅ Required | Tenant/Landlord | Digitally sign rental agreement |
+| `PATCH` | `/rental-contracts/:id/terminate` | ✅ Required | Landlord | Terminate active rental agreement |
+| `GET` | `/rental-history/tenant` | ✅ Required | Tenant | Fetch historical past tenancy records |
+| `GET` | `/rental-history/landlord` | ✅ Required | Landlord | Fetch historical tenant checkout records |
 
 ---
 
-## 7. Search
+## 8. Search & Discovery Engine (`/search`)
 
 Base path: `/search`
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/search` | ❌ Public | Search listings with filters |
-| `GET` | `/search/popular-districts` | ❌ Public | Get most popular districts/neighborhoods |
-| `GET` | `/search/suggested/:listingId` | ❌ Public | Get listings similar to a given one |
-| `GET` | `/search/price-stats` | ❌ Public | Get min/max/average price statistics |
-
-### Common Query Parameters for `GET /search`
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `city` | `string` | Filter by city name |
-| `district` | `string` | Filter by district |
-| `minPrice` | `number` | Minimum monthly price |
-| `maxPrice` | `number` | Maximum monthly price |
-| `type` | `string` | Listing type (`apartment`, `room`, `bed`) |
-| `page` | `number` | Page number (default: 1) |
-| `limit` | `number` | Results per page (default: 10) |
+| `GET` | `/search` | ❌ Public | Advanced search with filters (City, Price, Gender, Amenities) |
+| `GET` | `/search/popular-districts` | ❌ Public | Top trending districts & search hotspots |
+| `GET` | `/search/suggested/:listingId` | ❌ Public | Smart recommendation Engine (similar properties) |
+| `GET` | `/search/price-stats` | ❌ Public | Price distribution & average rental cost metrics |
 
 ---
 
-## 8. Alerts (Saved Searches)
+## 9. Smart Saved Search Alerts (`/alerts`)
 
-Base path: `/alerts`  
-**All endpoints require authentication and the `tenant` role.**
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/alerts` | ✅ Tenant | Create a new saved search alert |
-| `GET` | `/alerts/my` | ✅ Tenant | Get all saved alerts for the authenticated tenant |
-| `PATCH` | `/alerts/:id` | ✅ Tenant | Update an existing alert |
-| `PATCH` | `/alerts/:id/toggle` | ✅ Tenant | Enable or disable an alert |
-| `DELETE` | `/alerts/:id` | ✅ Tenant | Delete an alert |
-
----
-
-## 9. Uploads
-
-Base path: `/uploads`
+Base path: `/alerts`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `POST` | `/uploads/listings/:listingId/images` | ✅ Required | Landlord | Upload listing images (`multipart/form-data`) |
-| `DELETE` | `/uploads/images/:imageId` | ✅ Required | Landlord | Delete a specific listing image |
-| `PATCH` | `/uploads/listings/:listingId/images/reorder` | ✅ Required | Landlord | Reorder listing images |
-| `POST` | `/uploads/id-card` | ✅ Required | Any | Upload national ID card photo |
-| `GET` | `/uploads/id-card/:userId` | ✅ Required | Admin | View a user's uploaded national ID card |
-| `POST` | `/uploads/avatar` | ✅ Required | Any | Upload or update the user's profile avatar |
-
-> **Note:** Image upload endpoints use `multipart/form-data` encoding, not JSON.
+| `POST` | `/alerts` | ✅ Required | Tenant | Create saved search alert criteria |
+| `GET` | `/alerts/my` | ✅ Required | Tenant | Fetch saved property alerts |
+| `PATCH` | `/alerts/:id` | ✅ Required | Tenant | Edit search alert criteria |
+| `PATCH` | `/alerts/:id/toggle` | ✅ Required | Tenant | Enable or disable instant alert notifications |
+| `DELETE` | `/alerts/:id` | ✅ Required | Tenant | Delete saved search alert |
 
 ---
 
-## 10. Payments & Subscriptions
+## 10. Interactive Community System (`/community`, `/admin/community`)
+
+Base path: `/community` & `/admin/community`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `GET` | `/community/categories` | ❌ Public | Any | List community post categories |
+| `GET` | `/community/posts` | ❌ Public | Any | Browse community posts (with governorate/category filters) |
+| `GET` | `/community/posts/:id` | ❌ Public | Any | View post details, comments, and members |
+| `POST` | `/community/posts` | ✅ Required | Tenant/Landlord | Create a new community activity post |
+| `POST` | `/community/posts/:id/join` | ✅ Required | Any | Join a community post activity group |
+| `POST` | `/community/posts/:id/leave` | ✅ Required | Any | Leave a community post activity group |
+| `POST` | `/community/posts/:id/comments` | ✅ Required | Any | Add a comment to a post |
+| `POST` | `/community/posts/:id/report` | ✅ Required | Any | Report an inappropriate post |
+| `GET` | `/admin/community/posts` | ✅ Required | Admin | Moderation list of community posts |
+| `GET` | `/admin/community/reports` | ✅ Required | Admin | View reported community posts |
+| `PATCH` | `/admin/community/posts/:id/status` | ✅ Required | Admin | Moderate post status (APPROVE, BLOCK, ARCHIVE) |
+
+---
+
+## 11. Ad Engine & Campaign System (`/ads`, `/admin/ads`)
+
+Base path: `/ads` & `/admin/ads`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `GET` | `/ads/active` | ❌ Public | Any | Fetch active winning ad for slot via Smart Weighting Engine |
+| `POST` | `/ads/:id/impression` | ❌ Public | Any | Asynchronously record ad view impression |
+| `POST` | `/ads/:id/click` | ❌ Public | Any | Asynchronously record ad click event |
+| `GET` | `/admin/ads/analytics` | ✅ Required | Admin | Super Admin Ad Engine Analytics & CTR Metrics |
+| `GET` | `/admin/ads/advertisements` | ✅ Required | Admin | Manage all advertisement items |
+| `POST` | `/admin/ads/advertisements` | ✅ Required | Admin | Create advertisement item |
+| `PATCH` | `/admin/ads/advertisements/:id` | ✅ Required | Admin | Update advertisement controls & target |
+| `DELETE` | `/admin/ads/advertisements/:id` | ✅ Required | Admin | Soft-delete advertisement |
+| `GET` | `/admin/ads/campaigns` | ✅ Required | Admin | Manage advertising campaigns |
+| `POST` | `/admin/ads/campaigns` | ✅ Required | Admin | Create advertising campaign |
+| `PATCH` | `/admin/ads/campaigns/:id` | ✅ Required | Admin | Update campaign status/budget |
+| `GET` | `/admin/ads/placements` | ✅ Required | Admin | List ad placement configurations |
+| `PATCH` | `/admin/ads/placements/:id` | ✅ Required | Admin | Toggle placement slot status |
+| `GET` | `/admin/ads/debug` | ✅ Required | Super Admin | Ad Engine Simulator & Exclusion Breakdown Tool |
+| `POST` | `/admin/ads/toggle-setting` | ✅ Required | Super Admin | Global toggle for `adsEnabled` system setting |
+
+---
+
+## 12. Real-time Chat & Support (`/chat`, `/chat/pusher`)
+
+Base path: `/chat`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `POST` | `/chat/send` | ✅ Required | Any | Send direct message or submit to Support Inbox |
+| `GET` | `/chat/conversation/:userId` | ✅ Required | Any | Get paginated chat history with a user |
+| `GET` | `/chat/support` | ✅ Required | Admin | View admin support inbox conversations |
+| `PATCH` | `/chat/read/:senderId` | ✅ Required | Any | Mark messages from sender as read |
+| `GET` | `/chat/unread-count` | ✅ Required | Any | Get unread messages counter |
+| `POST` | `/chat/pusher/auth` | ✅ Required | Any | Authenticate private Pusher channels (`private-chat-user-{userId}`) |
+
+---
+
+## 13. Notifications & Webhooks (`/notifications`, `/telegram`)
+
+Base path: `/notifications` & `/telegram`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `GET` | `/notifications` | ✅ Required | Any | Fetch user notifications (paginated) |
+| `GET` | `/notifications/unread-count` | ✅ Required | Any | Get unread notifications badge counter |
+| `PATCH` | `/notifications/read-all` | ✅ Required | Any | Mark all notifications as read |
+| `PATCH` | `/notifications/:id/read` | ✅ Required | Any | Mark single notification as read |
+| `GET` | `/notifications/push/vapid-key` | ❌ Public | Any | Get WebPush VAPID public key |
+| `POST` | `/notifications/push/subscribe` | ✅ Required | Any | Register WebPush subscription payload |
+| `POST` | `/telegram/webhook` | ❌ Public | Any | Telegram Bot Webhook endpoint for instant notifications |
+
+---
+
+## 14. Payments, Billing & Subscriptions (`/payments`)
 
 Base path: `/payments`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `GET` | `/payments/plan` | ✅ Required | Landlord | Get active subscription plan details |
-| `POST` | `/payments/initiate` | ✅ Required | Landlord | Initiate a new payment session |
-| `POST` | `/payments/webhook` | ❌ Public | — | Webhook endpoint for Paymob payment provider |
-| `GET` | `/payments/history` | ✅ Required | Landlord | Get all past payment transactions |
-| `DELETE` | `/payments/subscription` | ✅ Required | Landlord | Cancel the active subscription |
+| `GET` | `/payments/plan` | ✅ Required | Landlord | Get active landlord subscription plan details |
+| `POST` | `/payments/initiate` | ✅ Required | Landlord | Initiate Paymob payment checkout session |
+| `POST` | `/payments/webhook` | ❌ Public | Service | Webhook callback handler from Paymob gateway |
+| `GET` | `/payments/history` | ✅ Required | Landlord | Transaction history & billing invoices |
+| `DELETE` | `/payments/subscription` | ✅ Required | Landlord | Cancel recurring landlord subscription |
 
 ---
 
-## 11. Chat (Real-time Support)
+## 15. Media Uploads & Storage (`/uploads`)
 
-Base path: `/chat`  
-**All endpoints require authentication.**
-
-> **Architecture:** Messages are persisted to the database first, then broadcast in real-time via Pusher. The frontend must subscribe to the appropriate Pusher channel to receive live messages.
-
-### Pusher Channels
-
-| Channel Name | Usage |
-|---|---|
-| `private-chat-user-{userId}` | Personal channel for a user to receive direct messages |
-| `private-support` | General support messages with no specific receiver (admin inbox) |
-
-### Pusher Event
-
-| Event | Payload |
-|---|---|
-| `new-message` | `{ id, content, sender, receiverId, createdAt }` |
-
-### Endpoints
+Base path: `/uploads`
 
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `POST` | `/chat/send` | ✅ Required | Any | Send a message. Omit `receiverId` to send to admin support inbox |
-| `GET` | `/chat/conversation/:userId` | ✅ Required | Any | Get paginated DM history with another user |
-| `GET` | `/chat/support` | ✅ Required | Admin | View all support inbox messages |
-| `PATCH` | `/chat/read/:senderId` | ✅ Required | Any | Mark all messages from a sender as read |
-| `GET` | `/chat/unread-count` | ✅ Required | Any | Get total unread message count for current user |
-
-### Request Body — `POST /chat/send`
-
-```json
-{
-  "content": "Hello, I have a question about listing XYZ.",
-  "receiverId": "optional-user-id"
-}
-```
-> Omitting `receiverId` routes the message to the admin support channel.
+| `POST` | `/uploads/listings/:listingId/images` | ✅ Required | Landlord | Upload property images (`multipart/form-data`) |
+| `DELETE` | `/uploads/images/:imageId` | ✅ Required | Landlord | Delete property image |
+| `PATCH` | `/uploads/listings/:listingId/images/reorder` | ✅ Required | Landlord | Reorder gallery images |
+| `POST` | `/uploads/id-card` | ✅ Required | Any | Upload National ID image for verification |
+| `GET` | `/uploads/id-card/:userId` | ✅ Required | Admin | View user National ID image |
+| `POST` | `/uploads/avatar` | ✅ Required | Any | Upload/update profile picture |
 
 ---
 
-## 12. Admin Panel
+## 16. Location Data Services (`/location`)
 
-Base path: `/admin`  
-**All endpoints require authentication and the `admin` or `super_admin` role.**
-
-### Listings Management
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `GET` | `/admin/listings/pending` | Admin | Get all listings awaiting review/approval |
-| `PATCH` | `/admin/listings/:id/review` | Admin | Approve or reject a listing |
-| `DELETE` | `/admin/listings/:id` | Admin | **Permanently** delete any fraudulent or violating listing |
-
-### Users Management
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `GET` | `/admin/users` | Admin | List all users (paginated, filterable by role) |
-| `PATCH` | `/admin/users/:id/verify` | Admin | Verify a user's identity |
-| `PATCH` | `/admin/users/:id/toggle-status` | Admin | Activate or deactivate a user account |
-| `PATCH` | `/admin/users/:id/role` | **Super Admin only** | Change a user's role |
-| `POST` | `/admin/users` | Admin | Manually create a new user account |
-| `DELETE` | `/admin/users/:id` | Admin | **Permanently** delete any user (including banned users) |
-| `POST` | `/admin/register-admin` | **Super Admin only** | Register a new admin account directly |
-
-### Blacklist Management
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `POST` | `/admin/ban` | Admin | Ban a user from the platform |
-| `GET` | `/admin/banned` | Admin | List all banned users (with search and user profiles) |
-| `DELETE` | `/admin/banned/:id` | **Super Admin only** | Lift a ban (unban a user) |
-
-### Query Parameters — `GET /admin/banned`
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `page` | `number` | Page number (default: 1) |
-| `limit` | `number` | Items per page (default: 10) |
-| `search` | `string` | Filter/search by phone number, nationalIdHash, or reason |
-
-> **User Integration:** Each blacklist entry in the response array is dynamically joined with the associated `user` object containing `{ id, name, email, role, plan, identityStatus, isActive, createdAt }` if a registered user exists with that phone number.
-
-### Dashboard & Monitoring
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| `GET` | `/admin/dashboard/stats` | Admin | Get platform-wide statistics and KPIs |
-| `GET` | `/admin/requests` | Admin | Monitor **all** rental requests on the platform (for dispute resolution) |
-
-### Query Parameters — `GET /admin/requests`
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `page` | `number` | Page number (default: 1) |
-| `limit` | `number` | Items per page (default: 10) |
-
----
-
-## Response Format
-
-All API responses follow this standard format:
-
-```json
-{
-  "message": "Human-readable status message",
-  "data": { "..." : "..." }
-}
-```
-
-Error responses:
-
-```json
-{
-  "statusCode": 400,
-  "message": "Descriptive error message",
-  "error": "Bad Request"
-}
-```
-
----
-
-## HTTP Status Codes
-
-| Code | Meaning |
-|------|---------|
-| `200` | OK — Request succeeded |
-| `201` | Created — Resource created successfully |
-| `400` | Bad Request — Invalid input or business rule violation |
-| `401` | Unauthorized — Missing or invalid JWT token |
-| `403` | Forbidden — Authenticated but lacking required role or account is banned |
-| `404` | Not Found — Resource does not exist |
-| `409` | Conflict — Duplicate resource (e.g., phone already registered) |
-| `500` | Internal Server Error — Unexpected server-side error |
-
----
-
-## 13. Health Check
+Base path: `/location`
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/health` | ❌ Public | Check service health including database connectivity |
-
-<details>
-<summary><code>GET /health</code> — Response Example</summary>
-
-```json
-{
-  "status": "ok",
-  "database": {
-    "status": "connected",
-    "latencyMs": 12
-  },
-  "process": {
-    "uptime": 1542,
-    "pid": 14344,
-    "memoryUsage": {
-      "rssMb": 87.25,
-      "heapTotalMb": 54.12,
-      "heapUsedMb": 32.45,
-      "externalMb": 2.1
-    }
-  },
-  "system": {
-    "platform": "win32",
-    "cpuCount": 8,
-    "loadAverage": [0, 0, 0],
-    "freeMemoryGb": 4.25,
-    "totalMemoryGb": 16.0
-  },
-  "version": "1.0.0",
-  "timestamp": "2026-07-13T02:57:10.123Z"
-}
-```
-</details>
+| `GET` | `/location/governorates` | ❌ Public | Fetch Egyptian Governorates list |
+| `GET` | `/location/cities/:governorateId` | ❌ Public | Fetch Cities/Districts for a Governorate |
 
 ---
 
-*Last updated: June 2026 — Sakani Backend v1.1 (Security Hardening v4 — Enterprise Edition)*
+## 17. Dashboard Analytics (`/dashboard`)
+
+Base path: `/dashboard`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `GET` | `/dashboard/tenant/summary` | ✅ Required | Tenant | Tenant dashboard summary (wishlist, applications, alerts) |
+| `GET` | `/dashboard/landlord/summary` | ✅ Required | Landlord | Landlord dashboard summary (occupancy, revenue, requests) |
+
+---
+
+## 18. Admin Panel & Governance (`/admin`)
+
+Base path: `/admin`
+
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| `GET` | `/admin/dashboard/stats` | ✅ Required | Admin | Platform KPI stats & system health metrics |
+| `GET` | `/admin/listings/pending` | ✅ Required | Admin | Moderation queue of listings pending approval |
+| `PATCH` | `/admin/listings/:id/review` | ✅ Required | Admin | Approve or reject pending listing |
+| `DELETE` | `/admin/listings/:id` | ✅ Required | Admin | Permanently purge violating listing |
+| `GET` | `/admin/users` | ✅ Required | Admin | List all registered users (filterable) |
+| `PATCH` | `/admin/users/:id/verify` | ✅ Required | Admin | Verify National ID & identity badge |
+| `PATCH` | `/admin/users/:id/toggle-status` | ✅ Required | Admin | Activate or suspend user account |
+| `PATCH` | `/admin/users/:id/role` | ✅ Required | Super Admin | Change user role (`TENANT`, `LANDLORD`, `ADMIN`, `SUPER_ADMIN`) |
+| `POST` | `/admin/register-admin` | ✅ Required | Super Admin | Register new Admin account |
+| `POST` | `/admin/ban` | ✅ Required | Admin | Ban user by Phone / National ID |
+| `GET` | `/admin/banned` | ✅ Required | Admin | List blacklisted users |
+| `DELETE` | `/admin/banned/:id` | ✅ Required | Super Admin | Lift user ban |
+| `GET` | `/admin/banned-words` | ✅ Required | Admin | List automated content moderation banned words |
+| `POST` | `/admin/banned-words` | ✅ Required | Admin | Add new banned word filter |
+| `DELETE` | `/admin/banned-words/:id` | ✅ Required | Admin | Remove banned word filter |
+| `GET` | `/admin/account-lifecycle/restorations` | ✅ Required | Admin | View pending account restoration requests |
+| `POST` | `/admin/account-lifecycle/restore` | ✅ Required | Admin | Approve account restoration |
+
+---
+
+## 19. System Health Check (`/health`)
+
+Base path: `/health`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/health` | ❌ Public | Service health, DB latency, Memory & CPU metrics |
+
+---
+
+## 20. Error Codes & HTTP Status Matrix
+
+| Status Code | Meaning | Common Causes |
+|-------------|---------|---------------|
+| `200 OK` | Request Succeeded | Normal query/fetch execution |
+| `201 Created` | Created | Resource successfully initialized |
+| `400 Bad Request` | Validation Failure | Invalid DTO format, missing required fields |
+| `401 Unauthorized` | Unauthenticated | Missing or expired JWT token |
+| `403 Forbidden` | Access Denied | Lacking role permissions or account is suspended/banned |
+| `404 Not Found` | Resource Missing | Invalid ID or soft-deleted record |
+| `409 Conflict` | Unique Key Conflict | Phone number or National ID already registered |
+| `500 Server Error` | Internal Failure | Unexpected exception (monitored & logged) |
+
+---
+
+*Document Revision: August 2026 — Sakani Enterprise Core v1.1*
