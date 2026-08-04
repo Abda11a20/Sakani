@@ -13,13 +13,10 @@ jobs:
 
     strategy:
       matrix:
-        # Match the Node version used by the production Docker images.
         node-version: [22.x]
 
     env:
-      # DATABASE_URL مخزّن كـ GitHub Secret — لا يظهر في الكود أبداً
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # باقي المتغيرات مطلوبة فقط لتجميع TypeScript — لا تتصل بأي خدمة حقيقية في CI
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
       ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
@@ -42,7 +39,8 @@ jobs:
         run: npm ls @nestjs/swagger --workspace=backend --depth=0
 
       - name: Generate Prisma Client
-        run: npx prisma generate --schema=apps/backend/prisma/schema.prisma
+        working-directory: apps/backend
+        run: npx prisma generate
 
       - name: Lint
         run: npm run lint
