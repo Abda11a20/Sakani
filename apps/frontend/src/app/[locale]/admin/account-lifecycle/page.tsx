@@ -16,6 +16,7 @@ import {
   X,
   Eye,
   AlertTriangle,
+  UserX,
 } from "lucide-react";
 import {
   useAdminAccountLifecycle,
@@ -24,8 +25,13 @@ import {
 } from "@/hooks/useAdmin";
 import { Avatar, useToast } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function AdminAccountLifecyclePage() {
+  const locale = useLocale();
+  const tLife = useTranslations("admin.accountLifecycle");
+  const tCommon = useTranslations("common");
+  const isRtl = locale === "ar";
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<"IN_GRACE_PERIOD" | "RESTORED" | "CANCELLED">("IN_GRACE_PERIOD");
@@ -51,7 +57,7 @@ export default function AdminAccountLifecyclePage() {
 
   const formatDate = (d?: string) => {
     if (!d) return "-";
-    return new Date(d).toLocaleDateString("ar-EG", {
+    return new Date(d).toLocaleDateString(isRtl ? "ar-EG" : "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -63,7 +69,8 @@ export default function AdminAccountLifecyclePage() {
   const calculateRemainingDays = (scheduledDate?: string) => {
     if (!scheduledDate) return 0;
     const diffMs = new Date(scheduledDate).getTime() - new Date().getTime();
-    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
   };
 
   const handleRestoreUserAction = (userId: string) => {
@@ -110,16 +117,16 @@ export default function AdminAccountLifecyclePage() {
   };
 
   return (
-    <div className="h-full flex flex-col font-cairo bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-      {/* Header */}
-      <div className="bg-[#0F1A2E] text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+    <div className="flex flex-col h-full bg-surface border border-border rounded-3xl overflow-hidden shadow-xs font-cairo">
+      {/* Top Banner */}
+      <div className="bg-slate-900 p-5 flex items-center justify-between flex-wrap gap-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-status-warning/20 text-status-warning flex items-center justify-center font-bold">
-            <RotateCcw size={20} />
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+            <UserX size={20} />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white">دورة حياة الحسابات (Account Lifecycle)</h1>
-            <p className="text-[11px] text-white/60">إدارة طلبات التعطيل الذاتي، فترة السماح، وحالات الاستعادة</p>
+            <h1 className="text-sm font-bold text-white">{tLife("title")}</h1>
+            <p className="text-[11px] text-white/60">{tLife("subtitle")}</p>
           </div>
         </div>
 
@@ -128,13 +135,12 @@ export default function AdminAccountLifecyclePage() {
           className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold self-end sm:self-center"
         >
           <RefreshCcw size={15} className={isLoading ? "animate-spin" : ""} />
-          <span>تحديث البيانات</span>
+          <span>{tCommon("refresh")}</span>
         </button>
       </div>
 
       {/* Tabs & Search */}
       <div className="bg-surface-secondary border-b border-border p-4 flex flex-col md:flex-row items-center justify-between gap-3 shrink-0">
-        {/* Tab Switcher */}
         <div className="flex items-center gap-2 bg-surface p-1 rounded-2xl border border-border w-full md:w-auto overflow-x-auto">
           <button
             onClick={() => {
@@ -147,7 +153,7 @@ export default function AdminAccountLifecyclePage() {
             )}
           >
             <Clock size={14} />
-            <span>في فترة السماح</span>
+            <span>{tLife("inGracePeriod")}</span>
           </button>
 
           <button
@@ -161,7 +167,7 @@ export default function AdminAccountLifecyclePage() {
             )}
           >
             <CheckCircle2 size={14} />
-            <span>تمت الاستعادة</span>
+            <span>{tLife("restored")}</span>
           </button>
 
           <button
@@ -175,11 +181,10 @@ export default function AdminAccountLifecyclePage() {
             )}
           >
             <XCircle size={14} />
-            <span>تم الإلغاء</span>
+            <span>{tLife("cancelled")}</span>
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="relative w-full md:w-80">
           <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -189,7 +194,7 @@ export default function AdminAccountLifecyclePage() {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            placeholder="بحث باسم الحساب، رقم الهاتف، أو الإيميل..."
+            placeholder={isRtl ? "بحث باسم الحساب، رقم الهاتف، أو الإيميل..." : "Search by name, phone or email..."}
             className="w-full ps-9 pe-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-500 transition-all"
           />
         </div>
@@ -200,20 +205,20 @@ export default function AdminAccountLifecyclePage() {
         {isLoading ? (
           <div className="p-12 text-center text-slate-500 flex flex-col items-center">
             <Loader2 size={24} className="animate-spin mb-2 text-amber-600" />
-            <span className="text-xs font-bold">جارٍ تحميل بيانات الحسابات...</span>
+            <span className="text-xs font-bold">{tCommon("loading")}</span>
           </div>
         ) : isError ? (
           <div className="p-12 text-center text-rose-600 text-xs font-bold flex flex-col items-center">
             <AlertCircle size={24} className="mb-2" />
-            <span>فشل جلب بيانات دورة الحياة. حاول التحديث.</span>
+            <span>{tCommon("error")}</span>
           </div>
         ) : usersList.length === 0 ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
               <RotateCcw size={24} />
             </div>
-            <h4 className="font-bold text-sm text-slate-800">لا توجد حسابات تنطبق عليها هذه الحالة</h4>
-            <p className="text-xs max-w-sm">جميع الحسابات تعمل بشكل طبيعي أو لا توجد نتائج مطابقة للبحث.</p>
+            <h4 className="font-bold text-sm text-slate-800">{tLife("emptyStateTitle")}</h4>
+            <p className="text-xs max-w-sm">{tLife("emptyStateDesc")}</p>
           </div>
         ) : (
           <div className="w-full">

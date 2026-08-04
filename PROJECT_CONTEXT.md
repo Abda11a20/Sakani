@@ -1,235 +1,131 @@
-# دليل مرجع النظام المعماري والتقني لمنصة سَكني (Sakani Platform Reference Guide)
+# 🤖 Sakany (سكني) - AI Assistant & Developer Context Reference (`PROJECT_CONTEXT.md`)
 
-منصة **سَكني** هي منصة متكاملة مخصصة لتسهيل عمليات تأجير العقارات والغرف والأسرة للشباب والطلاب في مصر. يوفر هذا المستند مرجعاً تقنياً ومعمارياً شاملاً يغطي كافة التفاصيل البرمجية على مستوى الملفات والمكونات والتقنيات المستخدمة في كل من الواجهة الخلفية (Backend) والواجهة الأمامية (Frontend).
-
----
-
-## 1. نظرة عامة على التقنيات المستخدمة (Technology Stack)
-
-### الواجهة الخلفية (Backend API)
-* **الإطار الأساسي (Core):** NestJS (TypeScript) - هيكلية معيارية مقسمة لـ Modules.
-* **إدارة قاعدة البيانات:** Prisma ORM مع استخدام Driver Adapter `@prisma/adapter-pg` للاتصال بـ PostgreSQL.
-* **قاعدة البيانات:** Neon Serverless PostgreSQL.
-* **المصادقة والأمان:** JSON Web Tokens (JWT) للمصادقة، و `bcrypt` لتشفير كلمات المرور، و `crypto` للتشفير المتماثل للبيانات الحساسة (مثل الرقم القومي).
-* **الحماية من إغراق الطلبات:** `@nestjs/throttler` (Rate Limiting).
-* **إرسال الرسائل الحية (Real-time):** Pusher (قنوات مشفرة وخاصة).
-* **إدارة ورفع الملفات:** Cloudinary API أو AWS S3 (قابل للتغيير ديناميكياً عبر المتغيرات).
-* **التوثيق الإلكتروني:** Swagger / OpenAPI متاح على مسار `/api/docs`.
-* **البريد الإلكتروني:** خدمة Resend API أو SMTP (Nodemailer) لإرسال أكواد الـ OTP وتفعيل الحسابات.
-* **التنبيهات المباشرة:** WhatsApp Cloud API لإرسال الإشعارات والتحذيرات للمستخدمين.
-
-### الواجهة الأمامية (Frontend Application)
-* **الإطار الأساسي (Core):** Next.js 14 (App Router) باستخدام TypeScript.
-* **التدويل والترجمة (Localization):** `next-intl` لدعم كامل للغتين العربية والإنجليزية.
-* **التنسيق والمظهر (Styling):** Tailwind CSS مع استخدام Radix UI ومكتبات التحريك.
-* **إدارة الحالات الموزعة (State Management):** Zustand (مع حفظ الحالة تلقائياً في LocalStorage للـ Tokens والمستخدم).
-* **جلب البيانات والتزامن (Data Fetching):** React Query / Tanstack Query للـ Caching وإدارة الاستجابات وطلب الـ APIs.
-* **التعامل مع الـ HTTP:** Axios مع ميزة Response Interceptor لفك تغليف الاستجابات وعلاج أخطاء الـ Token تلقائياً.
-* **نماذج التحقق (Form Validation):** React Hook Form مع Zod كأداة للتحقق من صحة المدخلات.
-* **تحديثات المحادثة الحية:** Pusher JS للاتصال المستمر بقنوات البث الفوري للمحادثات.
+> **Note for AI Coding Assistants (Antigravity, Claude, ChatGPT, Copilot, Cursor):**
+> This document contains the definitive, authoritative context for the **Sakany (سكني)** monorepo codebase. You **MUST** read and adhere to all architectural constraints, local environment variables, database adapters, and i18n rules documented here before proposing or generating any code edits.
 
 ---
 
-## 2. هيكل قاعدة البيانات (Database Schema - Prisma)
+## 📌 1. Project Quick Matrix
 
-يحتوي النظام على الجداول الرئيسية التالية والمعرفة بملف [Prisma Schema](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/prisma/schema.prisma):
-* **`users`:** جدول المستخدمين، يحتوي على الاسم، الهاتف، الإيميل، الرتبة (`UserRole`)، الباقة الحالية (`UserPlan`)، تاريخ تفعيل الحساب، والرقم القومي المشفر.
-* **`listings`:** جدول الإعلانات العقارية (شقة، غرفة، سرير). يحتوي على السعر، التفاصيل، الموقع الإحداثي والجغرافي، وحالة المراجعة (`ListingStatus`).
-* **`listing_images`:** الصور الخاصة بالعقارات.
-* **`listing_beds`:** تفاصيل وحالة الأسرة داخل الإعلانات المخصصة (متاح، محجوز، نوع السرير، تاريخ التأجير).
-* **`viewing_requests`:** طلبات المعاينة المرسلة من المستأجر للمؤجر مع التواريخ المفضلة والحالة.
-* **`reviews`:** التقييمات والتعليقات الممنوحة بين المستأجر والمؤجر وعقارات الملاك.
-* **`alerts`:** التنبيهات الذكية التي يضبطها المستأجر لاستقبال تنبيهات بالبريد/الواتساب عند نشر عقار يطابق فلاتره المفضلة.
-* **`subscriptions`:** باقات الاشتراك الممتازة الخاصة بالدفع والترقية وسجلات Paymob.
-* **`blacklist`:** الحسابات والأرقام القومية وأرقام الهواتف المحظورة من المنصة.
-* **`verification_codes`:** الأكواد المشفرة للتحقق من الإيميل أو استعادة كلمة المرور مع تتبع المحاولات وتواريخ انتهاء الصلاحية.
-* **`device_sessions`:** جلسات الأجهزة النشطة للمستخدم لإتاحة تسجيل الدخول المتعدد وإلغاء الجلسات عند تغيير كلمة المرور.
-* **`chat_messages`:** سجل الرسائل الفورية بين المستخدمين أو مع الدعم الفني.
-* **`notifications`:** الإشعارات الداخلية للمستخدم.
-* **`audit_logs`:** سجل العمليات والتحركات التي يجريها المسؤولون والمشرفون على المنصة.
+| Attribute | Configuration Detail |
+| :--- | :--- |
+| **Project Name** | Sakany (سكني) - Egyptian Housing & Shared Bed Rental Platform |
+| **Monorepo Engine** | Turborepo (`npm` workspaces) |
+| **Frontend Server** | Next.js 14.2 App Router (Runs on `http://localhost:3000`) |
+| **Backend Server** | NestJS 10.0 Monolith (Runs on `http://localhost:4000`) |
+| **Database** | PostgreSQL 16 (`localhost:5432` / `sakani_db`) |
+| **Prisma Config** | Prisma ORM 5/7 with `@prisma/adapter-pg` driven by `prisma.config.ts` |
+| **CLI Command Flag** | `npm run dev -- --env-mode=loose` (Mandatory on Windows) |
+| **Locales Supported** | Arabic (`ar` - Default / RTL) and English (`en` - LTR) via `next-intl` |
 
 ---
 
-## 3. تفاصيل ملفات الواجهة الخلفية (Backend Structure - File by File)
+## 🛠️ 2. Environment & Database Configuration
 
-تقع ملفات الباك إند داخل مجلد [apps/backend/src](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src):
+### 2.1 Database Connection String (`apps/backend/.env`)
+```env
+DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/sakani_db?schema=public"
+PORT=4000
+JWT_SECRET="super-secret-jwt-key"
+JWT_REFRESH_SECRET="super-secret-refresh-key"
+```
 
-### الملفات الرئيسية
-* **[main.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/main.ts):** نقطة انطلاق التطبيق. يهيئ السيرفر، ويفعل الحماية (Helmet, Dynamic CORS), وضغط الملفات (Compression)، والـ API Versioning (`/api/v1`)، وموثق Swagger.
-* **[app.module.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/app.module.ts):** الموديول الرئيسي الذي يجمع ويفعل كل الموديولات الفرعية للخدمات وإعدادات الـ Throttler والـ Config.
-* **[env.validation.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/backend/src/env.validation.ts):** ملف فحص متغيرات البيئة قبل الإقلاع باستخدام Zod للتأكد من وجود مفاتيح الاتصال الهامة (`DATABASE_URL`, `JWT_SECRET`, ...).
+### 2.2 Prisma Adapter Configuration (`apps/backend/prisma.config.ts`)
+```typescript
+import path from 'node:path'
+import { defineConfig } from 'prisma/config'
+import { PrismaPg } from '@prisma/adapter-pg'
+import 'dotenv/config'
 
-### الخدمات والموديولات الفرعية (Modules)
-
-1. **المصادقة والأمان (`auth`)**
-   * **`auth.controller.ts`:** يستقبل طلبات التسجيل، وتفعيل الحساب بـ OTP، تسجيل الدخول، وتجديد الـ Access Token، وتغيير أو إعادة تعيين كلمة المرور. يحتوي على محددات Throttler مخصصة لكل مسار.
-   * **`auth.service.ts`:** المنطق الفعلي للمصادقة. يحتوي على دوال تشفير وفك تشفير البيانات بـ `AES-256-CBC`، وإدارة عمليات التسجيل داخل Prisma Transactions لضمان الاستقرار، والتحقق من صلاحية الجلسات وحذفها.
-   * **`guards/jwt-auth.guard.ts` & `strategies/jwt.strategy.ts`:** للتحقق من الـ Tokens وصلاحيات الوصول للمسارات المحمية.
-
-2. **المشرفين (`admin`)**
-   * **`admin.controller.ts`:** مسارات المشرفين لمراقبة حالة النظام، توثيق المستخدمين، مراجعة صور الرقم القومي، إغلاق أو مراجعة العقارات، وحظر المستخدمين.
-   * **`admin.service.ts`:** يحتوي على دوال جلب الإحصائيات الشاملة، ورفع وحجب المستخدمين من الدخول، وفحص الهويات، واستعراض سجل التحركات والأعطال.
-
-3. **إدارة العقارات والإعلانات (`listings`)**
-   * **`listings.controller.ts`:** التحكم في إضافة عقار، تعديل التفاصيل، جلب إعلانات مؤجر معين، وتحديث الحالة.
-   * **`listings.service.ts`:** تتولى منطق تخزين العقار إحداثياً وجغرافياً، وربط الصور المرفوعة، والتحكم بالحقوق وحساب المتوسطات للأسرة المتوفرة.
-
-4. **إدارة الأسرة (`beds`)**
-   * **`beds.controller.ts`:** تحديث شواغر وحالات الأسرة للمؤجر.
-   * **`beds.service.ts`:** منطق تأجير سرير محدد وإخلاءه وتحديث حالة التوفر فوراً في العقار لتزامن نتائج البحث.
-
-5. **طلبات المعاينة (`requests`)**
-   * **`requests.controller.ts`:** إرسال طلبات المعاينة وتعديل حالتها.
-   * **`requests.service.ts`:** التحقق من شروط الطلب (مثال: التأكد من مطابقة فئة المستأجر كـ "شباب" أو "بنات" لنوع العقار المستهدف) وتغيير الحالة مع إرسال إشعارات.
-
-6. **البحث المتقدم (`search`)**
-   * **`search.controller.ts`:** معالجة مسارات البحث وقائمة المناطق المميزة.
-   * **`search.service.ts`:** ينفذ استعلامات تصفية معقدة في قاعدة البيانات (مثل فلترة الأسعار، المناطق، التقييمات، والخدمات الإضافية) بدعم الـ Pagination وحفظ سجلات البحث.
-
-7. **التنبيهات الذكية (`alerts`)**
-   * **`alerts.controller.ts`:** ضبط ومسح فلاتر التنبيهات للمستأجر.
-   * **`alerts.service.ts`:** يقوم بمطابقة كل عقار يتم تفعيله ونشره حديثاً مع قائمة فلاتر المستخدمين الفعالة وإرسال إشعار فوري لهم عبر البريد الإلكتروني أو الواتساب.
-
-8. **المحادثة والدعم (`chat`)**
-   * **`chat.controller.ts`:** جلب رسائل محادثة معينة، وتتبع المحادثات المفتوحة للمشرفين.
-   * **`chat.service.ts`:** منطق حفظ الرسائل وإرسالها حياً عبر قنوات Pusher والتأكد من تحديث حالات القراءة للرسائل.
-
-9. **الملفات المرفوعة (`uploads`)**
-   * **`uploads.controller.ts` & `uploads.service.ts`:** توفير روابط رفع الصور وتخزينها إما محلياً أو على Cloudinary/AWS S3.
-   * **`pipes/file-validation.pipe.ts`:** فحص الملفات المرفوعة عن طريق قراءة التوقيع الثنائي الحقيقي للملف (Magic Numbers) للتأكد من خلوه من البرمجيات الخبيثة والتأكد من امتداده الحقيقي.
-
-10. **المدفوعات والاشتراكات (`payments`)**
-    * **`payments.controller.ts` & `payments.service.ts`:** إدارة عمليات الدفع عبر بوابة Paymob، واستقبال الـ Webhooks، والتأكد من توقيع HMAC، وترقية الحسابات لباقات Premium، والتحقق التلقائي من تاريخ انتهاء الباقات دورياً عبر Cron Jobs.
-
-11. **الخدمات العامة والمشتركة (`common` & `health` & `prisma`)**
-    * **`prisma.service.ts`:** إعداد اتصال Prisma بقاعدة بيانات Neon مع تفعيل Graceful Shutdown.
-    * **`global-exception.filter.ts`:** يلتقط أخطاء الخادم ويسجلها للمطورين بعد إخفاء أي بيانات حساسة (مثل الأرقام القومية أو الباسوردات) لضمان السرية التامة.
-    * **`health.controller.ts`:** قياس مدى اتصال قاعدة البيانات والخادم عبر مسار `/api/v1/health` وتحديد زمن الاستجابة للمراقبة المستمرة.
+export default defineConfig({
+  schema: path.join('prisma', 'schema.prisma'),
+  datasource: { url: process.env.DATABASE_URL! },
+  migrate: {
+    async adapter() {
+      return new PrismaPg({
+        connectionString: process.env.DATABASE_URL!,
+      })
+    },
+  },
+})
+```
 
 ---
 
-## 4. تفاصيل ملفات الواجهة الأمامية (Frontend Structure - File by File)
+## 🚨 3. Mandatory AI Coding Rules & Constraints
 
-تقع الملفات داخل مجلد [apps/frontend/src](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src):
+When modifying or generating code for this repository, AI agents **MUST** enforce the following rules:
 
-### مسارات وهيكل التطبيق (App Router)
-توجد الصفحات داخل المجلد [app/[locale]](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/[locale]):
-* **`layout.tsx`:** الملف الأساسي لواجهة اللغة. يحتوي على محددات الخطوط (Cairo للعربية و Inter للإنجليزية)، وإعدادات PWA، وتهيئة Themes (وضع مظلم/مضيء)، و `NextIntlClientProvider` لنصوص الترجمة، و `Providers` الأساسية (React Query).
-* **`page.tsx`:** الصفحة الرئيسية للمنصة (أقسام Hero، كيف يعمل الموقع، الإعلانات المميزة، المناطق الشهيرة، دعوات المؤجرين).
-* **`(auth)`:** مجلد يضم صفحة تسجيل الدخول، إنشاء حساب جديد، وتأكيد البريد بـ OTP، وطلب كلمة مرور جديدة.
-* **`listings/[id]/page.tsx`:** صفحة تفاصيل العقار؛ تعرض معرض الصور مع Lightbox، السعر، المميزات، الشروط، التقييمات، ومودال إرسال طلب معاينة.
-* **`search/page.tsx`:** صفحة البحث الكاملة مع شريط الفلاتر الجانبي (تصفية ديناميكية عبر تعديل الـ URL Query Params مباشرة لمنع تحديث الصفحة ودعم النسخ والمشاركة).
-* **`dashboard`:**
-  * **`landlord/`:** لوحة تحكم المالك؛ وتضم عرض الإحصائيات، وإدارة الإعلانات (إضافة عقار وتعديله بنموذج متعدد الخطوات `ListingForm`)، وقبول/رفض طلبات المعاينة، وإدارة شواغر الأسرة.
-  * **`tenant/`:** لوحة تحكم المستأجر؛ إدارة طلبات المعاينة، وإضافة تقييمات، وإعداد التنبيهات التلقائية، واستعراض المفضلة (Wishlist) المخزنة في LocalStorage، وإدارة الاشتراكات عبر Paymob.
-  * **`profile/page.tsx`:** صفحة الملف الشخصي الموحدة لتعديل الاسم، رفع صورة المستخدم، رفع صورة بطاقة الهوية القومية للملاك، وتغيير الباسورد.
-  * **`admin/`:** لوحة تحكم الإدارة الشاملة لإدارة المستخدمين، العقارات المعلقة، تصفح المحظورين، والرد المباشر على رسائل الدعم الفني.
+### Rule 1: Zero Hardcoded Translatable UI Strings
+- **NEVER** write plain Arabic or English user-facing text inside JSX/TSX components.
+- Always use `useTranslations("namespace")` from `next-intl`.
+- Add new keys symmetrically to both `apps/frontend/messages/ar.json` and `apps/frontend/messages/en.json`.
+- Reuse existing keys under `common.status.*`, `common.unit.*`, and `common.actions.*` whenever possible.
 
-### المكونات والخدمات والخطاطيف (Components & Hooks)
-* **`components/layout/Navbar.tsx`:** شريط التنقل العلوي المستجيب للهواتف مع قائمة تبديل اللغات وتبديل الـ Themes وأيقونة المستخدم.
-* **`components/layout/Footer.tsx`:** تذييل الصفحة وروابط الوصول السريع.
-* **`lib/api.ts`:** إعداد مكتبة Axios الموحدة؛ تتولى دمج الـ Access Token تلقائياً في الترويسات (Headers)، وإدارة عملية تجديد الجلسة تلقائياً عبر `refreshToken` في حال انتهت صلاحية الجلسة لمنع خروج المستخدم، وتعديل هيكلة الأخطاء لإظهار الرسائل الودية للمستخدم.
-* **`store/auth.store.ts`:** مخزن Zustand لحفظ المستخدم الحالي والـ Access Token محلياً والتزامن مع الـ LocalStorage.
-* **`hooks/`:**
-  * `useAuth`: دوال الدخول والخروج والتسجيل.
-  * `useListings` / `useBeds` / `useRequests` / `useProfile` / `useAdmin`: هوكس React Query للتكامل وتزامن البيانات حياً مع الـ API وعمل Caching ذكي ومثالي.
+### Rule 2: Zero Unsanctioned Backend / Database Breaking Changes
+- **NEVER** modify NestJS API DTO signatures, endpoint routes, or Prisma model column names without explicit user request.
+- Always run `npx prisma migrate dev` after altering `schema.prisma`.
+
+### Rule 3: Strict TypeScript & Type Imports
+- **NEVER** use `any` in core domain services, hooks, or component props.
+- Import shared types from `@/types` or `@sakani/types`.
+
+### Rule 4: RTL/LTR Layout & Directional Hygiene
+- Use Next.js locale context `dir={isAr ? "rtl" : "ltr"}`.
+- Use Tailwind CSS logical properties: `ps-*` (padding-start), `pe-*` (padding-end), `start-*`, `end-*`, `ms-*`, `me-*`.
 
 ---
 
-## 5. مصفوفة الصلاحيات والمستخدمين (Roles & Permissions Matrix)
+## 📁 4. Core Entry Points & File Map
 
-يتم تخصيص الصلاحيات بناءً على `UserRole` المعرّف في الباك إند بالشكل التالي:
+### 4.1 Frontend Map (`apps/frontend/`)
+- `messages/ar.json` & `messages/en.json` — i18n Translation Dictionaries.
+- `src/app/[locale]/layout.tsx` — NextIntl Client Provider & Global Theme Root.
+- `src/app/[locale]/page.tsx` — Public Home Landing Page.
+- `src/app/[locale]/search/page.tsx` — Interactive Discovery & Map Search Engine.
+- `src/app/[locale]/dashboard/landlord/` — Landlord Management System (Ads, Beds, Requests).
+- `src/app/[locale]/dashboard/tenant/` — Tenant Portal (Viewing Requests, Wishlist, Alerts).
+- `src/app/[locale]/dashboard/support/` — Realtime Support Chat Room.
+- `src/app/[locale]/admin/` — Platform Moderation, Verifications & Banned Users Index.
+- `src/services/api.ts` — Unified Axios Instance with HTTP-Only Cookie Refresh Interceptors.
 
-| الصلاحية / الميزة | مستأجر (`tenant`) | مؤجر (`landlord`) | مسؤول (`admin`) | مسؤول خارق (`super_admin`) |
-| :--- | :---: | :---: | :---: | :---: |
-| تصفح العقارات والبحث | ✅ | ✅ | ✅ | ✅ |
-| تقديم طلب معاينة عقار | ✅ | ❌ | ✅ | ✅ |
-| إضافة وتعديل إعلانات وعقارات | ❌ | ✅ | ✅ | ✅ |
-| إدارة شواغر الأسرة واستئجارها | ❌ | ✅ | ✅ | ✅ |
-| إعداد تنبيهات ذكية وجديدة | ✅ | ❌ | ✅ | ✅ |
-| تقييم الملاك والعقارات | ✅ | ❌ | ✅ | ✅ |
-| تصفح إحصائيات النظام الشاملة | ❌ | ❌ | ✅ | ✅ |
-| توثيق الحسابات وفحص الهويات | ❌ | ❌ | ✅ | ✅ |
-| حذف الإعلانات أو حظر المستخدمين | ❌ | ❌ | ✅ | ✅ |
-| رفع الحظر عن مستخدم محظور | ❌ | ❌ | ❌ | ✅ |
-| ترقية الحساب لباقات Premium | ✅ | ✅ | ✅ | ✅ |
-
----
-
-## 6. دليل الأخطاء الشائعة وحلها محلياً (Troubleshooting & Local Setup)
-
-### 1. مشكلة تكرار الهيكل (Double HTML layout Mismatch)
-* **المظهر:** شاشة بيضاء كاملة بالفرونت إند عند التشغيل.
-* **الحل الدائم:** تعديل [app/layout.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/layout.tsx) ليكون مجرد ممرر للـ `children` فقط:
-  ```tsx
-  export default function RootLayout({ children }: { children: React.ReactNode }) {
-    return children;
-  }
-  ```
-  مع نقل ملفات `error.tsx` و `not-found.tsx` إلى داخل مجلد `[locale]/` لكي ترث الـ layout الصحيح وتتجنب التكرار والتعارض.
-
-### 2. خطأ الـ 401 Unauthorized عند الربط
-* **السبب:** تداخل الكود؛ الواجهة الأمامية المحلية ترسل `identifier` بينما السيرفر المرفوع أونلاين لم يصله تحديث الكود بعد ويبحث عن حقل `phone`.
-* **الحل:**
-  1. توجيه ملف [.env.local](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/.env.local) في الفرونت إند ليتصل بالباك إند المحلي:
-     `NEXT_PUBLIC_API_URL="http://localhost:3001/api/v1"`
-  2. تشغيل الفرونت والباك معاً محلياً من المجلد الرئيسي للمشروع:
-     `npm run dev`
-  3. استخدام الحساب التجريبي الموثق والموجود بقاعدة البيانات:
-     * **البريد:** `admin@sakani.eg`
-     * **كلمة المرور:** `AdminPassword123!`
+### 4.2 Backend Map (`apps/backend/`)
+- `src/main.ts` — NestJS Bootstrap Entry (ValidationPipes, CORS, CookieParsers).
+- `prisma/schema.prisma` — Master PostgreSQL Entity Definitions & Enums.
+- `src/auth/` — JWT Strategy, Passport Auth, Refresh Token Handlers, Roles Guards.
+- `src/listings/` — Apartment & Bed Listing CRUD Controllers.
+- `src/requests/` — Viewing Request Workflow & Rental Contract Generators.
+- `src/chat/` — Pusher Realtime WebSocket Broadcasters.
+- `src/uploads/` — Cloudinary REST Upload Signer.
 
 ---
 
-## 7. التعارضات والمشاكل المكتشفة بين الباك إند والفرونت إند (Discovered Contradictions & Bugs)
+## ⚙️ 5. Common Maintenance Commands
 
-أثناء فحص الملفات بالتفصيل، تم التوصل إلى التعارضات البرمجية التالية والتي تمثل أسباباً مباشرة لبعض المشاكل (Bugs) في المنصة:
+```bash
+# Start full stack development server (Windows loose mode)
+npm run dev
 
-### 1. تعارض خيارات جنس الإعلان (genderTarget = "family")
-* **الخلل:** في صفحة البحث [search-client.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/app/[locale]/search/search-client.tsx) يحتوي فلتر الفئة المستهدفة على خيار "عائلات" بقيمة `"family"`.
-* **المشكلة:** الباك إند يعتمد على الـ Enum الخاص بقاعدة البيانات `GenderTarget` والذي يقبل فقط (`male`, `female`, `mixed`).
-* **الأثر:** عند قيام المستخدم بتصفية العقارات بـ "عائلات"، يرفض الباك إند الطلب فوراً بـ `400 Bad Request` وتفشل عملية البحث بالكامل.
+# Run TypeScript compilation check across frontend
+cd apps/frontend && npx tsc --noEmit
 
-### 2. تعارض مسمى نوع عداد الكهرباء (electricityType vs meterType)
-* **الخلل:** قاعدة بيانات الباك إند تسمي الحقل `electricityType` بينما نوع البيانات في الفرونت إند [types/index.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/types/index.ts) يسميه `meterType`.
-* **المشكلة:** عند تحميل بيانات العقار للتعديل في النموذج [ListingForm.tsx](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/components/dashboard/ListingForm.tsx)، يبحث النموذج عن `initialData?.meterType` (وهو غير موجود في رد الـ API) فيفشل في تعبئة القيمة الصحيحة.
-* **الأثر:** يُعاد تعيين نوع العداد تلقائياً إلى `"modern_meter"` (الافتراضي) عند حفظ التعديلات لأي عقار بغض النظر عن قيمته الحقيقية.
+# Run Prisma DB Migration & Seed
+cd apps/backend && npx prisma migrate dev && npx prisma db seed
 
-### 3. تعارض حقل نوع العقار (type vs unitType)
-* **الخلل:** يعتمد الفرونت إند في كروته وصفحاته على حقل `listing.type` لمعرفة ما إذا كان العقار شقة أو غرفة أو سرير، بينما تعيد قاعدة بيانات الباك إند الحقل باسم `unitType` فقط.
-* **المشكلة:** لا يتم عمل مواءمة (Mapping) للبيانات القادمة من الاستعلامات في الفرونت إند.
-* **الأثر:**
-  1. لا تظهر تسميات نوع العقار (شقة/غرفة/سرير) على كروت العقارات (تظهر فارغة).
-  2. تفشل كروت البحث في معرفة ما إذا كانت الوحدة عبارة عن سرير (`listing.type === "bed"`) لعرض عدد الأسرة المتاحة والشاغرة.
-  3. تظهر عناوين وتفاصيل الإعلانات دائماً بكلمة "سرير" كقيمة افتراضية في بعض الشاشات حتى لو كانت العقارات شققاً أو غرفاً.
+# Launch Next.js frontend only
+npm run dev:frontend
 
-### 4. تعارض مسميات حالات طلب المعاينة (approved vs accepted)
-* **الخلل:** يعرف الفرونت إند حالة طلب المعاينة باسم `"approved"` (موافق عليه)، بينما يستخدم الباك إند في الـ Enum الخاص بقاعدة البيانات مسمى `"accepted"`.
-* **الأثر:** على الرغم من وجود حماية ومعالجة يدوية في الهوكس واللوحات حالياً للتحويل، إلا أن بقاء هذا الاختلاف قد يسبب مشاكل في أي موديول جديد لا يعالج هذا التضارب يدوياً.
+# Launch NestJS backend only
+npm run dev:backend
+```
 
 ---
 
-## 8. التحديثات الأخيرة وحالة الرفع والاستضافة (Latest Updates & Deployment Status)
+## 🏆 6. Development Status Summary
 
-### التحديثات المضافة حديثاً (المرحلة السادسة):
-1. **توثيق Swagger التفاعلي:**
-   * تفعيل Swagger compiler plugin لقراءة الـ DTOs تلقائياً وإنتاج مستند تفاعلي عند `/api/docs`.
-   * توفير خيارات التحكم البيئية `DISABLE_SWAGGER` و `ENABLE_SWAGGER_IN_PROD` لتأمين السيرفر في الإنتاج.
-2. **سكريبت تغذية مكرر آمن (Idempotent Arabic Seeder):**
-   * سكريبت `db:seed` لتنظيف البيانات وإعادة ملئها ببيانات مصرية عربية واقعية للغاية باستخدام `@faker-js/faker` دون تكرار الحسابات الإدارية.
-   * إدراج نطاقات Unsplash و Dicebear في تكوينات Next.js لتخويل استعراض الصور.
-3. **نظام السجلات والـ Request IDs:**
-   * توليد `requestId` فريد لكل عملية، وتفعيل `CustomLogger` لحفظ السجلات في ملفات `combined.log` و `error.log`.
-   * تسجيل كافة تفاصيل الطلبات وزمن الاستجابة بدقة بالـ Middleware.
-4. **لوحة مراقبة الصحة الشاملة (System Health):**
-   * تطوير مسار `/health` ليعود بتقرير تفصيلي حي عن استهلاك ذاكرة السيرفر، عدد المعالجات، ونظام التشغيل، وسرعة استجابة قاعدة البيانات.
-5. **نافذة تفاصيل الحظر التفاعلية والبحث بالرقم:**
-   * إتاحة البحث الفوري برقم الهاتف أو الرقم القومي للمستخدمين المحظورين.
-   * تقسيم قائمة المحظورين تحت ترويسات تواريخ مرتبة.
-   * إظهار تفاصيل الحساب الحقيقية (غير المموهة) للأدمن، مع نافذة منبثقة تفاعلية تعرض الاسم الكامل، البريد، نوع الخطة، وتفاصيل التسجيل فور الضغط على الرقم.
-
-> [!WARNING]
-> **تنبيه هام بشأن الاستضافة والرفع:**
-> لم يتم رفع أو نشر (Deploy) هذه التعديلات الأخيرة على منصات الاستضافة الخارجية حتى الآن (مثل Railway للواجهة الخلفية أو Vercel/Netlify للواجهة الأمامية). 
-> جميع التعديلات الحالية تم اختبارها وبناؤها وتعمل بنجاح تام على البيئة المحلية للتطوير فقط. يرجى مراجعة الاستضافة ورفع التعديلات للإنتاج عند جاهزيتها.
-
+- [x] **Turborepo Monorepo Architecture:** Next.js 14 + NestJS + Prisma 5/7 + PostgreSQL 16.
+- [x] **RBAC Authentication:** User Roles (`tenant`, `landlord`, `admin`, `super_admin`), JWT Access Tokens, Refresh Token Cookies.
+- [x] **i18n Localization (100% Verified):** Clean bilingual `ar`/`en` dictionaries, dynamic frontend notification mapping, zero TypeScript errors (`tsc --noEmit` pass with 0 errors).
+- [x] **Property & Bed Matrix Listing:** Landlords manage full apartments and individual bed occupancies.
+- [x] **Realtime Support Chat:** Live support channels powered by Pusher WebSockets.
+- [x] **Admin Moderation & Lifecycle:** Listing verifications, banned user indices, and self-deactivation grace period trackers.

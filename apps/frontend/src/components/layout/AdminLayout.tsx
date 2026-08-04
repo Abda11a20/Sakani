@@ -3,6 +3,7 @@
 
 import {
   LayoutDashboard,
+  Megaphone,
   Building2,
   Users,
   ShieldBan,
@@ -38,7 +39,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       exact: true,
     },
     {
-      label: "مراجعة الإعلانات",
+      label: "الإعلانات التجارية (Ads)",
+      labelEn: "Ad Server",
+      icon: Megaphone,
+      href: `/${locale}/admin/ads`,
+    },
+    {
+      label: "مراجعة إعلانات العقارات",
       labelEn: "Review Listings",
       icon: Building2,
       href: `/${locale}/admin/listings`,

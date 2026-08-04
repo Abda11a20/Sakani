@@ -127,7 +127,204 @@
     "lightMode": "Light Mode",
     "arabic": "العربية",
     "english": "English",
-    "egp": "EGP"
+    "egp": "EGP",
+    "views": "Views",
+    "perMonthUnit": "EGP/month",
+    "filters": "Filters",
+    "all": "All",
+    "refresh": "Refresh",
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "pending_review": "Under Review",
+      "rented": "Rented",
+      "paused": "Paused",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "accepted": "Accepted",
+      "closed": "Closed"
+    },
+    "unit": {
+      "apartment": "Apartment",
+      "room": "Room",
+      "bed": "Bed"
+    },
+    "actions": {
+      "republish": "Republish",
+      "detailsAndActions": "Details & Actions",
+      "details": "Details",
+      "ban": "Ban",
+      "unban": "Unban",
+      "restore": "Restore",
+      "purge": "Delete Permanently"
+    }
+  },
+  "dashboard": {
+    "landlord": {
+      "beds": {
+        "title": "Beds & Vacancies Management",
+        "description": "Register or vacate bed lease contracts to automatically update bed vacancies.",
+        "selectListing": "Select Shared Listing",
+        "noBedsMessage": "You do not have any bed listings to manage here.",
+        "totalBeds": "Total Beds",
+        "availableBeds": "Available Beds",
+        "rentedBeds": "Rented Beds",
+        "occupancyDetails": "Bed Occupancy Details",
+        "bedNumber": "Bed #{number}",
+        "tenantLabel": "Tenant:",
+        "contractActiveDate": "Valid lease contract date"
+      },
+      "requests": {
+        "title": "Incoming Requests",
+        "description": "Manage viewing and rental requests submitted by students and youth for your properties.",
+        "totalRequests": "Total Requests",
+        "newRequests": "New (Awaiting Action)",
+        "acceptedRequests": "Accepted Requests",
+        "rejectedRequests": "Rejected Requests"
+      },
+      "advertisements": {
+        "title": "Advertisement Management",
+        "subtitle": "Click any ad to view its details and actions."
+      },
+      "urgent": {
+        "needsAction": "Needs Action",
+        "urgent": "Urgent",
+        "notice": "Notice",
+        "info": "Info",
+        "takeAction": "Take Action"
+      },
+      "recommendations": {
+        "title": "Smart Recommendations",
+        "urgentTip": "Urgent Tip",
+        "importantTip": "Important Tip",
+        "todaysTip": "Today's Tip",
+        "takeAction": "Take Action"
+      }
+    },
+    "tenant": {
+      "viewingRequests": {
+        "title": "Viewing Requests",
+        "description": "Track your submitted viewing requests and coordinate with landlords."
+      },
+      "wishlist": {
+        "title": "My Saved Listings",
+        "description": "Apartments and beds you saved for comparison and later reference.",
+        "emptyTitle": "No Saved Listings Yet",
+        "emptyDesc": "You haven't saved any listings yet. Browse available properties to get started.",
+        "browseBtn": "Browse Available Listings",
+        "archivedTitle": "This property is no longer available",
+        "archivedDesc": "Archived or removed",
+        "removeBtn": "Remove from Wishlist"
+      },
+      "alerts": {
+        "title": "My Smart Alerts",
+        "description": "We notify you as soon as a new listing matching your criteria is posted.",
+        "newAlert": "New Alert",
+        "emptyTitle": "No Alerts Yet",
+        "emptyDesc": "Create a smart alert to get notified when an apartment or bed matching your budget is posted.",
+        "createFirst": "Create Your First Alert"
+      }
+    },
+    "support": {
+      "title": "Live Support Chat",
+      "titleWithPartner": "Chat with: {name}",
+      "connected": "Connected to live support",
+      "connecting": "Connecting to network...",
+      "blockedTitle": "This conversation has been blocked by platform administration",
+      "loading": "Loading conversation...",
+      "welcomeTitle": "Welcome to Support Center 👏",
+      "welcomeDesc": "Our team is here to help with any question or issue. Send your inquiry and we'll respond shortly.",
+      "inputPlaceholder": "Type your message here...",
+      "send": "Send"
+    }
+  },
+  "admin": {
+    "listings": {
+      "title": "Listings Management",
+      "subtitle": "Manage and filter all platform listings",
+      "noListings": "No matching listings found"
+    },
+    "users": {
+      "title": "Users Management",
+      "userCount": "{count} Users",
+      "addAdmin": "Add Admin",
+      "searchPlaceholder": "Search by name, phone or email...",
+      "roles": {
+        "tenant": "Tenant",
+        "landlord": "Landlord",
+        "admin": "Admin",
+        "super_admin": "Super Admin"
+      },
+      "status": {
+        "active": "Active",
+        "verified": "Verified",
+        "unverified": "Unverified"
+      },
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Quick Actions"
+      }
+    },
+    "banned": {
+      "title": "Banned Users List",
+      "subtitle": "Users banned from the platform",
+      "addBan": "Add Ban",
+      "searchPlaceholder": "Search by phone or ban reason...",
+      "emptyState": "No banned users currently"
+    },
+    "accountLifecycle": {
+      "title": "Account Lifecycle Management",
+      "subtitle": "Manage self-deactivation requests, grace periods, and account restorations",
+      "inGracePeriod": "In Grace Period",
+      "restored": "Restored",
+      "cancelled": "Cancelled",
+      "emptyStateTitle": "No accounts match this status",
+      "emptyStateDesc": "All accounts are operating normally or no results match your search."
+    },
+    "reports": {
+      "title": "Community & User Reports",
+      "subtitle": "Review reports filed against posts and violating content",
+      "totalReports": "Total Reports: {count}",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "rejected": "Rejected",
+      "all": "All Statuses",
+      "reporter": "Reporter:",
+      "reportedUser": "Reported User:",
+      "reportedPost": "Reported Post:",
+      "reportDetails": "Report Details:"
+    },
+    "requests": {
+      "title": "Viewing Requests",
+      "subtitle": "Click any request to view contact details between tenant, landlord, and property",
+      "totalRequests": "Total Requests: {count}"
+    },
+    "chat": {
+      "title": "Customer Support Chat",
+      "subtitle": "Manage direct support chats and customer inquiries",
+      "chatsTab": "Conversations",
+      "bannedTab": "Banned from Chat",
+      "selectChatTitle": "Select a conversation to begin",
+      "selectChatDesc": "Choose a customer chat from the sidebar to view history and respond."
+    },
+    "communityArchived": {
+      "title": "Events Archive (Expired & Deleted)",
+      "manageWordBlock": "Manage Blocked Words",
+      "totalEvents": "Section Total: {count}",
+      "allArchived": "All (Full Archive)",
+      "expiredEvents": "Expired Events (Auto)",
+      "deletedEvents": "Recently Deleted Events"
+    },
+    "deletedAds": {
+      "title": "Deleted Advertisements",
+      "subtitle": "Deleted ads archive — restore or permanently delete",
+      "notice": "Permanent deletion requires archiving the listing first with no active viewing requests.",
+      "deletedBy": "Deleted by: {name}",
+      "statusBeforeDelete": "Status before deletion:",
+      "reason": "Reason:"
+    }
   },
   "home": {
     "metaTitle": "Sakani | Premium Housing & Rental Platform in Egypt",

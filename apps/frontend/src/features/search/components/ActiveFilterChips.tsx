@@ -7,40 +7,46 @@ import { UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG, AMENITIES_CONFIG } from "@/lib/
 import type { SearchFilters } from "@/types";
 import { Button } from "@/components/ui";
 
+import { useLocale } from "next-intl";
+
 interface ActiveFilterChipsProps {
   filters: SearchFilters;
   onChange: (partial: Partial<SearchFilters>) => void;
 }
 
 export function ActiveFilterChips({ filters, onChange }: ActiveFilterChipsProps) {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
   const chips: { label: string; onRemove: () => void }[] = [];
 
   if (filters.unitType) {
-    const label = UNIT_TYPE_CONFIG[filters.unitType as keyof typeof UNIT_TYPE_CONFIG]?.labelAr ?? filters.unitType;
-    chips.push({ label: `وحدة: ${label}`, onRemove: () => onChange({ unitType: undefined, page: 1 }) });
+    const cfg = UNIT_TYPE_CONFIG[filters.unitType as keyof typeof UNIT_TYPE_CONFIG];
+    const label = isRtl ? (cfg?.labelAr ?? filters.unitType) : (cfg?.labelEn ?? filters.unitType);
+    chips.push({ label: `${isRtl ? "وحدة" : "Unit"}: ${label}`, onRemove: () => onChange({ unitType: undefined, page: 1 }) });
   }
   if (filters.governorate) {
-    chips.push({ label: `المحافظة: ${filters.governorate}`, onRemove: () => onChange({ governorate: "", district: "", page: 1 }) });
+    chips.push({ label: `${isRtl ? "المحافظة" : "Governorate"}: ${filters.governorate}`, onRemove: () => onChange({ governorate: "", district: "", page: 1 }) });
   }
   if (filters.district) {
-    chips.push({ label: `المنطقة: ${filters.district}`, onRemove: () => onChange({ district: "", page: 1 }) });
+    chips.push({ label: `${isRtl ? "المنطقة" : "District"}: ${filters.district}`, onRemove: () => onChange({ district: "", page: 1 }) });
   }
   if (filters.minPrice) {
-    chips.push({ label: `من ${filters.minPrice} ج.م`, onRemove: () => onChange({ minPrice: undefined, page: 1 }) });
+    chips.push({ label: `${isRtl ? "من" : "From"} ${filters.minPrice} ${isRtl ? "ج.م" : "EGP"}`, onRemove: () => onChange({ minPrice: undefined, page: 1 }) });
   }
   if (filters.maxPrice) {
-    chips.push({ label: `حتى ${filters.maxPrice} ج.م`, onRemove: () => onChange({ maxPrice: undefined, page: 1 }) });
+    chips.push({ label: `${isRtl ? "حتى" : "To"} ${filters.maxPrice} ${isRtl ? "ج.م" : "EGP"}`, onRemove: () => onChange({ maxPrice: undefined, page: 1 }) });
   }
   if (filters.verifiedOnly) {
-    chips.push({ label: "عقارات موثقة فقط", onRemove: () => onChange({ verifiedOnly: false, page: 1 }) });
+    chips.push({ label: isRtl ? "عقارات موثقة فقط" : "Verified Only", onRemove: () => onChange({ verifiedOnly: false, page: 1 }) });
   }
   if (filters.genderTarget) {
-    const label = GENDER_TARGET_CONFIG[filters.genderTarget as keyof typeof GENDER_TARGET_CONFIG]?.labelAr ?? filters.genderTarget;
-    chips.push({ label: `الفئة: ${label}`, onRemove: () => onChange({ genderTarget: undefined, page: 1 }) });
+    const cfg = GENDER_TARGET_CONFIG[filters.genderTarget as keyof typeof GENDER_TARGET_CONFIG];
+    const label = isRtl ? (cfg?.labelAr ?? filters.genderTarget) : (cfg?.labelEn ?? filters.genderTarget);
+    chips.push({ label: `${isRtl ? "الفئة" : "Target"}: ${label}`, onRemove: () => onChange({ genderTarget: undefined, page: 1 }) });
   }
   if (filters.isFurnished !== undefined) {
     chips.push({
-      label: filters.isFurnished ? "مفروشة 🛋️" : "فارغة 🚪",
+      label: filters.isFurnished ? (isRtl ? "مفروشة 🛋️" : "Furnished 🛋️") : (isRtl ? "فارغة 🚪" : "Unfurnished 🚪"),
       onRemove: () => onChange({ isFurnished: undefined, page: 1 }),
     });
   }
@@ -48,7 +54,7 @@ export function ActiveFilterChips({ filters, onChange }: ActiveFilterChipsProps)
     const found = AMENITIES_CONFIG.find((am) => am.key === a);
     if (found) {
       chips.push({
-        label: found.labelAr,
+        label: isRtl ? found.labelAr : found.labelEn,
         onRemove: () => onChange({ amenities: filters.amenities?.filter((x) => x !== a), page: 1 }),
       });
     }
@@ -73,7 +79,7 @@ export function ActiveFilterChips({ filters, onChange }: ActiveFilterChipsProps)
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4 font-cairo text-xs">
-      <span className="text-text-secondary font-medium me-1">الفلاتر المطبقة:</span>
+      <span className="text-text-secondary font-medium me-1">{isRtl ? "الفلاتر المطبقة:" : "Active Filters:"}</span>
       {chips.map((chip, i) => (
         <span
           key={i}
@@ -102,7 +108,7 @@ export function ActiveFilterChips({ filters, onChange }: ActiveFilterChipsProps)
           className="text-xs text-text-secondary hover:text-text underline p-1 h-auto"
           leftIcon={<RotateCcw size={12} />}
         >
-          إزالة الفلاتر ({chips.length})
+          {isRtl ? `إزالة الفلاتر (${chips.length})` : `Clear Filters (${chips.length})`}
         </Button>
       )}
     </div>

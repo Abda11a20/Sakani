@@ -26,15 +26,14 @@ import {
   AlertTriangle,
   Search,
 } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { EGYPTIAN_GOVERNORATES, UNIT_TYPE_CONFIG, GENDER_TARGET_CONFIG } from "@/lib/constants";
 import { generateAlertSummary } from "@/lib/helpers";
 import type { Alert, GenderTarget } from "@/types";
 
-
-
 export default function TenantAlerts() {
   const locale = useLocale();
+  const tAlert = useTranslations("dashboard.tenant.alerts");
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
@@ -184,9 +183,9 @@ export default function TenantAlerts() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-cairo text-text">تنبيهاتي الذكية</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-cairo text-text">{tAlert("title")}</h1>
             <p className="text-text-secondary mt-1 font-cairo text-xs sm:text-sm">
-              نبلغك ونرسل لك إشعاراً فور إدراج عقار جديد يطابق مواصفات البحث الخاصة بك.
+              {tAlert("description")}
             </p>
           </div>
           <button
@@ -195,7 +194,7 @@ export default function TenantAlerts() {
             className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-cairo text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
           >
             <Plus size={16} className="shrink-0" />
-            <span>تنبيه جديد</span>
+            <span>{tAlert("newAlert")}</span>
           </button>
         </div>
 
@@ -203,8 +202,8 @@ export default function TenantAlerts() {
         {alerts.length === 0 ? (
           <EmptyState
             icon={<Bell size={48} />}
-            title="لا توجد تنبيهات بعد"
-            description="أنشئ تنبيهاً ذكياً لنخطرك فور نزول شقة أو سرير يناسب ميزانيتك وموقعك المفضل."
+            title={tAlert("emptyTitle")}
+            description={tAlert("emptyDesc")}
             action={
               <button
                 type="button"
@@ -212,7 +211,7 @@ export default function TenantAlerts() {
                 className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-cairo text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
               >
                 <Plus size={16} className="shrink-0" />
-                <span>أنشئ أول تنبيه</span>
+                <span>{tAlert("createFirst")}</span>
               </button>
             }
           />

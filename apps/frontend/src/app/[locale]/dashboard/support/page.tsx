@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useAuthGuard } from "@/features/auth";
 import TenantLayout from "@/components/layout/TenantLayout";
@@ -52,6 +52,7 @@ const isFileUrl = (content: string) => {
 
 export default function SupportPage() {
   const locale = useLocale();
+  const tSupport = useTranslations("dashboard.support");
   const isRtl = locale === "ar";
   const { toast } = useToast();
   const { token } = useAuthStore();
@@ -271,7 +272,7 @@ export default function SupportPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">
-                {chatPartnerName ? `المحادثة مع: ${chatPartnerName}` : "محادثة الدعم الفني المباشر"}
+                {chatPartnerName ? tSupport("titleWithPartner", { name: chatPartnerName }) : tSupport("title")}
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <span
@@ -281,7 +282,7 @@ export default function SupportPage() {
                   )}
                 />
                 <span className="text-xs text-muted-foreground font-medium">
-                  {isConnected ? "متصل بالخدمة الحية" : "جارٍ الاتصال بالشبكة..."}
+                  {isConnected ? tSupport("connected") : tSupport("connecting")}
                 </span>
               </div>
             </div>
@@ -295,7 +296,7 @@ export default function SupportPage() {
             <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-4 text-red-500 flex items-start gap-3 text-sm">
               <ShieldAlert size={20} className="shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">تم حظر هذه المحادثة من قِبَل إدارة المنصة</p>
+                <p className="font-bold">{tSupport("blockedTitle")}</p>
                 {blockReason && <p className="mt-1 text-xs opacity-90">{blockReason}</p>}
               </div>
             </div>
@@ -306,14 +307,14 @@ export default function SupportPage() {
             {isLoadingHistory ? (
               <div className="h-full flex items-center justify-center text-muted-foreground">
                 <Loader2 size={24} className="animate-spin me-2" />
-                <span className="text-sm">جارٍ تحميل المحادثة...</span>
+                <span className="text-sm">{tSupport("loading")}</span>
               </div>
             ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
                 <Bot size={48} className="mb-4 opacity-30 text-primary" />
-                <h3 className="font-bold text-base text-foreground mb-1">مرحباً بك في مركز الدعم الفني 👋</h3>
+                <h3 className="font-bold text-base text-foreground mb-1">{tSupport("welcomeTitle")}</h3>
                 <p className="text-sm max-w-md">
-                  فريقنا متواجد لمساعدتك في أي استفسار أو مشكلة تواجهك. أرسل استفسارك وسنقوم بالرد عليك في أقرب وقت.
+                  {tSupport("welcomeDesc")}
                 </p>
               </div>
             ) : (
@@ -421,7 +422,7 @@ export default function SupportPage() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="أكتب استفسارك هنا..."
+                  placeholder={tSupport("inputPlaceholder")}
                   disabled={isSending || !token || !conversationId}
                   className="flex-1 input-field py-3 text-sm"
                 />

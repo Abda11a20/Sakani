@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useAuthGuard } from "@/features/auth";
 import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
 import { useLandlordRequests, useLandlordRequestStats, useUpdateRequestStatus } from "@/hooks/useRequests";
@@ -22,6 +22,8 @@ type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "completed";
 
 export default function LandlordRequests() {
   const locale = useLocale();
+  const tReq = useTranslations("dashboard.landlord.requests");
+  const tCommon = useTranslations("common");
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["landlord"] });
   const [page] = useState(1);
@@ -112,19 +114,19 @@ export default function LandlordRequests() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold font-cairo">الطلبات الواردة</h1>
+          <h1 className="text-3xl font-bold font-cairo">{tReq("title")}</h1>
           <p className="text-slate-500 mt-1 font-cairo text-sm">
-            إدارة طلبات المعاينة والاستئجار المقدمة من قبل الطلاب والشباب لعقاراتك.
+            {tReq("description")}
           </p>
         </div>
 
         {/* Stats Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "إجمالي الطلبات", value: statsTotal, color: "text-slate-600 bg-slate-100" },
-            { label: "جديد (ينتظر ردك)", value: statsPending, color: "text-amber-600 bg-amber-500/10" },
-            { label: "طلبات مقبولة", value: statsApproved, color: "text-green-600 bg-green-500/10" },
-            { label: "طلبات مرفوضة", value: statsRejected, color: "text-red-600 bg-red-500/10" },
+            { label: tReq("totalRequests"), value: statsTotal, color: "text-slate-600 bg-slate-100" },
+            { label: tReq("newRequests"), value: statsPending, color: "text-amber-600 bg-amber-500/10" },
+            { label: tReq("acceptedRequests"), value: statsApproved, color: "text-green-600 bg-green-500/10" },
+            { label: tReq("rejectedRequests"), value: statsRejected, color: "text-red-600 bg-red-500/10" },
           ].map((stat, idx) => (
             <div key={idx} className={`p-4 rounded-2xl flex flex-col justify-center border border-slate-200/50 ${stat.color}`}>
               <span className="text-xs font-semibold font-cairo opacity-70">{stat.label}</span>
@@ -137,11 +139,11 @@ export default function LandlordRequests() {
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
           {(
             [
-              { key: "all", label: "الكل" },
-              { key: "pending", label: "جديد" },
-              { key: "accepted", label: "مقبول" },
-              { key: "rejected", label: "مرفوض" },
-              { key: "completed", label: "مكتمل" },
+              { key: "all", label: tCommon("all") },
+              { key: "pending", label: tCommon("status.pending") },
+              { key: "accepted", label: tCommon("status.accepted") },
+              { key: "rejected", label: tCommon("status.rejected") },
+              { key: "completed", label: tCommon("status.completed") },
             ] as const
           ).map((tab) => (
             <button

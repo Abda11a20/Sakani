@@ -28,6 +28,7 @@ import { EGYPTIAN_GOVERNORATES } from "@/lib/constants";
 import { SearchFilterDrawer } from "@/features/search";
 import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { AdSlot } from "@/features/ads/components/AdSlot";
 import Link from "next/link";
 
 interface Category {
@@ -366,6 +367,7 @@ export default function CommunityPage() {
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+        <AdSlot placementKey="COMMUNITY_TOP" />
         {/* Search Header Container - Matching /search layout & SearchHeader UI component exactly */}
         <div ref={filterRef} className="bg-surface border border-border rounded-2xl p-4 shadow-xs space-y-3 font-cairo z-30 relative">
           {/* Top Row: Search Input + Filters Button */}
@@ -404,11 +406,11 @@ export default function CommunityPage() {
               variant={(genderPref || selectedDate) ? "primary" : "outline"}
               size="md"
               onClick={() => setFilterDrawerOpen(true)}
-              aria-label="فتح فلاتر المجتمع المتقدمة"
+              aria-label={isRtl ? "فتح فلاتر المجتمع المتقدمة" : "Open advanced community filters"}
               leftIcon={<SlidersHorizontal size={16} />}
               className="shrink-0 text-xs font-bold rounded-xl"
             >
-              الفلاتر
+              {isRtl ? "الفلاتر" : "Filters"}
               {(genderPref || selectedDate) && (
                 <span className="ms-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-text">
                   {(genderPref ? 1 : 0) + (selectedDate ? 1 : 0)}

@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { CustomLogger } from './common/logger/custom-logger.service';
@@ -14,6 +15,10 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
   app.useLogger(app.get(CustomLogger));
+
+  // زيادة حد استقبال البيانات إلى 15MB للصور والفيديوهات
+  app.use(json({ limit: '15mb' }));
+  app.use(urlencoded({ limit: '15mb', extended: true }));
 
   // ── 1. إعدادات السيرفر الأساسية (Server Configs) ─────────────
 

@@ -23,6 +23,7 @@ import {
   MapPin,
   Coins,
 } from "lucide-react";
+import { useLocale } from "next-intl";
 import { EGYPTIAN_GOVERNORATES, GENDER_TARGET_CONFIG, AMENITIES_CONFIG } from "@/lib/constants";
 import type { SearchFilters, UnitType, GenderTarget } from "@/types";
 
@@ -137,6 +138,8 @@ export function SearchFilterControls({
   className = "",
   hideActions = false,
 }: SearchFilterControlsProps) {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   const toggleAmenity = (key: string) => {
@@ -153,25 +156,25 @@ export function SearchFilterControls({
       <div className="space-y-1">
         <div className="flex items-center gap-1 text-xs font-bold text-text">
           <MapPin size={14} className="text-primary" />
-          <span>الموقع والجغرافيا</span>
+          <span>{isRtl ? "الموقع والجغرافيا" : "Location & Geography"}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">المحافظة</label>
+            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">{isRtl ? "المحافظة" : "Governorate"}</label>
             <CustomSelect
               value={filters.governorate ?? ""}
               options={[
-                { value: "", label: "كل المحافظات" },
+                { value: "", label: isRtl ? "كل المحافظات" : "All Governorates" },
                 ...EGYPTIAN_GOVERNORATES.map((gov) => ({ value: gov, label: gov })),
               ]}
               onChange={(val) => onChange({ governorate: val, district: "", page: 1 })}
             />
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">الحي / المنطقة</label>
+            <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">{isRtl ? "الحي / المنطقة" : "District / Area"}</label>
             <input
               type="text"
-              placeholder="مثال: المنصورة"
+              placeholder={isRtl ? "مثال: المنصورة" : "e.g., Mansoura"}
               value={filters.district ?? ""}
               onChange={(e) => onChange({ district: e.target.value, page: 1 })}
               className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-border focus:outline-none focus:border-primary bg-surface truncate text-text placeholder:text-text-tertiary"
@@ -186,12 +189,12 @@ export function SearchFilterControls({
       <div className="space-y-1">
         <div className="flex items-center gap-1 text-xs font-bold text-text">
           <Building2 size={14} className="text-primary" />
-          <span>نوع الوحدة السكنية</span>
+          <span>{isRtl ? "نوع الوحدة السكنية" : "Unit Type"}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { value: "apartment", label: "شقة بالكامل", icon: Building2 },
-            { value: "bed", label: "سرير / غرفة", icon: BedDouble },
+            { value: "apartment", label: isRtl ? "شقة بالكامل" : "Entire Apartment", icon: Building2 },
+            { value: "bed", label: isRtl ? "سرير / غرفة" : "Bed / Room", icon: BedDouble },
           ].map(({ value, label, icon: Icon }) => {
             const isSelected = filters.unitType === value;
             return (
@@ -225,12 +228,12 @@ export function SearchFilterControls({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-xs font-bold text-text">
             <Coins size={14} className="text-primary" />
-            <span>نطاق السعر الشهري</span>
+            <span>{isRtl ? "نطاق السعر الشهري" : "Monthly Price Range"}</span>
           </div>
           <span className="text-[10px] font-bold text-primary">
             {filters.minPrice || filters.maxPrice
-              ? `${filters.minPrice ?? 0} - ${filters.maxPrice ?? "أقصى"} ج.م`
-              : "أي سعر"}
+              ? `${filters.minPrice ?? 0} - ${filters.maxPrice ?? (isRtl ? "أقصى" : "Max")} ${isRtl ? "ج.م" : "EGP"}`
+              : (isRtl ? "أي سعر" : "Any Price")}
           </span>
         </div>
 
@@ -247,7 +250,7 @@ export function SearchFilterControls({
           <div className="flex items-center gap-1.5">
             <input
               type="number"
-              placeholder="من"
+              placeholder={isRtl ? "من" : "Min"}
               value={filters.minPrice ?? ""}
               onChange={(e) => onChange({ minPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
               className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-border focus:outline-none focus:border-primary bg-surface text-text placeholder:text-text-tertiary"
@@ -256,7 +259,7 @@ export function SearchFilterControls({
             <span className="text-text-tertiary font-bold text-xs">—</span>
             <input
               type="number"
-              placeholder="إلى"
+              placeholder={isRtl ? "إلى" : "Max"}
               value={filters.maxPrice ?? ""}
               onChange={(e) => onChange({ maxPrice: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
               className="w-full text-xs font-semibold px-2 py-1 rounded-lg border border-border focus:outline-none focus:border-primary bg-surface text-text placeholder:text-text-tertiary"
@@ -271,24 +274,29 @@ export function SearchFilterControls({
       {/* 4. Gender Target & Sort Side-by-Side */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">الفئة المستهدفة</label>
+          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">{isRtl ? "الفئة المستهدفة" : "Target Audience"}</label>
           <CustomSelect
             value={filters.genderTarget ?? ""}
             options={[
-              { value: "", label: "جميع الفئات" },
-              { value: "male", label: GENDER_TARGET_CONFIG.male.labelAr },
-              { value: "female", label: GENDER_TARGET_CONFIG.female.labelAr },
-              { value: "family", label: GENDER_TARGET_CONFIG.family.labelAr },
+              { value: "", label: isRtl ? "جميع الفئات" : "All Audiences" },
+              { value: "male", label: isRtl ? GENDER_TARGET_CONFIG.male.labelAr : GENDER_TARGET_CONFIG.male.labelEn },
+              { value: "female", label: isRtl ? GENDER_TARGET_CONFIG.female.labelAr : GENDER_TARGET_CONFIG.female.labelEn },
+              { value: "family", label: isRtl ? GENDER_TARGET_CONFIG.family.labelAr : GENDER_TARGET_CONFIG.family.labelEn },
             ]}
             onChange={(val) => onChange({ genderTarget: (val || undefined) as GenderTarget | undefined, page: 1 })}
           />
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">ترتيب النتائج</label>
+          <label className="text-[10px] font-semibold text-text-secondary mb-0.5 block">{isRtl ? "ترتيب النتائج" : "Sort By"}</label>
           <CustomSelect
             value={filters.sortBy ?? "newest"}
-            options={SORT_OPTIONS}
+            options={[
+              { value: "newest", label: isRtl ? "الأحدث إضافتاً" : "Newest" },
+              { value: "cheapest", label: isRtl ? "الأقل سعراً" : "Lowest Price" },
+              { value: "expensive", label: isRtl ? "الأعلى سعراً" : "Highest Price" },
+              { value: "popular", label: isRtl ? "الأكثر مشاهدة" : "Most Popular" },
+            ]}
             onChange={(val) => onChange({ sortBy: val as SearchFilters["sortBy"], page: 1 })}
           />
         </div>
@@ -305,7 +313,7 @@ export function SearchFilterControls({
         >
           <div className="flex items-center gap-1.5">
             <span className="text-primary">⚙</span>
-            <span>مواصفات إضافية (مفروش، خدمات، توثيق)</span>
+            <span>{isRtl ? "مواصفات إضافية (مفروش، خدمات، توثيق)" : "Additional Filters (Furnished, Amenities, Verified)"}</span>
           </div>
           {isAccordionOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </button>
@@ -314,12 +322,12 @@ export function SearchFilterControls({
           <div className="p-3 space-y-3 animate-in fade-in duration-150">
             {/* Furnishing Status */}
             <div>
-              <h4 className="text-[11px] font-bold text-text mb-1.5">حالة الفرش</h4>
+              <h4 className="text-[11px] font-bold text-text mb-1.5">{isRtl ? "حالة الفرش" : "Furnishing Status"}</h4>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
-                  { value: undefined, label: "الكل" },
-                  { value: true, label: "مفروشة 🛋️" },
-                  { value: false, label: "فارغة 🚪" },
+                  { value: undefined, label: isRtl ? "الكل" : "All" },
+                  { value: true, label: isRtl ? "مفروشة 🛋️" : "Furnished 🛋️" },
+                  { value: false, label: isRtl ? "فارغة 🚪" : "Unfurnished 🚪" },
                 ].map((item) => {
                   const isSelected = filters.isFurnished === item.value;
                   return (
@@ -347,8 +355,8 @@ export function SearchFilterControls({
                   <ShieldCheck size={16} className="text-accent" />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold text-primary">عقارات موثقة فقط</p>
-                  <p className="text-[10px] font-semibold text-text-secondary">إظهار إعلانات المؤجرين الموثقين</p>
+                  <p className="text-xs font-extrabold text-primary">{isRtl ? "عقارات موثقة فقط" : "Verified Listings Only"}</p>
+                  <p className="text-[10px] font-semibold text-text-secondary">{isRtl ? "إظهار إعلانات المؤجرين الموثقين" : "Show verified landlord listings"}</p>
                 </div>
               </div>
               <button
@@ -378,9 +386,9 @@ export function SearchFilterControls({
 
             {/* Amenities */}
             <div>
-              <h4 className="text-[11px] font-bold text-text mb-1.5">المميزات والخدمات</h4>
+              <h4 className="text-[11px] font-bold text-text mb-1.5">{isRtl ? "المميزات والخدمات" : "Amenities & Features"}</h4>
               <div className="grid grid-cols-2 gap-1.5">
-                {AMENITIES_CONFIG.map(({ key, labelAr }) => {
+                {AMENITIES_CONFIG.map(({ key, labelAr, labelEn }) => {
                   const isChecked = filters.amenities?.includes(key) ?? false;
                   return (
                     <label
@@ -402,7 +410,7 @@ export function SearchFilterControls({
                       <span className={isChecked ? "text-primary" : "text-text-tertiary"}>
                         {AMENITY_ICON_MAP_SEARCH[key]}
                       </span>
-                      <span className="truncate">{labelAr}</span>
+                      <span className="truncate">{isRtl ? labelAr : labelEn}</span>
                     </label>
                   );
                 })}
@@ -420,7 +428,7 @@ export function SearchFilterControls({
             onClick={onApply}
             className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-xl shadow-xs transition-all cursor-pointer hover:bg-primary-hover flex items-center justify-center gap-1.5"
           >
-            تطبيق الفلاتر
+            {isRtl ? "تطبيق الفلاتر" : "Apply Filters"}
           </button>
           <button
             type="button"
@@ -428,7 +436,7 @@ export function SearchFilterControls({
             className="px-3 py-2 rounded-xl border border-border text-xs font-bold text-text-secondary hover:bg-surface-secondary transition-colors cursor-pointer flex items-center justify-center gap-1"
           >
             <RotateCcw size={13} />
-            مسح
+            {isRtl ? "مسح" : "Reset"}
           </button>
         </div>
       )}

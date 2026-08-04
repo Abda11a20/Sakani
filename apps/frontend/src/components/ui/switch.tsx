@@ -4,15 +4,22 @@
 import React, { useId } from "react";
 import { cn } from "@/lib/utils";
 
-export interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+export interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "onChange"> {
   label?: string;
   description?: string;
+  onCheckedChange?: (checked: boolean) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
-  ({ className, label, description, disabled, checked, id: customId, ...props }, ref) => {
+  ({ className, label, description, disabled, checked, id: customId, onCheckedChange, onChange, ...props }, ref) => {
     const generatedId = useId();
     const switchId = customId || generatedId;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange?.(e);
+      onCheckedChange?.(e.target.checked);
+    };
 
     return (
       <div className="flex items-center justify-between gap-4 select-none">
@@ -22,13 +29,14 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             {description && <span className="text-xs text-text-secondary block mt-0.5">{description}</span>}
           </label>
         )}
-        <div className="relative inline-flex items-center">
+        <label htmlFor={switchId} className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id={switchId}
             ref={ref}
             checked={checked}
             disabled={disabled}
+            onChange={handleChange}
             className="peer sr-only"
             {...props}
           />
@@ -41,11 +49,11 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             <div
               className={cn(
                 "pointer-events-none inline-block h-5 w-5 rounded-full bg-surface shadow-sm ring-0 transition duration-200 ease-in-out",
-                checked ? "translate-x-5" : "translate-x-0"
+                checked ? "rtl:-translate-x-5 ltr:translate-x-5" : "translate-x-0"
               )}
             />
           </div>
-        </div>
+        </label>
       </div>
     );
   }

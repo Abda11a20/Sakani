@@ -45,6 +45,8 @@ async function getFeaturedListings(): Promise<Listing[]> {
   }
 }
 
+import { AdSlot } from "@/features/ads/components/AdSlot";
+
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home" });
@@ -81,7 +83,13 @@ export default async function HomePage({ params }: HomePageProps) {
   return (
     <main className="font-cairo bg-surface-secondary min-h-screen">
       <JsonLd data={[websiteSchema]} />
+      <AdSlot placementKey="INTERSTITIAL" />
       <HomeHeroSection locale={locale} />
+      
+      <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+        <AdSlot placementKey="HOME_HERO" />
+      </div>
+
       <HomeHowItWorksSection />
       
       {/* Featured Section — 4 Curated Listings */}

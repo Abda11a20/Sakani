@@ -11,13 +11,14 @@ import type { Listing } from "@/types";
 import TenantLayout from "@/components/layout/TenantLayout";
 import { EmptyState, Spinner, Button } from "@/components/ui";
 import { Heart, Search, Archive, Trash2 } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 
 // ── Archived Listing Card ────────────────────────────────────────────────────
 
 function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRemove: (id: string) => void }) {
   const { removeFromWishlist } = useWishlist();
+  const tWish = useTranslations("dashboard.tenant.wishlist");
 
   const handleRemove = () => {
     removeFromWishlist(listingId);
@@ -30,15 +31,15 @@ function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRem
         <Archive size={18} className="text-text-tertiary" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-text font-cairo">هذا العقار لم يعد متاحاً</p>
-        <p className="text-xs text-text-tertiary font-cairo mt-0.5">تمت أرشفته أو حذفه</p>
+        <p className="text-sm font-semibold text-text font-cairo">{tWish("archivedTitle")}</p>
+        <p className="text-xs text-text-tertiary font-cairo mt-0.5">{tWish("archivedDesc")}</p>
       </div>
       <button
         onClick={handleRemove}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-cairo text-status-danger bg-status-danger/10 border border-status-danger/30 hover:bg-status-danger/20 transition-colors"
       >
         <Trash2 size={12} />
-        إزالة من المفضلة
+        {tWish("removeBtn")}
       </button>
     </div>
   );
@@ -48,6 +49,7 @@ function ArchivedListingCard({ listingId, onRemove }: { listingId: string; onRem
 
 export default function TenantWishlist() {
   const locale = useLocale();
+  const tWish = useTranslations("dashboard.tenant.wishlist");
   const { user, isLoading: isAuthLoading } = useAuthGuard({ requiredRoles: ["tenant"] });
 
   // Get client-side wishlist IDs
@@ -107,9 +109,9 @@ export default function TenantWishlist() {
 
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold font-cairo">عقاراتي المفضلة</h1>
+          <h1 className="text-3xl font-bold font-cairo">{tWish("title")}</h1>
           <p className="text-slate-500 mt-1 font-cairo text-sm">
-            الشقق والأسرة التي قمت بحفظها للمقارنة والرجوع إليها لاحقاً.
+            {tWish("description")}
           </p>
         </div>
 
@@ -127,13 +129,13 @@ export default function TenantWishlist() {
                 <Heart size={32} className="fill-red-500/20" />
               </div>
             }
-            title="لا توجد عقارات في المفضلة"
-            description="لم تقم بإضافة أي عقار إلى المفضلة بعد. تصفح العقارات المتاحة الآن لتبدأ الحفظ."
+            title={tWish("emptyTitle")}
+            description={tWish("emptyDesc")}
             action={
               <Link href={`/${locale}/search`}>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 font-cairo font-bold flex items-center gap-1.5 mx-auto">
                   <Search size={16} />
-                  <span>تصفح العقارات المتاحة</span>
+                  <span>{tWish("browseBtn")}</span>
                 </Button>
               </Link>
             }

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
   Building2, Check, X, Trash2, ChevronLeft, ChevronRight,
@@ -56,6 +56,8 @@ function IdCardViewer({ userId, onClose }: { userId: string, onClose: () => void
 
 export default function AdminListingsPage() {
   const locale = useLocale();
+  const tAdmin = useTranslations("admin.listings");
+  const tCommon = useTranslations("common");
   const isRtl = locale === "ar";
   const { toast } = useToast();
   
@@ -109,10 +111,10 @@ export default function AdminListingsPage() {
   const meta = data?.meta;
 
   const tabs = [
-    { id: "pending_review", label: "قيد المراجعة" },
-    { id: "active", label: "النشطة" },
-    { id: "rejected", label: "المرفوضة" },
-    { id: "all", label: "الكل" },
+    { id: "pending_review", label: tCommon("status.pending_review") },
+    { id: "active", label: tCommon("status.active") },
+    { id: "rejected", label: tCommon("status.rejected") },
+    { id: "all", label: tCommon("all") },
   ];
 
   return (
@@ -121,10 +123,10 @@ export default function AdminListingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-text font-cairo">
-            إدارة الإعلانات
+            {tAdmin("title")}
           </h1>
           <p className="text-sm text-text-secondary mt-0.5 font-cairo">
-            إدارة وتصفية جميع الإعلانات في المنصة
+            {tAdmin("subtitle")}
           </p>
         </div>
       </div>
@@ -157,7 +159,7 @@ export default function AdminListingsPage() {
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-cairo text-sm">
           <AlertCircle size={18} className="shrink-0" />
-          <span>فشل في تحميل الإعلانات</span>
+          <span>{isRtl ? "فشل في تحميل الإعلانات" : "Failed to load listings"}</span>
         </div>
       )}
 

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ShieldBan, Plus, Trash2, ChevronLeft, ChevronRight,
   AlertCircle, Loader2, Phone, Calendar, X, Search
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 export default function AdminBannedPage() {
   const locale = useLocale();
+  const tBanned = useTranslations("admin.banned");
   const isRtl = locale === "ar";
   const { toast } = useToast();
   const { user } = useAuthStore();
@@ -99,18 +100,16 @@ export default function AdminBannedPage() {
     }
   };
 
-
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-text font-cairo">
-            قائمة الحظر
+            {tBanned("title")}
           </h1>
           <p className="text-sm text-text-secondary mt-0.5 font-cairo">
-            المستخدمون المحظورون من المنصة
+            {tBanned("subtitle")}
           </p>
         </div>
         <button
@@ -118,7 +117,7 @@ export default function AdminBannedPage() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-cairo bg-status-danger hover:opacity-90 text-white transition-all shadow-xs cursor-pointer"
         >
           <Plus size={16} />
-          إضافة حظر
+          {tBanned("addBan")}
         </button>
       </div>
 
@@ -128,7 +127,7 @@ export default function AdminBannedPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="البحث برقم الهاتف أو سبب الحظر..."
+          placeholder={tBanned("searchPlaceholder")}
           className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-border bg-surface text-sm text-text font-cairo placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-status-danger/30"
         />
         <div className={cn("absolute top-3.5 shrink-0", isRtl ? "left-3" : "right-3")}>
@@ -147,7 +146,7 @@ export default function AdminBannedPage() {
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-status-danger/15 border border-status-danger/30 text-status-danger font-cairo text-sm font-bold">
           <AlertCircle size={18} className="shrink-0" />
-          <span>فشل في تحميل قائمة الحظر</span>
+          <span>{isRtl ? "فشل في تحميل قائمة الحظر" : "Failed to load banned list"}</span>
         </div>
       )}
 
@@ -160,7 +159,7 @@ export default function AdminBannedPage() {
                 <ShieldBan size={28} className="text-status-success" />
               </div>
               <p className="text-text-secondary font-cairo font-semibold">
-                لا يوجد مستخدمون محظورون حالياً
+                {tBanned("emptyState")}
               </p>
             </div>
           ) : (

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Users, Shield, ShieldOff, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
   AlertCircle, Loader2, UserCheck, UserX, Crown, Search, Ban, X, Eye,
@@ -20,11 +20,11 @@ import type { User } from "@/types";
 import Image from "next/image";
 
 // ── Brand color role badges ───────────────────────────────────────────────────
-const roleBadge: Record<string, { label: string; className: string }> = {
-  tenant: { label: "مستأجر", className: "bg-primary/10 text-primary border border-primary/20" },
-  landlord: { label: "مُعلِن", className: "bg-accent/15 text-accent-dark border border-accent/30" },
-  admin: { label: "أدمن", className: "bg-surface-tertiary text-text-secondary border border-border" },
-  super_admin: { label: "سوبر أدمن", className: "bg-status-danger/15 text-status-danger border border-status-danger/30" },
+const roleBadgeConfig: Record<string, { labelAr: string; labelEn: string; className: string }> = {
+  tenant: { labelAr: "مستأجر", labelEn: "Tenant", className: "bg-primary/10 text-primary border border-primary/20" },
+  landlord: { labelAr: "مُعلِن", labelEn: "Landlord", className: "bg-accent/15 text-accent-dark border border-accent/30" },
+  admin: { labelAr: "أدمن", labelEn: "Admin", className: "bg-surface-tertiary text-text-secondary border border-border" },
+  super_admin: { labelAr: "سوبر أدمن", labelEn: "Super Admin", className: "bg-status-danger/15 text-status-danger border border-status-danger/30" },
 };
 
 // ── ID Card Viewer ────────────────────────────────────────────────────────────
@@ -174,6 +174,7 @@ function CreateAdminModal({ onClose }: { onClose: () => void }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
   const locale = useLocale();
+  const tAdmin = useTranslations("admin.users");
   const isRtl = locale === "ar";
   const { toast } = useToast();
   const { user: currentUser } = useAuthStore();
@@ -284,10 +285,10 @@ export default function AdminUsersPage() {
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 font-cairo">
-            إدارة المستخدمين
+            {tAdmin("title")}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5 font-cairo">
-            {meta ? `${meta.total} مستخدم` : "جاري التحميل..."}
+            {meta ? tAdmin("userCount", { count: meta.total }) : (isRtl ? "جاري التحميل..." : "Loading...")}
           </p>
         </div>
 
@@ -300,7 +301,7 @@ export default function AdminUsersPage() {
               style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}
             >
               <UserPlus size={16} className="text-[#0EA5E9]" />
-              إضافة مسؤول
+              {tAdmin("addAdmin")}
             </button>
           )}
 
@@ -309,7 +310,7 @@ export default function AdminUsersPage() {
             <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
             <input
               type="text"
-              placeholder="بحث بالاسم أو الهاتف أو البريد..."
+              placeholder={tAdmin("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="ps-9 pe-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 font-cairo focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] min-w-[250px]"
@@ -383,7 +384,8 @@ export default function AdminUsersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {users.map((user) => {
-                    const badge = roleBadge[user.role] ?? roleBadge.tenant;
+                    const badge = roleBadgeConfig[user.role] ?? roleBadgeConfig.tenant;
+                    const badgeLabel = isRtl ? badge.labelAr : badge.labelEn;
                     const isActive = (user as Record<string, unknown>).isActive !== false;
                     const isVerified = user.emailVerifiedAt !== null;
 
@@ -408,7 +410,7 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className={cn("px-2 py-0.5 rounded-lg text-xs font-bold font-cairo", badge.className)}>
-                            {badge.label}
+                            {badgeLabel}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -509,8 +511,8 @@ export default function AdminUsersPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 font-cairo">{selectedUser.name}</h2>
-                  <span className={cn("inline-block mt-1 px-2.5 py-0.5 rounded-lg text-xs font-bold font-cairo", roleBadge[selectedUser.role]?.className || roleBadge.tenant.className)}>
-                    {roleBadge[selectedUser.role]?.label}
+                  <span className={cn("inline-block mt-1 px-2.5 py-0.5 rounded-lg text-xs font-bold font-cairo", (roleBadgeConfig[selectedUser.role] ?? roleBadgeConfig.tenant).className)}>
+                    {isRtl ? (roleBadgeConfig[selectedUser.role] ?? roleBadgeConfig.tenant).labelAr : (roleBadgeConfig[selectedUser.role] ?? roleBadgeConfig.tenant).labelEn}
                   </span>
                 </div>
               </div>

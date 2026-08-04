@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useAuthGuard } from "@/features/auth";
 import { useMyListings } from "@/hooks/useListings";
 import { useListingBeds, useListingBedStats, useVacateBed } from "@/hooks/useBeds";
@@ -27,6 +27,8 @@ import {
 export default function LandlordBeds() {
   const router = useRouter();
   const locale = useLocale();
+  const tBeds = useTranslations("dashboard.landlord.beds");
+  const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
@@ -204,19 +206,19 @@ export default function LandlordBeds() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-extrabold font-cairo text-text">إدارة الأسرة والشواغر</h1>
+          <h1 className="text-3xl font-extrabold font-cairo text-text">{tBeds("title")}</h1>
           <p className="text-text-secondary mt-1 font-cairo text-sm">
-            قم بتسجيل عقود إيجار الأسرة وإخلاءها لتحديث شواغر الأسرة تلقائياً.
+            {tBeds("description")}
           </p>
         </div>
 
         {/* Dropdown Selector */}
         <div className="bg-surface border border-border rounded-3xl p-5 shadow-xs max-w-xl">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-text font-cairo">اختر الإعلان المشترك</label>
+            <label className="text-sm font-bold text-text font-cairo">{tBeds("selectListing")}</label>
             {bedListings.length === 0 ? (
               <p className="text-sm text-status-danger font-cairo">
-                {`ليس لديك أي عقارات من نوع "سرير" (Bed) لتتمكن من إدارتها هنا.`}
+                {tBeds("noBedsMessage")}
               </p>
             ) : (
               <select
@@ -239,9 +241,9 @@ export default function LandlordBeds() {
             {/* Stats strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {[
-                { label: "إجمالي الأسرة", value: stats?.total ?? beds.length, color: "bg-surface-secondary text-text border-border" },
-                { label: "الأسرة المتاحة", value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-status-success/15 text-status-success border-status-success/30" },
-                { label: "الأسرة المؤجرة", value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-status-danger/15 text-status-danger border-status-danger/30" },
+                { label: tBeds("totalBeds"), value: stats?.total ?? beds.length, color: "bg-surface-secondary text-text border-border" },
+                { label: tBeds("availableBeds"), value: stats?.available ?? beds.filter(b => b.isAvailable).length, color: "bg-status-success/15 text-status-success border-status-success/30" },
+                { label: tBeds("rentedBeds"), value: stats?.rented ?? beds.filter(b => !b.isAvailable).length, color: "bg-status-danger/15 text-status-danger border-status-danger/30" },
               ].map((stat, idx) => (
                 <div key={idx} className={`p-5 rounded-2xl border flex items-center justify-between ${stat.color}`}>
                   <div className="space-y-1">
@@ -257,12 +259,12 @@ export default function LandlordBeds() {
 
             {/* Beds occupancy Grid */}
             <div className="space-y-4">
-              <h2 className="text-xl font-bold font-cairo text-slate-800">تفاصيل إشغال الأسرة</h2>
+              <h2 className="text-xl font-bold font-cairo text-slate-800">{tBeds("occupancyDetails")}</h2>
               
               {beds.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-slate-200 rounded-3xl font-cairo text-slate-400">
                   <BedIcon size={40} className="mx-auto mb-3 opacity-20" />
-                  <p>لا توجد أسرة معرفة لهذا الإعلان بعد.</p>
+                  <p>{tBeds("noBedsMessage")}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -281,7 +283,7 @@ export default function LandlordBeds() {
                       <CardBody className="p-5 space-y-4 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between">
-                            <span className="font-bold font-cairo text-base">سرير رقم {bed.bedNumber}</span>
+                            <span className="font-bold font-cairo text-base">{tBeds("bedNumber", { number: bed.bedNumber })}</span>
                             <Badge
                               className={
                                 bed.isAvailable
@@ -289,7 +291,7 @@ export default function LandlordBeds() {
                                   : "bg-red-100 text-red-800 font-bold"
                               }
                             >
-                              {bed.isAvailable ? "متاح" : "مؤجر"}
+                              {bed.isAvailable ? tCommon("status.active") : tCommon("status.rented")}
                             </Badge>
                           </div>
 
@@ -298,11 +300,11 @@ export default function LandlordBeds() {
                             <div className="mt-4 space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 font-cairo">
                               <div className="flex items-center gap-2">
                                 <User size={13} className="text-amber-500" />
-                                <span>المستأجر: <span className="font-bold text-slate-800">{currentTenant?.name || "غير مسجل"}</span></span>
+                                <span>{tBeds("tenantLabel")} <span className="font-bold text-slate-800">{currentTenant?.name || "-"}</span></span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Calendar size={13} className="text-amber-500" />
-                                <span>تاريخ عقد الإيجار ساري المفعول</span>
+                                <span>{tBeds("contractActiveDate")}</span>
                               </div>
                             </div>
                           )}

@@ -10,6 +10,7 @@ import { SearchFilterDrawer } from "@/features/search";
 import { ActiveFilterChips } from "@/features/search";
 import { SearchResultsGrid } from "@/features/search";
 import { SearchPagination } from "@/features/search";
+import { AdSlot } from "@/features/ads/components/AdSlot";
 import type { SearchFilters } from "@/types";
 
 // Custom inline debounce hook
@@ -217,6 +218,8 @@ export function SearchPageClient({
               onSortChange={(sortBy) => handleFilterChange({ sortBy, page: 1 })}
               onResetFilters={handleReset}
             />
+
+            <AdSlot placementKey="SEARCH_BOTTOM" className="my-6" />
 
             {!isFetching && (
               <SearchPagination

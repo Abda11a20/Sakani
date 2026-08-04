@@ -143,7 +143,7 @@ export default function TenantRequests() {
     const cfg = REQUEST_STATUS_CONFIG[normalized as keyof typeof REQUEST_STATUS_CONFIG];
     return (
       <Badge variant={cfg?.color ?? "gray"} className="font-bold font-cairo text-xs px-2.5 py-1">
-        {cfg?.labelAr ?? status}
+        {isAr ? (cfg?.labelAr ?? status) : (cfg?.labelEn ?? status)}
       </Badge>
     );
   };
@@ -168,11 +168,11 @@ export default function TenantRequests() {
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4 font-cairo">
           {(
             [
-              { key: "all", label: "الكل" },
-              { key: "pending", label: "جديد" },
-              { key: "accepted", label: "مقبول" },
-              { key: "rejected", label: "مرفوض" },
-              { key: "completed", label: "مكتمل" },
+              { key: "all", label: isAr ? "الكل" : "All" },
+              { key: "pending", label: isAr ? "جديد" : "Pending" },
+              { key: "accepted", label: isAr ? "مقبول" : "Accepted" },
+              { key: "rejected", label: isAr ? "مرفوض" : "Rejected" },
+              { key: "completed", label: isAr ? "مكتمل" : "Completed" },
             ] as const
           ).map((tab) => (
             <button

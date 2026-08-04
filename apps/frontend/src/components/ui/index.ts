@@ -17,3 +17,4 @@ export * from "./SearchableCombobox";
 export * from "./language-switcher";
 export * from "./otp-input";
 export * from "./table";
+export * from "./pagination";

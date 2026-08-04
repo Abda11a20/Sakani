@@ -1,121 +1,293 @@
-# الهيكل المعماري لمشروع سكني | Sakany Architecture 🏠
+# 🏗️ Sakany (سكني) - System Architecture & Technical Diagrams
 
-يوضح هذا المستند التصميم الهيكلي، والتنظيم المعماري، والتفاصيل الهندسية لمشروع **سكني** (Sakany).
+This document outlines the architectural blueprints, component relationships, data flow diagrams, and database entity models powering the **Sakany Platform**.
 
 ---
 
-## 1. نظرة عامة على البنية (High-Level Architecture)
+## Table of Contents
+1. [High-Level System Architecture](#1-high-level-system-architecture)
+2. [Monorepo & Workspace Layering](#2-monorepo--workspace-layering)
+3. [Database Entity Relationship Diagram (ERD)](#3-database-entity-relationship-diagram-erd)
+4. [Authentication & JWT Refresh Token Sequence](#4-authentication--jwt-refresh-token-sequence)
+5. [Property Search & Filter Request Flow](#5-property-search--filter-request-flow)
+6. [Listing Creation & Bed Allocation Pipeline](#6-listing-creation--bed-allocation-pipeline)
+7. [Viewing Request & Contract Lifecycle State Machine](#7-viewing-request--contract-lifecycle-state-machine)
+8. [Realtime WebSocket Chat Architecture](#8-realtime-websocket-chat-architecture)
+9. [i18n Locale & Translation Resolution Pipeline](#9-i18n-locale--translation-resolution-pipeline)
 
-يعتمد مشروع سكني على هيكلية **Monorepo** تدار بواسطة **Turborepo** لمشاركة الأكواد والأنواع بسهولة وسرعة في بناء التطبيقات:
+---
+
+## 1. High-Level System Architecture
+
+```mermaid
+graph TB
+    subgraph Client Tier
+        Browser["User Browser / Client"]
+        FE_App["Next.js 14 App Router (Port 3000)"]
+    end
+
+    subgraph Service Tier
+        API_GW["Axios HTTP Interceptor & API Client"]
+        BE_App["NestJS Modular Backend (Port 4000)"]
+        Guard["JWT & RBAC Roles Guards"]
+    end
+
+    subgraph Storage & Cloud Infrastructure
+        DB[("PostgreSQL 16 Database")]
+        Cloudinary["Cloudinary CDN (Media & Documents)"]
+        Pusher["Pusher Channels (Realtime WebSockets)"]
+    end
+
+    Browser -->|HTTP / HTTPS| FE_App
+    FE_App -->|REST API Calls| API_GW
+    API_GW -->|Bearer JWT Header| BE_App
+    BE_App --> Guard
+    Guard -->|Validated Request| BE_App
+    BE_App -->|Prisma ORM| DB
+    BE_App -->|SDK Direct Upload| Cloudinary
+    BE_App -->|Trigger Events| Pusher
+    Pusher -->|WebSocket Events| Browser
+```
+
+---
+
+## 2. Monorepo & Workspace Layering
 
 ```mermaid
 graph TD
-    Client[Next.js Frontend] <-->|HTTP REST / JSON| Server[NestJS Backend REST API]
-    Server <-->|Prisma ORM| Database[(Neon PostgreSQL)]
-    Client <-->|WebSockets| Pusher((Pusher Service))
-    Server <-->|Events| Pusher
-    Server <-->|AWS S3 SDK| Cloudinary[(Cloudinary S3 API)]
+    Root["sakani/ (Turborepo Root)"]
+    
+    subgraph Frontend Workspace (apps/frontend)
+        AppRouter["App Router (/[locale])"]
+        I18n["next-intl Dictionaries (messages/ar.json & en.json)"]
+        Features["Feature Modules (Search, Auth, Listings, Chat)"]
+        ReactQuery["TanStack React Query Cache Layer"]
+    end
+
+    subgraph Backend Workspace (apps/backend)
+        Controllers["NestJS Controllers (REST API Endpoints)"]
+        Services["NestJS Services (Business Rules & Domain Logic)"]
+        PrismaORM["Prisma Client & Migrations"]
+    end
+
+    Root --> Frontend Workspace
+    Root --> Backend Workspace
+    AppRouter --> Features
+    Features --> ReactQuery
+    ReactQuery -->|HTTP / REST| Controllers
+    Controllers --> Services
+    Services --> PrismaORM
 ```
 
 ---
 
-## 2. هيكلية المستودع (Monorepo Workspace)
+## 3. Database Entity Relationship Diagram (ERD)
 
-يُقسم المشروع إلى التطبيقات (`apps`) والحزم المشتركة (`packages`):
-* **`apps/frontend`:** تطبيق الويب الخاص بالمستأجرين والملاك ولوحة الإدارة مبني بـ `Next.js 14` (App Router).
-* **`apps/backend`:** خادم الخدمات المصغرة ومقصد الـ APIs مبني باستخدام إطار العمل `NestJS` وقاعدة البيانات `PostgreSQL` عبر `Prisma ORM`.
-* **`packages/types`:** حزمة مشتركة تحتوي على كافة أنواع TypeScript المشتركة بين الواجهة والسيرفر لضمان سلامة الـ Types (End-to-End Type Safety).
+```mermaid
+erDiagram
+    users ||--o{ listings : "publishes (landlord)"
+    users ||--o{ viewing_requests : "submits (tenant)"
+    users ||--o{ alerts : "creates"
+    users ||--o{ favorites : "saves"
+    users ||--o{ community_posts : "authors"
+    users ||--o{ chat_messages : "sends"
+    
+    listings ||--o{ listing_images : "has"
+    listings ||--o{ listing_beds : "contains (if bed unit)"
+    listings ||--o{ viewing_requests : "receives"
+    listings ||--o{ rental_contracts : "generates"
+    listings ||--o{ reviews : "collects"
 
----
+    users {
+        string id PK
+        string phone UK
+        string email UK
+        string role
+        string plan
+        boolean nationalIdVerified
+        boolean isActive
+        boolean isDeleted
+        datetime createdAt
+    }
 
-## 3. معمارية الباكيند (Backend Architecture)
+    listings {
+        string id PK
+        string landlordId FK
+        string title
+        string unitType
+        int price
+        string governorate
+        string district
+        string status
+        int viewCount
+        datetime createdAt
+    }
 
-خادم الباكيند مصمم باستخدام نمط **NestJS Modular Architecture** حيث يُقسّم السيرفر إلى وحدات مستقلة (Modules) تعتمد على مبادئ الحقن (Dependency Injection):
+    listing_beds {
+        string id PK
+        string listingId FK
+        int bedNumber
+        string status
+        int price
+        string currentTenantId FK
+    }
 
+    viewing_requests {
+        string id PK
+        string listingId FK
+        string tenantId FK
+        string landlordId FK
+        string status
+        datetime proposedDate
+    }
+
+    rental_contracts {
+        string id PK
+        string listingId FK
+        string landlordId FK
+        string tenantId FK
+        datetime startDate
+        datetime endDate
+        int monthlyRent
+    }
+
+    alerts {
+        string id PK
+        string userId FK
+        string governorate
+        int maxPrice
+        string unitType
+        boolean isActive
+    }
 ```
-src/
-├── app.module.ts              # الوحدة الرئيسية التي تجمع كل المقاطع
-├── main.ts                    # نقطة الدخول وإعدادات CORS، الأمن، والتوثيق (Swagger)
-├── auth/                      # إدارة الجلسات والتسجيل وتوليد JWT Tokens
-├── users/                     # إدارة ملفات المستخدمين والتحقق من الهوية
-├── listings/                  # إدارة إعلانات العقارات (الشقق، الغرف، الأسرة)
-├── requests/                  # طلبات المعاينة وإجراءات حجز وتأجير الوحدات
-├── beds/                      # إدارة الأسرة الفردية وتأجيرها داخل السكن المشترك
-├── chat/                      # نظام غرف الدعم الفني والتكامل مع Pusher
-├── notifications/             # نظام الإشعارات الفورية
-├── payments/                  # نظام الاشتراكات وبوابات الدفع (Paymob)
-└── prisma/                    # إعدادات الاتصال بقاعدة البيانات وخدمة PrismaService
-```
-
-### قرارات هندسية هامة في الباكيند:
-1. **Prisma Serverless Adapter:** نستخدم `@prisma/adapter-pg` مع `pg.Pool` ليتماشى الاتصال بسلاسة مع البنية السحابية لقواعد بيانات Neon PostgreSQL دون حدوث انقطاع مفاجئ للاتصال.
-2. **Swagger Autogeneration:** قمنا بدمج المكون الإضافي `@nestjs/swagger` داخل خيارات المترجم `nest-cli.json` لقراءة أنواع المعطيات والـ Validations تلقائياً وبناء توثيق Swagger تفاعلي متكامل عند المسار `/api/docs`.
-3. **تشفير البيانات الحساسة:** تُخزن الهوية الوطنية للمستخدمين مشفرة بـ AES-256 لمنع تسريب بيانات الهوية أمنياً.
 
 ---
 
-## 4. معمارية الفرونتند (Frontend Architecture)
-
-واجهة المستخدم مبنية على Next.js مع التركيز الكامل على تحسين الأداء وتدويل الموقع (Localization):
-
-### 1. نظام إدارة الحالة والبيانات:
-- **TanStack Query (React Query) v5:** نستخدمه لإدارة جلب الكاش وحالات التحميل والتزامن مع السيرفر كبديل عن إدخال حالات Redux المعقدة.
-- **Zustand (Auth Store):** متجر خفيف وسريع [auth.store.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/store/auth.store.ts) لإدارة حالة تسجيل الدخول، تخزين التوكنات، وبيانات المستخدم بالاعتماد على مفاتيح localStorage موحدة في [constants.ts](file:///c:/Users/pc/Desktop/Sakany/sakani/apps/frontend/src/lib/constants.ts).
-
-### 2. التدويل واللغات (i18n):
-- نستخدم مكتبة `next-intl` لتقديم دعم متكامل للغتين العربية والإنجليزية مع تطبيق اتجاهات النصوص المناسبة (RTL للعربية و LTR للإنجليزية) بشكل ديناميكي وتلقائي بناءً على مسار الصفحة (مثال: `/[locale]/search`).
-
-### 3. تأمين مسارات الواجهة (Route Guards):
-- يتم تأمين المسارات الحساسة للوحة التحكم عبر مكون `useAuthGuard` المطور الذي يقبل مصفوفة أدوار مسموح لها بالدخول `requiredRoles` (مثلاً: لوحة تحكم المستأجرين تتطلب `requiredRoles: ["tenant"]` فقط لمنع تداخل الأدوار).
-- توحيد بناء مسارات لوحات التحكم عبر دالة مركزية `getDashboardPath(user.role, locale)`.
-
----
-
-## 5. نظام التوثيق والأمن (Security & Auth Flow)
+## 4. Authentication & JWT Refresh Token Sequence
 
 ```mermaid
 sequenceDiagram
-    participant User as المستخدم
-    participant Client as Frontend (Zustand)
-    participant Server as Backend (JWT Guard)
+    autonumber
+    actor User
+    participant FE as Frontend Client
+    participant Axios as Axios Interceptor
+    participant BE as NestJS Auth Controller
+    participant DB as PostgreSQL DB
+
+    User->>FE: Click Login & Submit Credentials
+    FE->>BE: POST /api/v1/auth/login
+    BE->>DB: Find User by Phone/Email
+    DB-->>BE: User Record
+    BE->>BE: Verify bcrypt Hash
+    BE-->>FE: Return Access Token + HttpOnly Cookie Refresh Token
     
-    User->>Client: إرسال البريد وكلمة المرور
-    Client->>Server: طلب تسجيل الدخول (POST /auth/login)
-    Note over Server: التحقق من كلمة المرور وتوليد التوكنات
-    Server-->>Client: إرجاع Access Token (15m) + Refresh Token (7d)
-    Client->>Client: حفظ التوكنات في localStorage
-    Client->>Server: طلب محمي (إرسال الـ Access Token في Headers)
-    Server-->>Client: الاستجابة بالبيانات المطلوبة
+    Note over FE,BE: Standard Authenticated Request
+    FE->>Axios: Call Protected API Endpoint
+    Axios->>BE: GET /api/v1/listings/my-listings (Header: Bearer Token)
+    BE-->>FE: 200 OK Response Data
+
+    Note over FE,BE: Access Token Expiration Auto-Refresh
+    FE->>Axios: Call Protected API Endpoint
+    Axios->>BE: GET /api/v1/dashboard/stats
+    BE-->>Axios: 401 Unauthorized (Token Expired)
+    Axios->>BE: POST /api/v1/auth/refresh (HttpOnly Cookie)
+    BE->>BE: Validate Refresh Token
+    BE-->>Axios: New Access Token
+    Axios->>BE: Retry Original Request with New Access Token
+    BE-->>FE: 200 OK Response Data
 ```
 
-عند انتهاء صلاحية الـ `AccessToken`، يقوم الـ Interceptor الخاص بـ Axios بطلب توكن جديد تلقائياً بإرسال الـ `RefreshToken` لمسار `/auth/refresh` دون شعور المستخدم بأي انقطاع في التصفح.
+---
+
+## 5. Property Search & Filter Request Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tenant
+    participant UI as Search Filter Controls
+    participant Hook as usePaginatedListings Hook
+    participant BE as Listings Controller
+    participant DB as PostgreSQL (Prisma Index)
+
+    Tenant->>UI: Select Governorate + Set Max Price + Toggle Furnished
+    UI->>Hook: Trigger onChange(newFilters)
+    Hook->>BE: GET /api/v1/listings/search?governorate=Cairo&maxPrice=5000&isFurnished=true&page=1
+    BE->>DB: Query listings with indexed filters (governorate, status=active, price)
+    DB-->>BE: Matched Listing Records + Total Count
+    BE-->>Hook: Return { listings: [...], meta: { page: 1, lastPage: 5, total: 48 } }
+    Hook-->>UI: Update React Query Cache & Render Ad Cards Grid
+```
 
 ---
 
-## 6. نظام الحظر الذكي وتكامله (Smart Blacklist Architecture)
+## 6. Listing Creation & Bed Allocation Pipeline
 
-يتميز نظام الحظر (Blacklist) بآلية تكامل ديناميكية بين قائمة الحظر وجدول المستخدمين الرئيسي:
-1. **ربط تلقائي بالهوية القومية ورقم الهاتف:** عند إدخال هاتف لحظر مستخدم، يقوم السيرفر بالتحقق من وجود المستخدم وجلب هاش الرقم القومي المسجل لحسابه تلقائياً وضمه للقائمة لمنع التفاف المستخدم بالتسجيل بهويته مرة أخرى.
-2. **التعطيل المتتالي (Cascading Deactivation):** بمجرد حظر الهوية أو الهاتف، يقوم السيرفر بتعطيل حالة النشاط (`isActive: false`) لكافة الحسابات المرتبطة لمنع استمرار استخدامهم للمنصة.
-3. **نافذة تفاصيل الحظر (Details Pop-up Modal):** في لوحة التحكم، يستعلم جدول الحظر ديناميكياً عن ملف المستخدم المرتبط بالرقم المحظور (الاسم، البريد، نوع الخطة، وتاريخ الاشتراك) لعرضه للأدمن في نافذة منبثقة تفاعلية لتسهيل اتخاذ القرارات وحماية الخصوصية البرمجية.
+```mermaid
+graph TD
+    A[Landlord Fills Add Listing Form] --> B{Unit Type?}
+    B -->|Apartment| C[Set Single Price & Total Beds Count]
+    B -->|Bed / Room| D[Configure Bed Matrix Array]
+    D --> E[Generate Individual ListingBed Records]
+    C --> F[Upload Images to Cloudinary]
+    E --> F
+    F --> G[Submit to NestJS POST /api/v1/listings]
+    G --> H[Create Listing Record with status = pending_review]
+    H --> I[Admin Receives Verification Task in /admin/listings]
+    I -->|Approve| J[Listing Status set to ACTIVE & Available in Search]
+    I -->|Reject| K[Listing Status set to REJECTED with Reason]
+```
 
 ---
 
-## 7. نظام تغذية البيانات التجريبية (Idempotent Seeder)
+## 7. Viewing Request & Contract Lifecycle State Machine
 
-لضمان سهولة تشغيل المشروع في بيئات التطوير والاختبار، يعتمد المشروع على سكريبت تغذية ذكي `seed.ts` مصمم بالمعايير التالية:
-* **الأمان من التكرار (Idempotency):** يقوم السكريبت بمسح السجلات السابقة بترتيب صحيح يحترم قيود المفاتيح الأجنبية (Foreign Keys) ثم إعادة الإنشاء، لتجنب حدوث تصادمات أو تكرار الحسابات الإدارية.
-* **الواقعية (Realistic Arabic Dummy Data):** استخدام حزمة `@faker-js/faker` مخصصة باللغة العربية لإنشاء أسماء ملاك ومستأجرين مصريين، أرقام هواتف شبكات محلية (010, 011, 012, 015)، عقارات في محافظات حقيقية مع إرفاق صور جذابة ومجانية من موقع Unsplash.
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Tenant Submits Viewing Request
+    PENDING --> REJECTED: Landlord Rejects Request
+    PENDING --> ACCEPTED: Landlord Accepts Request
+    ACCEPTED --> COMPLETED: Viewing Conducted & Lease Agreement Signed
+    COMPLETED --> RENTAL_CONTRACT_ACTIVE: RentalContract Issued
+    RENTAL_CONTRACT_ACTIVE --> CONTRACT_EXPIRED: End Date Reached
+    REJECTED --> [*]
+    CONTRACT_EXPIRED --> [*]
+```
 
 ---
 
-## 8. نظام التسجيل والمراقبة (Logging & Monitoring)
+## 8. Realtime WebSocket Chat Architecture
 
-تم تصميم نظام مراقبة قوي لضمان أداء السيرفر وتتبع الأخطاء بشكل فوري:
-* **تسجيل الطلبات والأخطاء (Request Logging & ID):** يقوم `RequestIdMiddleware` بإسناد معرف فريد (`requestId`) لكل طلب وارد، ويسجل `RequestLoggerMiddleware` تفاصيل الطلب (المنفذ، المسار، الـ IP، المتصفح، وزمن المعالجة) ويحفظها بملفات `logs/combined.log` و `logs/error.log` بشكل آلي مع إزالة رموز الألوان لتسهيل القراءة البرمجية.
-* **مسار مراقبة الصحة (Health Check endpoint):** يوفر المسار `/api/v1/health` قراءة تفصيلية وفورية لحالة السيرفر تشمل:
-  1. حالة اتصال وزمن استجابة قاعدة البيانات (Database Latency).
-  2. معدل تشغيل السيرفر وعمر العملية (Uptime).
-  3. استهلاك الذاكرة العشوائية لـ Node.js بالتفصيل (Memory Usage: RSS, Heap).
-  4. مواصفات نظام التشغيل المضيف (CPU count, Free Memory, platform).
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tenant
+    actor SupportAgent as Support Agent
+    participant FE as Frontend Pusher Client
+    participant BE as NestJS Chat Service
+    participant Pusher as Pusher Cloud Channels
 
+    Tenant->>FE: Type message & click Send
+    FE->>BE: POST /api/v1/chat/messages
+    BE->>BE: Save ChatMessage to PostgreSQL DB
+    BE->>Pusher: Trigger event 'new-message' on channel 'chat-room-123'
+    Pusher-->>FE: WebSockets Push Broadcast
+    Pusher-->>SupportAgent: WebSockets Push Broadcast
+    FE->>FE: Append message to Chat UI instantly without re-fetch
+```
+
+---
+
+## 9. i18n Locale & Translation Resolution Pipeline
+
+```mermaid
+graph LR
+    URL["URL Path (/[locale]/dashboard)"] --> LocaleCheck{"Locale Param"}
+    LocaleCheck -->|'ar'| AR_Dict["Load messages/ar.json"]
+    LocaleCheck -->|'en'| EN_Dict["Load messages/en.json"]
+    AR_Dict --> Provider["NextIntlClientProvider (dir='rtl')"]
+    EN_Dict --> Provider2["NextIntlClientProvider (dir='ltr')"]
+    Provider --> Hook["useTranslations('namespace')"]
+    Provider2 --> Hook
+    Hook --> Component["Render Localized Component UI"]
+```

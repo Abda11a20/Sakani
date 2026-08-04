@@ -30,6 +30,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { RentalContractsModule } from './rental-contracts/rental-contracts.module';
 import { CommunityModule } from './community/community.module';
 import { LocationModule } from './location/location.module';
+import { AdsModule } from './ads/ads.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { LocationModule } from './location/location.module';
     DashboardModule,
     RentalContractsModule,
     CommunityModule,
+    AdsModule,
   ],
   controllers: [],
   providers: [

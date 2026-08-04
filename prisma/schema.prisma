@@ -142,6 +142,9 @@ model User {
   communityReportsMade  CommunityReport[]
   communityReviewsGiven   CommunityReview[]  @relation("CommunityReviewsGiven")
   communityReviewsReceived CommunityReview[]  @relation("CommunityReviewsReceived")
+  campaignsCreated        Campaign[]         @relation("CampaignCreatedBy")
+  campaignsUpdated        Campaign[]         @relation("CampaignUpdatedBy")
+  campaignsDeleted        Campaign[]         @relation("CampaignDeletedBy")
 
   @@map("users")
 }
@@ -796,4 +799,358 @@ model BannedWord {
   updatedAt   DateTime           @updatedAt
 
   @@map("banned_words")
+}
+
+// ── ADVERTISEMENTS MODULE ENUMS ─────────────────────────
+
+enum AdMediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+  HTML
+}
+
+enum AdDisplayType {
+  BANNER
+  POPUP
+  FULLSCREEN
+  FLOATING
+  SIDEBAR
+}
+
+enum TargetType {
+  EXTERNAL_URL
+  INTERNAL_PAGE
+  WHATSAPP
+  PHONE
+  EMAIL
+  APP_DEEP_LINK
+}
+
+enum OpenMode {
+  NEW_TAB
+  SAME_TAB
+  MODAL
+}
+
+enum TargetUserRole {
+  ALL
+  TENANT
+  LANDLORD
+  ADMIN
+  PROVIDER
+}
+
+enum DeviceTarget {
+  ALL
+  DESKTOP
+  MOBILE
+  TABLET
+}
+
+enum AdStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  PREVIEW
+  PUBLISHED
+  PAUSED
+  EXPIRED
+  LIMIT_REACHED
+  ARCHIVED
+}
+
+enum AdCategory {
+  REAL_ESTATE
+  FURNITURE
+  RESTAURANTS
+  BANKS
+  SERVICES
+  MEDICAL
+  EDUCATION
+  OTHER
+}
+
+enum DayOfWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum PerUserFrequencyCap {
+  EVERY_VISIT
+  EVERY_12_HOURS
+  DAILY
+  WEEKLY
+  MONTHLY
+  ONLY_ONCE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  VODAFONE_CASH
+  CREDIT_CARD
+  OTHER
+}
+
+// ── ADVERTISEMENTS MODULE MODELS ────────────────────────
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Boolean  @default(true)
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model AdPlacementConfig {
+  id          String          @id @default(cuid())
+  key         String          @unique
+  name        String
+  description String?
+  enabled     Boolean         @default(true)
+  ads         Advertisement[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("ad_placement_configs")
+}
+
+model Campaign {
+  id              String            @id @default(cuid())
+  campaignCode    String            @unique
+  name            String
+
+  clientName      String
+  clientLogo      String?
+  clientPhone     String?
+  clientEmail     String?
+
+  price           Float?
+  currency        String            @default("EGP")
+  isPaid          Boolean           @default(false)
+  paymentMethod   PaymentMethod?
+
+  startDate       DateTime
+  endDate         DateTime?
+  timezone        String            @default("Africa/Cairo")
+  notes           String?
+  status          AdStatus          @default(DRAFT)
+
+  targetUserRole  TargetUserRole    @default(ALL)
+  targetDevice    DeviceTarget      @default(ALL)
+  targetCountry   String            @default("ALL")
+
+  category        AdCategory        @default(REAL_ESTATE)
+  budget          Float?
+  spentAmount     Float             @default(0)
+  remainingAmount Float?
+
+  ads             Advertisement[]
+  invoices        AdInvoice[]
+
+  createdById     String
+  createdBy       User              @relation("CampaignCreatedBy", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?             @relation("CampaignUpdatedBy", fields: [updatedById], references: [id])
+  deletedById     String?
+  deletedBy       User?             @relation("CampaignDeletedBy", fields: [deletedById], references: [id])
+
+  publishedAt     DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+
+  @@index([status, startDate, endDate])
+  @@index([campaignCode])
+  @@index([deletedAt])
+  @@map("campaigns")
+}
+
+model Advertisement {
+  id                    String              @id @default(cuid())
+  campaignId            String
+  campaign              Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  title                 String
+
+  placementId           String
+  placement             AdPlacementConfig   @relation(fields: [placementId], references: [id])
+
+  target                AdTarget?
+  finalUtmUrl           String?
+  openMode              OpenMode            @default(NEW_TAB)
+  displayType           AdDisplayType       @default(BANNER)
+
+  daysOfWeek            DayOfWeek[]
+  dailyStartMinutes     Int?
+  dailyEndMinutes       Int?
+
+  maxViews              Int?
+  maxClicks             Int?
+  perUserFrequency      PerUserFrequencyCap @default(EVERY_12_HOURS)
+  maxDisplayPerSession  Int                 @default(1)
+
+  isSkippable           Boolean             @default(true)
+  isClosable            Boolean             @default(true)
+  skipSeconds           Int                 @default(5)
+
+  category              AdCategory          @default(REAL_ESTATE)
+  priority              Int                 @default(50)
+  displayOrder          Int                 @default(0)
+  trafficWeight         Int                 @default(50)
+  status                AdStatus            @default(DRAFT)
+
+  viewsCount            Int                 @default(0)
+  clicksCount           Int                 @default(0)
+  conversionCount       Int                 @default(0)
+
+  mediaItems            AdMedia[]
+  logs                  AdLog[]
+  dailyStats            AdDailyStats[]
+  versions              AdVersion[]
+
+  publishedAt           DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?
+
+  @@index([campaignId, placementId, status])
+  @@index([deletedAt])
+  @@map("advertisements")
+}
+
+model AdTarget {
+  id              String        @id @default(cuid())
+  advertisementId String        @unique
+  advertisement   Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+
+  type            TargetType    @default(EXTERNAL_URL)
+  url             String?
+  phone           String?
+  email           String?
+  whatsapp        String?
+  internalRoute   String?
+  appDeepLink     String?
+
+  @@map("ad_targets")
+}
+
+model AdMedia {
+  id              String        @id @default(cuid())
+  adId            String
+  advertisement   Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  url             String
+  thumbnailUrl    String?
+  type            AdMediaType   @default(IMAGE)
+  caption         String?
+  durationSeconds Int?
+  order           Int           @default(0)
+
+  createdAt       DateTime      @default(now())
+
+  @@map("ad_media")
+}
+
+model AdLog {
+  id              String        @id @default(cuid())
+  adId            String
+  advertisement   Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  type            String
+  conversionType  ConversionType? @default(CLICK)
+  referrer        String?
+  userIp          String?
+  userAgent       String?
+  userId          String?
+  deviceType      DeviceTarget  @default(ALL)
+  createdAt       DateTime      @default(now())
+
+  @@index([adId, type, createdAt])
+  @@map("ad_logs")
+}
+
+enum ConversionType {
+  CLICK
+  CALL
+  WHATSAPP
+  FORM
+  DOWNLOAD
+  INSTALL
+}
+
+model AdDailyStats {
+  id              String        @id @default(cuid())
+  adId            String
+  advertisement   Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  date            DateTime      @db.Date
+  views           Int           @default(0)
+  clicks          Int           @default(0)
+  conversions     Int           @default(0)
+  ctr             Float         @default(0)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([adId, date])
+  @@index([adId, date])
+  @@map("ad_daily_stats")
+}
+
+model AdVersion {
+  id              String        @id @default(cuid())
+  adId            String
+  advertisement   Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  versionNumber   Int           @default(1)
+  title           String
+  targetData      Json
+  mediaData       Json
+  createdById     String?
+  createdAt       DateTime      @default(now())
+
+  @@unique([adId, versionNumber])
+  @@map("ad_versions")
+}
+
+model AdInvoice {
+  id              String        @id @default(cuid())
+  campaignId      String
+  campaign        Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  invoiceNumber   String        @unique
+  amount          Float
+  currency        String        @default("EGP")
+  dueDate         DateTime?
+  isPaid          Boolean       @default(false)
+  pdfUrl          String?
+  payments        AdPayment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("ad_invoices")
+}
+
+model AdPayment {
+  id              String        @id @default(cuid())
+  invoiceId       String
+  invoice         AdInvoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amount          Float
+  paymentMethod   PaymentMethod @default(CASH)
+  transactionRef  String?
+  paidAt          DateTime      @default(now())
+
+  @@map("ad_payments")
 }
