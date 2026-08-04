@@ -15,6 +15,7 @@ const PLACEMENT_KEYS = [
   { value: 'SEARCH_AFTER_8', label: 'صفحة البحث (SEARCH_AFTER_8)' },
   { value: 'SEARCH_BOTTOM',  label: 'أسفل البحث (SEARCH_BOTTOM)' },
   { value: 'INTERSTITIAL',   label: 'الشاشة الكاملة (INTERSTITIAL)' },
+  { value: 'POPUP',          label: 'إعلان منبثق (POPUP)' },
   { value: 'COMMUNITY_TOP',  label: 'أعلى مجتمع سكني (COMMUNITY_TOP)' },
 ];
 
