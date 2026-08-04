@@ -14,7 +14,7 @@ import { useCampaigns } from '@/features/ads/hooks/useCampaigns';
 import { useAdMutations } from '@/features/ads/hooks/useAdMutations';
 import { campaignsApi } from '@/features/ads/api/campaigns.api';
 import { api } from '@/lib/api';
-import { Megaphone, Plus, Search } from 'lucide-react';
+import { Megaphone, Plus, Search, Sparkles } from 'lucide-react';
 import type { Advertisement, AdStatus, CreateAdPayload } from '@/features/ads/types/ads.types';
 
 const PAGE_SIZE = 10;
@@ -33,6 +33,7 @@ export default function AllAdvertisementsPage() {
   const { updateStatus, workflowAction, deleteAd } = useAdMutations();
 
   const [showCreateAdModal, setShowCreateAdModal] = useState(false);
+  const [isMigratingLegacyMedia, setIsMigratingLegacyMedia] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [placementFilter, setPlacementFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -123,6 +124,21 @@ export default function AllAdvertisementsPage() {
     }
   };
 
+  const handleMigrateLegacyMedia = async () => {
+    if (!confirm('سيتم نقل دفعة صغيرة من الوسائط القديمة إلى التخزين السحابي. لن يتغير أي إعلان إذا فشل رفع ملفه. هل تريد المتابعة؟')) return;
+
+    setIsMigratingLegacyMedia(true);
+    try {
+      const { data } = await api.post('/admin/ads/migrate-legacy-media', { limit: 20 });
+      alert(`تمت معالجة ${data.scanned} وسائط: ${data.migrated} نُقلت، ${data.skipped} تم تجاوزها، ${data.failed} فشلت دون تغيير.`);
+      await refetch();
+    } catch {
+      alert('تعذر ترحيل الوسائط القديمة. لم يتم تغيير أي إعلان.');
+    } finally {
+      setIsMigratingLegacyMedia(false);
+    }
+  };
+
   return (
     <AdsErrorBoundary fallbackTitle="حدث خطأ في تحميل قائمة الإعلانات التجارية">
       <div className="p-6 max-w-7xl mx-auto space-y-6 font-cairo" dir="rtl">
@@ -137,6 +153,16 @@ export default function AllAdvertisementsPage() {
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Sparkles size={15} />}
+              onClick={handleMigrateLegacyMedia}
+              disabled={isMigratingLegacyMedia}
+            >
+              {isMigratingLegacyMedia ? 'جارٍ تحسين الوسائط...' : 'تحسين الوسائط القديمة'}
+            </Button>
           <Button
             variant="accent"
             size="sm"
@@ -145,6 +171,7 @@ export default function AllAdvertisementsPage() {
           >
             إضافة إعلان
           </Button>
+          </div>
         </div>
 
         {/* Toolbar */}

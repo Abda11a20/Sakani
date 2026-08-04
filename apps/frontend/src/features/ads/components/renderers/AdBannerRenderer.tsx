@@ -82,6 +82,8 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
             ) : (
               <img
                 src={mediaUrl}
+                width={960}
+                height={320}
                 alt={cleanTitle || 'إعلان'}
                 referrerPolicy="no-referrer"
                 loading={isHeroAd ? 'eager' : 'lazy'}
