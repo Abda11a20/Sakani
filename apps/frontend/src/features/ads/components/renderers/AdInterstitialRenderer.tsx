@@ -131,18 +131,8 @@ export const AdInterstitialRenderer: React.FC<Props> = ({
           {/* Bottom Callout Overlay */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white text-right space-y-2">
             <div className="flex items-center space-x-2 space-x-reverse">
-              {ad.clientLogo && (
-                <div className="relative h-8 w-8 overflow-hidden rounded-full border border-white/20 shrink-0">
-                  <img
-                    src={ad.clientLogo}
-                    alt="Client"
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
               <span className="text-xs font-semibold text-gray-200">
-                {ad.clientName || 'سكني للإعلانات'}
+                سكني للإعلانات
               </span>
             </div>
 
