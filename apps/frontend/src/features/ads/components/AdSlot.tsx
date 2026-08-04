@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useActiveAd } from '../hooks/useActiveAd';
 import { AdBannerRenderer } from './renderers/AdBannerRenderer';
 import { AdInterstitialRenderer } from './renderers/AdInterstitialRenderer';
@@ -13,8 +13,21 @@ interface Props {
 
 export const AdSlot: React.FC<Props> = ({ placementKey, className }) => {
   const isOverlayPlacement = placementKey === 'INTERSTITIAL' || placementKey === 'POPUP';
-  const { ad, isLoading, handleAdClick } = useActiveAd(placementKey, isOverlayPlacement);
+  const [hasUserInteracted, setHasUserInteracted] = useState(!isOverlayPlacement);
+  const { ad, isLoading, handleAdClick } = useActiveAd(placementKey, hasUserInteracted);
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOverlayPlacement) return;
+
+    const activate = () => setHasUserInteracted(true);
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((event) => window.addEventListener(event, activate, { once: true, passive: true }));
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, activate));
+    };
+  }, [isOverlayPlacement]);
 
   if (isDismissed) {
     return null;

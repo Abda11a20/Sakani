@@ -3,6 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { ActiveAdResponse } from '../../types/ad.types';
+import {
+  getCloudinaryUrl,
+  getCloudinaryVideoPosterUrl,
+  getCloudinaryVideoUrl,
+} from '@/lib/utils';
 
 interface Props {
   ad: ActiveAdResponse;
@@ -15,6 +20,10 @@ export const AdPopupRenderer: React.FC<Props> = ({ ad, onAdClick, onClose }) => 
   const videoRef = useRef<HTMLVideoElement>(null);
   const primaryMedia = ad.mediaItems?.[0];
   const cleanTitle = ad.title?.replace(/\s*\([A-Z0-9_]+\)$/gi, '') || '';
+  const mediaUrl = primaryMedia?.type === 'VIDEO'
+    ? getCloudinaryVideoUrl(primaryMedia.url)
+    : getCloudinaryUrl(primaryMedia?.url, { width: 640, quality: 'auto' });
+  const videoPoster = getCloudinaryVideoPosterUrl(primaryMedia?.url);
 
   // Sync muted state directly to HTMLVideoElement DOM instance
   useEffect(() => {
@@ -59,7 +68,10 @@ export const AdPopupRenderer: React.FC<Props> = ({ ad, onAdClick, onClose }) => 
               <>
                 <video
                   ref={videoRef}
-                  src={primaryMedia.url}
+                  src={mediaUrl}
+                  poster={videoPoster || undefined}
+                  width={640}
+                  height={360}
                   autoPlay
                   muted={isMuted}
                   playsInline
@@ -80,7 +92,9 @@ export const AdPopupRenderer: React.FC<Props> = ({ ad, onAdClick, onClose }) => 
               </>
             ) : (
               <img
-                src={primaryMedia.url}
+                src={mediaUrl}
+                width={640}
+                height={360}
                 alt={cleanTitle}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

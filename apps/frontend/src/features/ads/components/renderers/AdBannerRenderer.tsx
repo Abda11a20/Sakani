@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { ActiveAdResponse } from '../../types/ad.types';
-import { getCloudinaryUrl } from '@/lib/utils';
+import {
+  getCloudinaryUrl,
+  getCloudinaryVideoPosterUrl,
+  getCloudinaryVideoUrl,
+} from '@/lib/utils';
 
 interface Props {
   ad: ActiveAdResponse;
@@ -12,13 +16,15 @@ interface Props {
 
 export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const primaryMedia = ad.mediaItems?.[0];
   const cleanTitle = ad.title?.replace(/\s*\([A-Z0-9_]+\)$/gi, '') || '';
   const isHeroAd = ad.placementKey === 'HOME_HERO';
   const mediaUrl = primaryMedia?.type === 'IMAGE'
     ? getCloudinaryUrl(primaryMedia.url, { width: 960, quality: 'auto' })
-    : primaryMedia?.url;
+    : getCloudinaryVideoUrl(primaryMedia?.url);
+  const videoPoster = getCloudinaryVideoPosterUrl(primaryMedia?.url);
 
   // Sync muted state directly to HTMLVideoElement DOM instance
   useEffect(() => {
@@ -26,6 +32,22 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
       videoRef.current.muted = isMuted;
     }
   }, [isMuted]);
+
+  useEffect(() => {
+    if (primaryMedia?.type !== 'VIDEO' || !isHeroAd) {
+      setShouldLoadVideo(true);
+      return;
+    }
+
+    setShouldLoadVideo(false);
+    const enableVideo = () => setShouldLoadVideo(true);
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((event) => window.addEventListener(event, enableVideo, { once: true, passive: true }));
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, enableVideo));
+    };
+  }, [isHeroAd, primaryMedia?.type, primaryMedia?.url]);
 
   return (
     <div className="w-full my-2 transition-all duration-300">
@@ -60,11 +82,15 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
               <>
                 <video
                   ref={videoRef}
-                  src={mediaUrl}
-                  autoPlay
+                  src={shouldLoadVideo ? mediaUrl : undefined}
+                  poster={videoPoster || undefined}
+                  width={640}
+                  height={320}
+                  autoPlay={shouldLoadVideo}
                   loop
                   muted={isMuted}
                   playsInline
+                  preload="metadata"
                   className="w-full h-32 sm:h-40 object-fill rounded-lg"
                 />
                 <button

@@ -4,13 +4,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { ActiveAdResponse, AdTarget } from '../types/ad.types';
 
-export function useActiveAd(placementKey: string, deferRequest = false) {
+export function useActiveAd(placementKey: string, enabled = true) {
   const [ad, setAd] = useState<ActiveAdResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasImpressionRecorded, setHasImpressionRecorded] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
+
+    if (!enabled) {
+      setAd(null);
+      setIsLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     async function fetchAd() {
       try {
@@ -84,19 +92,12 @@ export function useActiveAd(placementKey: string, deferRequest = false) {
       }
     }
 
-    const timer = deferRequest
-      ? window.setTimeout(fetchAd, 2000)
-      : undefined;
-
-    if (!deferRequest) {
-      fetchAd();
-    }
+    fetchAd();
 
     return () => {
       isMounted = false;
-      if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [placementKey, deferRequest]);
+  }, [placementKey, enabled]);
 
   // Record Impression once rendered
   useEffect(() => {

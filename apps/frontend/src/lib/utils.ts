@@ -70,6 +70,39 @@ export function getCloudinaryUrl(
   return `${baseUrl}${transformStr}/${rest}`;
 }
 
+/** Returns an optimized delivery URL for Cloudinary-hosted video. */
+export function getCloudinaryVideoUrl(
+  url: string | null | undefined,
+  width = 640,
+): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url || '';
+
+  const marker = '/video/upload/';
+  const index = url.indexOf(marker);
+  if (index === -1) return url;
+
+  const afterUpload = url.slice(index + marker.length);
+  const firstSegment = afterUpload.split('/')[0];
+  if (firstSegment.includes(',') || firstSegment.startsWith('q_')) return url;
+
+  return `${url.slice(0, index + marker.length)}q_auto:eco,vc_auto,w_${width}/${afterUpload}`;
+}
+
+/** Uses Cloudinary's first video frame as a lightweight poster image. */
+export function getCloudinaryVideoPosterUrl(
+  url: string | null | undefined,
+  width = 960,
+): string {
+  if (!url || !url.includes('res.cloudinary.com')) return '';
+
+  const marker = '/video/upload/';
+  const index = url.indexOf(marker);
+  if (index === -1) return '';
+
+  const afterUpload = url.slice(index + marker.length).replace(/\.[^./?]+(?=\?|$)/, '.jpg');
+  return `${url.slice(0, index + marker.length)}f_auto,q_auto,w_${width},so_0/${afterUpload}`;
+}
+
 /**
  * جلب رابط صورة الأفاتار بشكل موحّد — يعالج جميع الحالات:
  * - رابط كامل (https://...) → يعود كما هو
