@@ -87,7 +87,7 @@ export function AdItemRow({
 
             {ad.target?.url || ad.target?.whatsapp ? (
               <a
-                href={ad.target.url || `https://wa.me/${ad.target.whatsapp}`}
+                href={ad.target.url || (ad.target.whatsapp ? `https://wa.me/${ad.target.whatsapp.replace(/\D/g, '')}` : '#')}
                 target="_blank"
                 rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}

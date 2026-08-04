@@ -87,7 +87,7 @@ export function AdAnalyticsDetailModal({ isOpen, ad, onClose }: AdAnalyticsDetai
                 <span>رابط التوجيه:</span>
               </span>
               <a
-                href={ad.target.url || `https://wa.me/${ad.target.whatsapp}`}
+                href={ad.target.url || (ad.target.whatsapp ? `https://wa.me/${ad.target.whatsapp.replace(/\D/g, '')}` : '#')}
                 target="_blank"
                 rel="noreferrer"
                 className="font-mono text-primary hover:underline truncate max-w-[200px]"

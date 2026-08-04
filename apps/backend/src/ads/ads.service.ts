@@ -414,7 +414,10 @@ export class AdsService {
     }
 
     // Build UTM Url
-    const baseUrl = dto.target?.url || dto.target?.whatsapp || '';
+    const rawWa = dto.target?.whatsapp
+      ? `https://wa.me/${dto.target.whatsapp.replace(/\D/g, '')}`
+      : null;
+    const baseUrl = dto.target?.url || rawWa || '';
     const finalUtmUrl = baseUrl
       ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}utm_source=sakany&utm_medium=${dto.displayType || 'BANNER'}&utm_campaign=${encodeURIComponent(campaign.name)}`
       : null;

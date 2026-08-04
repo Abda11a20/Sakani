@@ -105,8 +105,16 @@ export function useActiveAd(placementKey: string) {
 
     const target: AdTarget | undefined | null = ad.target;
 
-    // Resolve target destination
-    if (ad.utmUrl) {
+    // Direct WHATSAPP target handling takes precedence for clean wa.me redirection
+    if (target?.type === 'WHATSAPP' && target.whatsapp) {
+      const cleanPhone = target.whatsapp.replace(/\D/g, '');
+      const waUrl = `https://wa.me/${cleanPhone}`;
+      window.open(waUrl, ad.openMode === 'SAME_TAB' ? '_self' : '_blank');
+      return;
+    }
+
+    // Resolve utmUrl if valid absolute URL
+    if (ad.utmUrl && (ad.utmUrl.startsWith('http://') || ad.utmUrl.startsWith('https://'))) {
       window.open(ad.utmUrl, ad.openMode === 'SAME_TAB' ? '_self' : '_blank');
       return;
     }
