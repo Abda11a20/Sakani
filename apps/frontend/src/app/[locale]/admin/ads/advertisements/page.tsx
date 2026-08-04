@@ -14,7 +14,7 @@ import { useCampaigns } from '@/features/ads/hooks/useCampaigns';
 import { useAdMutations } from '@/features/ads/hooks/useAdMutations';
 import { campaignsApi } from '@/features/ads/api/campaigns.api';
 import { api } from '@/lib/api';
-import { Megaphone, Plus, Search, Filter } from 'lucide-react';
+import { Megaphone, Plus, Search } from 'lucide-react';
 import type { Advertisement, AdStatus, CreateAdPayload } from '@/features/ads/types/ads.types';
 
 const PAGE_SIZE = 10;

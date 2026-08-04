@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import {
-  Megaphone, LayoutDashboard, Bug, ChevronRight, Menu, X, Home, LogOut,
-  FolderKanban, Layers, CreditCard, Radio,
+  Megaphone, LayoutDashboard, Bug,
+  FolderKanban, Layers, CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLogout } from '@/features/auth';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 
 interface AdsLayoutProps {
@@ -19,8 +18,6 @@ interface AdsLayoutProps {
 export default function AdsLayout({ children }: AdsLayoutProps) {
   const locale = useLocale();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { mutate: logout } = useLogout();
   const user = useAuthStore((state) => state.user);
 
   const isSuperAdmin = user?.role === 'super_admin';

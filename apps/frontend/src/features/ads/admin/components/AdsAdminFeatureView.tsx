@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { AdsErrorBoundary } from './AdsErrorBoundary';
 import { AnalyticsTab } from './AnalyticsTab';
 import { useAdsAnalytics } from '../../hooks/useAdsAnalytics';

@@ -44,12 +44,7 @@ const AMENITY_ICON_MAP_SEARCH: Record<string, React.ReactNode> = {
   parking:      <Car size={13} />,
 };
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "الأحدث الإضافة" },
-  { value: "cheapest", label: "الأقل سعراً" },
-  { value: "expensive", label: "الأعلى سعراً" },
-  { value: "popular", label: "الأكثر مشاهدة" },
-];
+
 
 interface CustomSelectProps {
   value: string;

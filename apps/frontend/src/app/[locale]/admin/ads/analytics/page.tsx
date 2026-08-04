@@ -3,12 +3,11 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { StatCardsSkeleton, TableSkeleton } from '@/features/ads/admin/components/AdsSkeleton';
 import { AdsErrorBoundary } from '@/features/ads/admin/components/AdsErrorBoundary';
 import { AdAnalyticsDetailModal } from '@/features/ads/admin/components/AdAnalyticsDetailModal';
 import { useAdsAnalytics } from '@/features/ads/hooks/useAdsAnalytics';
-import { BarChart2, Trophy, Eye, MousePointer, ChevronLeft } from 'lucide-react';
+import { BarChart2, Trophy, ChevronLeft } from 'lucide-react';
 import type { Advertisement } from '@/features/ads/types/ads.types';
 
 export default function DedicatedFullAnalyticsPage() {

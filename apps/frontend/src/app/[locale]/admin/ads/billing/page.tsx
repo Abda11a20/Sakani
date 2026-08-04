@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { StatCardsSkeleton, TableSkeleton } from '@/features/ads/admin/components/AdsSkeleton';
 import { AdsErrorBoundary } from '@/features/ads/admin/components/AdsErrorBoundary';
 import { useCampaigns } from '@/features/ads/hooks/useCampaigns';
-import { CreditCard, Receipt, Wallet, ArrowUpRight, CheckCircle2, Clock, Eye } from 'lucide-react';
+import { CreditCard, Receipt, Wallet, CheckCircle2, Clock, Eye } from 'lucide-react';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CASH: 'نقدي (Cash)',

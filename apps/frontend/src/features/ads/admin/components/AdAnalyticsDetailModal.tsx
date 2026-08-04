@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trophy, Eye, MousePointer, ExternalLink, AlertTriangle, CheckCircle, User, LayoutGrid } from 'lucide-react';
+import { Eye, MousePointer, ExternalLink, User, LayoutGrid } from 'lucide-react';
 import type { Advertisement } from '../../types/ads.types';
 
 interface AdAnalyticsDetailModalProps {
