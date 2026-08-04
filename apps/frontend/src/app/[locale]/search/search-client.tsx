@@ -184,6 +184,7 @@ export function SearchPageClient({
 
   return (
     <main className="min-h-screen bg-[#FDFBF7]">
+      <AdSlot placementKey="INTERSTITIAL" />
       {/* 1. Top Search Header with Quick Filters Strip */}
       <SearchHeader
         query={filters.query ?? ""}

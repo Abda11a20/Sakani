@@ -528,7 +528,10 @@ export class AdsService {
     if (dto.perUserFrequency !== undefined) {
       const validCaps = [
         'EVERY_VISIT',
+        'EVERY_3_HOURS',
+        'EVERY_6_HOURS',
         'EVERY_12_HOURS',
+        'EVERY_15_HOURS',
         'DAILY',
         'WEEKLY',
         'MONTHLY',

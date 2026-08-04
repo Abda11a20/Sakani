@@ -325,9 +325,15 @@ export function EditAdDialog({
                 value={form.perUserFrequency}
                 onValueChange={(val) => set('perUserFrequency', val)}
                 options={[
-                  { value: 'EVERY_12_HOURS', label: 'مرة كل 12 ساعة' },
-                  { value: 'DAILY', label: 'مرة يومياً (24 ساعة)' },
                   { value: 'EVERY_VISIT', label: 'ظهور دائم (عند كل زيارة)' },
+                  { value: 'EVERY_3_HOURS', label: 'مرة كل 3 ساعات' },
+                  { value: 'EVERY_6_HOURS', label: 'مرة كل 6 ساعات' },
+                  { value: 'EVERY_12_HOURS', label: 'مرة كل 12 ساعة' },
+                  { value: 'EVERY_15_HOURS', label: 'مرة كل 15 ساعة' },
+                  { value: 'DAILY', label: 'مرة يومياً (كل 24 ساعة)' },
+                  { value: 'WEEKLY', label: 'مرة أسبوعياً (كل 7 أيام)' },
+                  { value: 'MONTHLY', label: 'مرة شهرياً (كل 30 يوماً)' },
+                  { value: 'ONLY_ONCE', label: 'مرة واحدة فقط للزائر (مدى الحياة)' },
                 ]}
               />
             </div>

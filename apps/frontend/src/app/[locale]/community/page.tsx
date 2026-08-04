@@ -320,6 +320,7 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
+      <AdSlot placementKey="INTERSTITIAL" />
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-12 px-4 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
