@@ -18,11 +18,22 @@ export class LocationService {
   constructor(private readonly provider: NominatimProvider) {}
 
   private getCacheKey(query: string): string {
-    return query.trim().toLowerCase().replace(/[أإآآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+    return query
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي');
   }
 
-  async geocodeAddress(governorate?: string, district?: string, address?: string): Promise<{ results: LocationResult[]; message?: string }> {
-    const rawParts = [address, district, governorate].filter(Boolean).map((s) => s?.trim());
+  async geocodeAddress(
+    governorate?: string,
+    district?: string,
+    address?: string,
+  ): Promise<{ results: LocationResult[]; message?: string }> {
+    const rawParts = [address, district, governorate]
+      .filter(Boolean)
+      .map((s) => s?.trim());
     if (rawParts.length === 0) {
       return { results: [] };
     }
@@ -42,7 +53,11 @@ export class LocationService {
     }
 
     // 2. Execute Hierarchical Geocoding Candidate Pipeline
-    let sourceLevel: 'address' | 'cleaned_address' | 'district' | 'governorate' = 'address';
+    let sourceLevel:
+      | 'address'
+      | 'cleaned_address'
+      | 'district'
+      | 'governorate' = 'address';
 
     // Candidate 1: Full raw query (address + district + governorate)
     let results = await this.provider.geocode(fullQuery);
@@ -52,10 +67,14 @@ export class LocationService {
 
     // Candidate 2: Address minus district name + governorate (e.g. "سنديون قليوب" - "قليوب" => "سنديون" + "القليوبية")
     if (results.length === 0 && address && district && governorate) {
-      const cleanedAddr = address.replace(new RegExp(district, 'gi'), '').trim();
+      const cleanedAddr = address
+        .replace(new RegExp(district, 'gi'), '')
+        .trim();
       if (cleanedAddr && cleanedAddr.length > 1) {
         const cleanedAddrQuery = `${cleanedAddr} ${governorate}`;
-        this.logger.debug(`Trying cleaned address candidate: "${cleanedAddrQuery}"`);
+        this.logger.debug(
+          `Trying cleaned address candidate: "${cleanedAddrQuery}"`,
+        );
         results = await this.provider.geocode(cleanedAddrQuery);
         if (results.length > 0) sourceLevel = 'cleaned_address';
       }
@@ -90,16 +109,25 @@ export class LocationService {
 
     // 3. Save to L1 Cache
     if (finalResults.length > 0) {
-      this.cache.set(cacheKey, { results: finalResults, timestamp: Date.now() });
+      this.cache.set(cacheKey, {
+        results: finalResults,
+        timestamp: Date.now(),
+      });
     }
 
     return {
       results: finalResults,
-      message: finalResults.length === 0 ? 'لم نتمكن من العثور على نتائج مطابقة تلقائياً. يمكنك تحديد الموقع يدويًا على الخريطة.' : undefined,
+      message:
+        finalResults.length === 0
+          ? 'لم نتمكن من العثور على نتائج مطابقة تلقائياً. يمكنك تحديد الموقع يدويًا على الخريطة.'
+          : undefined,
     };
   }
 
-  async reverseGeocode(lat: number, lng: number): Promise<LocationResult | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number,
+  ): Promise<LocationResult | null> {
     if (!this.provider.reverseGeocode) return null;
     return this.provider.reverseGeocode(lat, lng);
   }

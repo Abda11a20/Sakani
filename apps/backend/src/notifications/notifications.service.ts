@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationType, NotificationEventKey, NotificationPriority, Prisma } from '@prisma/client';
+import {
+  NotificationType,
+  NotificationEventKey,
+  NotificationPriority,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService, transactionStorage } from '../prisma/prisma.service';
 import { NotificationDispatcher } from './notification-dispatcher.service';
 
@@ -34,9 +39,7 @@ export class NotificationService {
     const priority = input.priority ?? NotificationPriority.NORMAL;
     const title = input.title || '';
     const body = input.body || '';
-    const payload = input.payload
-      ? { version: 1, ...input.payload }
-      : null;
+    const payload = input.payload ? { version: 1, ...input.payload } : null;
 
     const existingNotification = await client.notification.findFirst({
       where: {

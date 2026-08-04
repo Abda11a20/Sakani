@@ -223,7 +223,9 @@ export class RequestsService {
         tx,
       );
       if (notif) {
-        this.notificationService.sendRealtimeNotification(listing.landlordId, notif).catch(() => {});
+        this.notificationService
+          .sendRealtimeNotification(listing.landlordId, notif)
+          .catch(() => {});
       }
 
       return createdRequest;
@@ -282,7 +284,9 @@ export class RequestsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          listing: { select: { id: true, title: true, unitType: true, images: true } },
+          listing: {
+            select: { id: true, title: true, unitType: true, images: true },
+          },
           tenant: {
             select: {
               ...userPublicSelect,

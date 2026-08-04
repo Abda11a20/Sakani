@@ -1,7 +1,12 @@
 // apps/backend/src/dashboard/providers/quick-actions.provider.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ListingStatus, RequestStatus, ContractStatus, UserRole } from '@prisma/client';
+import {
+  ListingStatus,
+  RequestStatus,
+  ContractStatus,
+  UserRole,
+} from '@prisma/client';
 
 export type QuickActionKey =
   | 'CREATE_FIRST_LISTING'
@@ -18,7 +23,10 @@ export type QuickActionKey =
 export class DashboardQuickActionsProvider {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getQuickActions(userId: string, role: string): Promise<QuickActionKey[]> {
+  async getQuickActions(
+    userId: string,
+    role: string,
+  ): Promise<QuickActionKey[]> {
     if (role === UserRole.landlord) {
       return this.getLandlordActions(userId);
     } else if (role === UserRole.tenant) {
@@ -29,10 +37,14 @@ export class DashboardQuickActionsProvider {
     return [];
   }
 
-  private async getLandlordActions(landlordId: string): Promise<QuickActionKey[]> {
+  private async getLandlordActions(
+    landlordId: string,
+  ): Promise<QuickActionKey[]> {
     const actions: QuickActionKey[] = [];
 
-    const listingsCount = await this.prisma.listing.count({ where: { landlordId } });
+    const listingsCount = await this.prisma.listing.count({
+      where: { landlordId },
+    });
     if (listingsCount === 0) {
       actions.push('CREATE_FIRST_LISTING');
     } else {
@@ -49,7 +61,11 @@ export class DashboardQuickActionsProvider {
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const expiringCount = await this.prisma.rentalContract.count({
-      where: { landlordId, status: ContractStatus.active, endDate: { lte: sevenDaysFromNow } },
+      where: {
+        landlordId,
+        status: ContractStatus.active,
+        endDate: { lte: sevenDaysFromNow },
+      },
     });
     if (expiringCount > 0) {
       actions.push('RENEW_EXPIRING_CONTRACT');
@@ -68,7 +84,9 @@ export class DashboardQuickActionsProvider {
       actions.push('CONFIRM_VIEWING_APPOINTMENT');
     }
 
-    const alertsCount = await this.prisma.alert.count({ where: { tenantId, isActive: true } });
+    const alertsCount = await this.prisma.alert.count({
+      where: { tenantId, isActive: true },
+    });
     if (alertsCount === 0) {
       actions.push('CREATE_SMART_ALERT');
     }
@@ -79,7 +97,9 @@ export class DashboardQuickActionsProvider {
   private async getAdminActions(): Promise<QuickActionKey[]> {
     const actions: QuickActionKey[] = [];
 
-    const pendingListings = await this.prisma.listing.count({ where: { status: ListingStatus.pending_review } });
+    const pendingListings = await this.prisma.listing.count({
+      where: { status: ListingStatus.pending_review },
+    });
     if (pendingListings > 0) {
       actions.push('MODERATE_PENDING_LISTINGS');
     }

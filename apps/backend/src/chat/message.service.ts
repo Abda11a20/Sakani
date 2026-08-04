@@ -224,7 +224,11 @@ export class MessageService {
     return { success: true };
   }
 
-  async notifyTyping(conversationId: string, userId: string, isTyping: boolean) {
+  async notifyTyping(
+    conversationId: string,
+    userId: string,
+    isTyping: boolean,
+  ) {
     await this.pusherService.broadcastToConversation(
       conversationId,
       'user.typing',

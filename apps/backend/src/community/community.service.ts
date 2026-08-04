@@ -64,7 +64,8 @@ export class CommunityService {
     }
 
     // Validate combined eventDate and timeSlot is in the future
-    const dateStr = typeof dto.eventDate === 'string' ? dto.eventDate.split('T')[0] : '';
+    const dateStr =
+      typeof dto.eventDate === 'string' ? dto.eventDate.split('T')[0] : '';
     const [year, month, day] = dateStr.split('-').map(Number);
     let hours = 0;
     let minutes = 0;
@@ -75,7 +76,15 @@ export class CommunityService {
       minutes = isNaN(m) ? 0 : m;
     }
 
-    const exactEventDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    const exactEventDateTime = new Date(
+      year,
+      month - 1,
+      day,
+      hours,
+      minutes,
+      0,
+      0,
+    );
     const now = new Date();
 
     if (exactEventDateTime < now) {
@@ -552,7 +561,9 @@ export class CommunityService {
           data: {
             userId: report.reporterId,
             type: NotificationType.SYSTEM,
-            title: isResolved ? '✅ تم اتخاذ إجراء بشأن بلاغك' : 'ℹ️ مراجعة بلاغك',
+            title: isResolved
+              ? '✅ تم اتخاذ إجراء بشأن بلاغك'
+              : 'ℹ️ مراجعة بلاغك',
             body: isResolved
               ? `قامت الإدارة بالتعامل مع بلاغك بشأن "${report.post?.title || 'المنشور'}". شكراً لمساعدتك في الحفاظ على أمان المجتمع!`
               : `تمت مراجعة بلاغك بشأن "${report.post?.title || 'المنشور'}". لم تجد الإدارة مخالفة صريحة وسيتم متابعة المحتوى.`,
@@ -624,7 +635,7 @@ export class CommunityService {
     if (!post) {
       throw new NotFoundException('الفعالية غير موجودة.');
     }
-    
+
     // Restore deleted post or reactivate archived post
     return this.prisma.communityPost.update({
       where: { id: postId },

@@ -10,7 +10,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
-import { ListingStatus, UnitType, Prisma, UserRole, NotificationType, BedStatus } from '@prisma/client';
+import {
+  ListingStatus,
+  UnitType,
+  Prisma,
+  UserRole,
+  NotificationType,
+  BedStatus,
+} from '@prisma/client';
 import { userPublicSelect } from '../common/selects/user.select';
 import { NotificationService } from '../notifications/notifications.service';
 
@@ -62,7 +69,8 @@ export class ListingsService {
         securityDeposit: dto.securityDeposit,
         includesBills: dto.includesBills,
         electricityType: dto.electricityType,
-        isFurnished: dto.unitType === UnitType.bed ? true : (dto.isFurnished ?? true),
+        isFurnished:
+          dto.unitType === UnitType.bed ? true : (dto.isFurnished ?? true),
         totalBeds: dto.totalBeds,
         availableBeds: dto.unitType === UnitType.bed ? dto.totalBeds : null,
         genderTarget: dto.genderTarget,

@@ -47,10 +47,9 @@ async function bootstrap(): Promise<void> {
 
   // CORS ديناميكي (السماح لـ Localhost في التطوير، والدومينات المحددة في الإنتاج)
   const allowedOrigins = isProduction
-    ? ([
-       process.env.FRONTEND_URL,
-       'https://sakanieg.vercel.app',
-     ].filter(Boolean) as string[])
+    ? ([process.env.FRONTEND_URL, 'https://sakanieg.vercel.app'].filter(
+        Boolean,
+      ) as string[])
     : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
   app.enableCors({

@@ -29,7 +29,9 @@ export class LocationController {
     }
 
     if (lat < 21.5 || lat > 31.8 || lng < 24.0 || lng > 37.0) {
-      throw new BadRequestException('الإحداثيات الجغرافية يجب أن تقع داخل حدود جمهورية مصر العربية');
+      throw new BadRequestException(
+        'الإحداثيات الجغرافية يجب أن تقع داخل حدود جمهورية مصر العربية',
+      );
     }
 
     const result = await this.locationService.reverseGeocode(lat, lng);

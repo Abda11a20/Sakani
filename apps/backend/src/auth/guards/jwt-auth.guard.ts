@@ -22,8 +22,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       const isExpired = info?.name === 'TokenExpiredError';
       throw new UnauthorizedException({
         statusCode: 401,
-        code: isExpired ? ErrorCode.AUTH_TOKEN_EXPIRED : ErrorCode.AUTH_INVALID_TOKEN,
-        message: isExpired ? 'انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول' : 'يرجى تسجيل الدخول أولاً',
+        code: isExpired
+          ? ErrorCode.AUTH_TOKEN_EXPIRED
+          : ErrorCode.AUTH_INVALID_TOKEN,
+        message: isExpired
+          ? 'انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول'
+          : 'يرجى تسجيل الدخول أولاً',
       });
     }
 
@@ -34,7 +38,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if ((user.deletedAt || user.isDeleted) && !allowSoftDeleted) {
       const remainingDays = user.scheduledFinalDeleteAt
-        ? Math.max(1, Math.floor((new Date(user.scheduledFinalDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(
+            1,
+            Math.floor(
+              (new Date(user.scheduledFinalDeleteAt).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24),
+            ),
+          )
         : 30;
 
       throw new ForbiddenException({

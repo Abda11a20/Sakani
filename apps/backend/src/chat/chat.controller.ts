@@ -117,7 +117,9 @@ export class ChatController {
     const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (!allowedExts.includes(ext)) {
-      throw new BadRequestException('نوع الملف غير مسموح به. يرجى رفع صورة JPG أو PNG أو WEBP فقط.');
+      throw new BadRequestException(
+        'نوع الملف غير مسموح به. يرجى رفع صورة JPG أو PNG أو WEBP فقط.',
+      );
     }
 
     // 3. MIME type check
@@ -128,18 +130,36 @@ export class ChatController {
 
     // 4. Magic Bytes Validation
     const buf = file.buffer;
-    const isJpeg = buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
-    const isPng = buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
-    const isWebp = buf.length >= 12 &&
-      buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
-      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
+    const isJpeg =
+      buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+    const isPng =
+      buf.length >= 4 &&
+      buf[0] === 0x89 &&
+      buf[1] === 0x50 &&
+      buf[2] === 0x4e &&
+      buf[3] === 0x47;
+    const isWebp =
+      buf.length >= 12 &&
+      buf[0] === 0x52 &&
+      buf[1] === 0x49 &&
+      buf[2] === 0x46 &&
+      buf[3] === 0x46 &&
+      buf[8] === 0x57 &&
+      buf[9] === 0x45 &&
+      buf[10] === 0x42 &&
+      buf[11] === 0x50;
 
     if (!isJpeg && !isPng && !isWebp) {
-      throw new BadRequestException('الملف المرفق ليس صورة صالحة (فشل التحقق الأمني من محتوى الملف).');
+      throw new BadRequestException(
+        'الملف المرفق ليس صورة صالحة (فشل التحقق الأمني من محتوى الملف).',
+      );
     }
 
     // 5. Upload file via UploadsService to Cloudinary / Storage
-    const uploadRes = await this.uploadsService.uploadChatAttachment(user.id, file);
+    const uploadRes = await this.uploadsService.uploadChatAttachment(
+      user.id,
+      file,
+    );
 
     // 6. Automatically create ChatMessage with type IMAGE
     return this.messageService.sendMessage(

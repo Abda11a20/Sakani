@@ -1,4 +1,10 @@
-import { IsEmail, IsEnum, IsOptional, IsString, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 
 export class ForgotPasswordDto {
   @IsOptional()

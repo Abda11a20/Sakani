@@ -7,12 +7,7 @@ import { RentalContractsModule } from '../rental-contracts/rental-contracts.modu
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [
-    AuthModule,
-    BedsModule,
-    RentalContractsModule,
-    NotificationsModule,
-  ],
+  imports: [AuthModule, BedsModule, RentalContractsModule, NotificationsModule],
   controllers: [RequestsController],
   providers: [RequestsService],
   exports: [RequestsService],

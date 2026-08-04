@@ -36,7 +36,9 @@ export class CreatePostDto {
   genderPreference: GenderPreference;
 
   @IsInt({ message: 'الحد الأقصى للمشاركين يجب أن يكون رقماً صحيحاً' })
-  @Min(2, { message: 'الحد الأقصى للمشاركين يجب أن يكون شخصين على الأقل (2 أو أكثر)' })
+  @Min(2, {
+    message: 'الحد الأقصى للمشاركين يجب أن يكون شخصين على الأقل (2 أو أكثر)',
+  })
   @Max(100, { message: 'الحد الأقصى للمشاركين لا يمكن أن يتجاوز 100 شخص' })
   maxParticipants: number;
 

@@ -39,7 +39,7 @@ type SafeUser = Omit<User, 'passwordHash'>;
 @Controller('auth')
 @UseGuards(AuthThrottlerGuard)
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   // ── POST /auth/register ────────────────────────────────────────────────────
   @Post('register')
@@ -166,10 +166,19 @@ export class AuthController {
   async restoreAccount(
     @Body() dto: LoginDto,
     @Req() req: Request,
-  ): Promise<{ success: boolean; message: string; data: { accessToken: string; refreshToken: string; user: SafeUser } }> {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: { accessToken: string; refreshToken: string; user: SafeUser };
+  }> {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     const deviceName = req.headers['user-agent'];
-    const result = await this.authService.restoreAccountByCredentials(dto, ip, deviceName);
+    const result = await this.authService.restoreAccountByCredentials(
+      dto,
+      ip,
+      deviceName,
+    );
     return {
       success: true,
       message: result.message,

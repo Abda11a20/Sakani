@@ -1,6 +1,13 @@
 // apps/backend/src/auth/dto/verify-otp.dto.ts
 
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 
 export class VerifyOtpDto {
   @IsOptional()

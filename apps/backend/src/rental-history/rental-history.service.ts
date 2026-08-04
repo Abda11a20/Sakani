@@ -21,7 +21,15 @@ export class RentalHistoryService {
 
   // ── Landlord Rental History ──────────────────────────────────────────────────
   async getLandlordHistory(landlordId: string, query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      from,
+      to,
+      status,
+      sort = 'desc',
+    } = query;
 
     const skip = (page - 1) * limit;
 
@@ -38,8 +46,14 @@ export class RentalHistoryService {
       } else if (status === ContractStatus.renewed) {
         where.OR = [
           { status: ContractStatus.renewed, listing: { landlordId } },
-          { createdByType: ContractCreatedBy.AUTO_RENEW, listing: { landlordId } },
-          { notes: { contains: 'تجديد', mode: 'insensitive' }, listing: { landlordId } },
+          {
+            createdByType: ContractCreatedBy.AUTO_RENEW,
+            listing: { landlordId },
+          },
+          {
+            notes: { contains: 'تجديد', mode: 'insensitive' },
+            listing: { landlordId },
+          },
         ];
         delete where.listing;
       } else {
@@ -142,7 +156,15 @@ export class RentalHistoryService {
 
   // ── Tenant Rental History ────────────────────────────────────────────────────
   async getTenantHistory(tenantId: string, query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      from,
+      to,
+      status,
+      sort = 'desc',
+    } = query;
 
     const skip = (page - 1) * limit;
 
@@ -261,7 +283,15 @@ export class RentalHistoryService {
 
   // ── Admin Rental History (All Completed Rentals) ──────────────────────────────
   async getAdminHistory(query: RentalHistoryQuery) {
-    const { page = 1, limit = 10, search, from, to, status, sort = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      from,
+      to,
+      status,
+      sort = 'desc',
+    } = query;
 
     const skip = (page - 1) * limit;
 

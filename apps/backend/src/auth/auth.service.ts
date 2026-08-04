@@ -116,7 +116,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly notificationService: NotificationService,
     private readonly telegramService: TelegramService,
-  ) { }
+  ) {}
 
   // ── User Registration ──────────────────────────────────────────────────────
   async register(dto: RegisterDto): Promise<{ message: string }> {
@@ -334,7 +334,9 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerifiedAt: dto.email ? new Date() : (user.emailVerifiedAt || new Date()),
+        emailVerifiedAt: dto.email
+          ? new Date()
+          : user.emailVerifiedAt || new Date(),
         phoneVerifiedAt: new Date(),
       },
     });
@@ -381,7 +383,13 @@ export class AuthService {
 
     if (user.isDeleted || user.deletedAt) {
       const remainingDays = user.scheduledFinalDeleteAt
-        ? Math.max(1, Math.floor((new Date(user.scheduledFinalDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(
+            1,
+            Math.floor(
+              (new Date(user.scheduledFinalDeleteAt).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24),
+            ),
+          )
         : 30;
 
       throw new ForbiddenException({
@@ -456,7 +464,11 @@ export class AuthService {
 
   // ── Logout ─────────────────────────────────────────────────────────────────
   async logout(refreshToken?: string): Promise<{ message: string }> {
-    if (refreshToken && typeof refreshToken === 'string' && refreshToken.trim()) {
+    if (
+      refreshToken &&
+      typeof refreshToken === 'string' &&
+      refreshToken.trim()
+    ) {
       try {
         const tokenHash = hashToken(refreshToken);
         await this.prisma.deviceSession.deleteMany({
@@ -660,7 +672,9 @@ export class AuthService {
       entityId: `${user.id}-${Date.now()}`,
     });
     if (notif) {
-      this.notificationService.sendRealtimeNotification(user.id, notif).catch(() => {});
+      this.notificationService
+        .sendRealtimeNotification(user.id, notif)
+        .catch(() => {});
     }
 
     if (user.email) {
@@ -918,7 +932,12 @@ export class AuthService {
     dto: LoginDto,
     ip?: string,
     deviceName?: string,
-  ): Promise<{ message: string; accessToken: string; refreshToken: string; user: SafeUser }> {
+  ): Promise<{
+    message: string;
+    accessToken: string;
+    refreshToken: string;
+    user: SafeUser;
+  }> {
     const user = await this.findUserByIdentifier(dto.identifier);
 
     if (!user) {
@@ -926,10 +945,15 @@ export class AuthService {
     }
 
     if (!user.passwordHash) {
-      throw new BadRequestException('هذا الحساب لا يدعم الاستعادة بكلمة المرور');
+      throw new BadRequestException(
+        'هذا الحساب لا يدعم الاستعادة بكلمة المرور',
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
     }
@@ -952,7 +976,11 @@ export class AuthService {
 
     const { passwordHash: _ph, ...safeUser } = updatedUser;
     const accessToken = this.generateAccessToken(safeUser);
-    const refreshToken = await this.createDeviceSession(user.id, ip, deviceName);
+    const refreshToken = await this.createDeviceSession(
+      user.id,
+      ip,
+      deviceName,
+    );
 
     return {
       message: 'تم استعادة تنشيط حسابك بنجاح. مرحباً بك مجدداً!',

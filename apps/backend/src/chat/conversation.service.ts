@@ -368,7 +368,10 @@ export class ConversationService {
         );
       `);
     } catch (err: any) {
-      console.warn('[ConversationService] chat_moderation_logs DDL notice:', err?.message || err);
+      console.warn(
+        '[ConversationService] chat_moderation_logs DDL notice:',
+        err?.message || err,
+      );
     }
   }
 
@@ -386,7 +389,8 @@ export class ConversationService {
       throw new NotFoundException('Conversation not found');
     }
 
-    const effectiveReason = (reason as ChatBlockReason) || ChatBlockReason.MANUAL;
+    const effectiveReason =
+      (reason as ChatBlockReason) || ChatBlockReason.MANUAL;
     const reasonText = note ? `${effectiveReason}: ${note}` : effectiveReason;
 
     const updated = await this.prisma.conversation.update({
@@ -410,7 +414,10 @@ export class ConversationService {
         },
       });
     } catch (err: any) {
-      console.warn('[ConversationService] Log creation deferred:', err?.message || err);
+      console.warn(
+        '[ConversationService] Log creation deferred:',
+        err?.message || err,
+      );
     }
 
     // System Audit Log
@@ -424,7 +431,10 @@ export class ConversationService {
         },
       });
     } catch (err: any) {
-      console.warn('[ConversationService] AuditLog creation deferred:', err?.message || err);
+      console.warn(
+        '[ConversationService] AuditLog creation deferred:',
+        err?.message || err,
+      );
     }
 
     await this.pusherService.broadcastToConversation(
@@ -470,7 +480,10 @@ export class ConversationService {
           },
         });
       } catch (err: any) {
-        console.warn('[ConversationService] Unblock log deferred:', err?.message || err);
+        console.warn(
+          '[ConversationService] Unblock log deferred:',
+          err?.message || err,
+        );
       }
 
       try {
@@ -483,7 +496,10 @@ export class ConversationService {
           },
         });
       } catch (err: any) {
-        console.warn('[ConversationService] Unblock AuditLog deferred:', err?.message || err);
+        console.warn(
+          '[ConversationService] Unblock AuditLog deferred:',
+          err?.message || err,
+        );
       }
     }
 

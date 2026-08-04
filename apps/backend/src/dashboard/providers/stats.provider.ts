@@ -1,7 +1,13 @@
 // apps/backend/src/dashboard/providers/stats.provider.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ListingStatus, RequestStatus, BedStatus, ContractStatus, UserRole } from '@prisma/client';
+import {
+  ListingStatus,
+  RequestStatus,
+  BedStatus,
+  ContractStatus,
+  UserRole,
+} from '@prisma/client';
 
 @Injectable()
 export class DashboardStatsProvider {
@@ -19,13 +25,33 @@ export class DashboardStatsProvider {
   }
 
   private async getLandlordStats(landlordId: string) {
-    const [activeListings, occupiedApartments, rentedBeds, pendingRequests, activeContracts, totalViewsAgg] = await Promise.all([
-      this.prisma.listing.count({ where: { landlordId, status: ListingStatus.active, isDeleted: false } }),
-      this.prisma.listing.count({ where: { landlordId, status: ListingStatus.rented, isDeleted: false } }),
-      this.prisma.listingBed.count({ where: { status: BedStatus.rented, listing: { landlordId } } }),
-      this.prisma.viewingRequest.count({ where: { listing: { landlordId }, status: RequestStatus.pending } }),
-      this.prisma.rentalContract.count({ where: { landlordId, status: ContractStatus.active } }),
-      this.prisma.listing.aggregate({ _sum: { viewCount: true }, where: { landlordId, isDeleted: false } }),
+    const [
+      activeListings,
+      occupiedApartments,
+      rentedBeds,
+      pendingRequests,
+      activeContracts,
+      totalViewsAgg,
+    ] = await Promise.all([
+      this.prisma.listing.count({
+        where: { landlordId, status: ListingStatus.active, isDeleted: false },
+      }),
+      this.prisma.listing.count({
+        where: { landlordId, status: ListingStatus.rented, isDeleted: false },
+      }),
+      this.prisma.listingBed.count({
+        where: { status: BedStatus.rented, listing: { landlordId } },
+      }),
+      this.prisma.viewingRequest.count({
+        where: { listing: { landlordId }, status: RequestStatus.pending },
+      }),
+      this.prisma.rentalContract.count({
+        where: { landlordId, status: ContractStatus.active },
+      }),
+      this.prisma.listing.aggregate({
+        _sum: { viewCount: true },
+        where: { landlordId, isDeleted: false },
+      }),
     ]);
 
     return {
@@ -38,14 +64,22 @@ export class DashboardStatsProvider {
   }
 
   private async getTenantStats(tenantId: string) {
-    const [activeRequests, activeAlerts, activeContracts, completedRentals] = await Promise.all([
-      this.prisma.viewingRequest.count({
-        where: { tenantId, status: { in: [RequestStatus.pending, RequestStatus.accepted] } },
-      }),
-      this.prisma.alert.count({ where: { tenantId, isActive: true } }),
-      this.prisma.rentalContract.count({ where: { tenantId, status: ContractStatus.active } }),
-      this.prisma.viewingRequest.count({ where: { tenantId, status: RequestStatus.completed } }),
-    ]);
+    const [activeRequests, activeAlerts, activeContracts, completedRentals] =
+      await Promise.all([
+        this.prisma.viewingRequest.count({
+          where: {
+            tenantId,
+            status: { in: [RequestStatus.pending, RequestStatus.accepted] },
+          },
+        }),
+        this.prisma.alert.count({ where: { tenantId, isActive: true } }),
+        this.prisma.rentalContract.count({
+          where: { tenantId, status: ContractStatus.active },
+        }),
+        this.prisma.viewingRequest.count({
+          where: { tenantId, status: RequestStatus.completed },
+        }),
+      ]);
 
     return {
       activeRequests,
@@ -82,14 +116,26 @@ export class DashboardStatsProvider {
       this.prisma.user.count({ where: { role: UserRole.admin } }),
       this.prisma.user.count({ where: { role: UserRole.super_admin } }),
       this.prisma.listing.count({ where: { isDeleted: false } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.active, isDeleted: false } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.pending_review, isDeleted: false } }),
-      this.prisma.listing.count({ where: { status: ListingStatus.paused, isDeleted: false } }),
+      this.prisma.listing.count({
+        where: { status: ListingStatus.active, isDeleted: false },
+      }),
+      this.prisma.listing.count({
+        where: { status: ListingStatus.pending_review, isDeleted: false },
+      }),
+      this.prisma.listing.count({
+        where: { status: ListingStatus.paused, isDeleted: false },
+      }),
       this.prisma.listing.count({ where: { isDeleted: true } }),
-      this.prisma.rentalContract.count({ where: { status: ContractStatus.active } }),
-      this.prisma.rentalContract.count({ where: { status: ContractStatus.expired } }),
+      this.prisma.rentalContract.count({
+        where: { status: ContractStatus.active },
+      }),
+      this.prisma.rentalContract.count({
+        where: { status: ContractStatus.expired },
+      }),
       this.prisma.viewingRequest.count(),
-      this.prisma.viewingRequest.count({ where: { status: RequestStatus.pending } }),
+      this.prisma.viewingRequest.count({
+        where: { status: RequestStatus.pending },
+      }),
     ]);
 
     return {

@@ -19,7 +19,9 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
-  @ApiOperation({ summary: 'Get unified dashboard summary for current user role' })
+  @ApiOperation({
+    summary: 'Get unified dashboard summary for current user role',
+  })
   async getSummary(@CurrentUser() user: SafeUser) {
     return this.dashboardService.getSummary(user.id, user.role);
   }

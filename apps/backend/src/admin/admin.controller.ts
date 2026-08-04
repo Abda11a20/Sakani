@@ -262,7 +262,13 @@ export class AdminController {
   @Post('banned-words')
   @Roles(UserRole.admin, UserRole.super_admin)
   async addBannedWord(
-    @Body() dto: { phrase: string; type?: any; severity?: any; description?: string },
+    @Body()
+    dto: {
+      phrase: string;
+      type?: any;
+      severity?: any;
+      description?: string;
+    },
   ) {
     return this.adminService.addBannedWord(dto);
   }

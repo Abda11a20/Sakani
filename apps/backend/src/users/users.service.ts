@@ -71,7 +71,10 @@ export class UsersService implements OnModuleInit {
       }
       return expiredUsers.length;
     } catch (err: any) {
-      console.warn('[processExpiredAccountDeletions] Error:', err?.message || err);
+      console.warn(
+        '[processExpiredAccountDeletions] Error:',
+        err?.message || err,
+      );
       return 0;
     }
   }
@@ -329,7 +332,10 @@ export class UsersService implements OnModuleInit {
         user.idCardPublicId,
       );
     } catch (err: any) {
-      console.warn('[anonymizeUser] Cloudinary asset cleanup notice:', err?.message || err);
+      console.warn(
+        '[anonymizeUser] Cloudinary asset cleanup notice:',
+        err?.message || err,
+      );
     }
 
     await this.prisma.user.update({

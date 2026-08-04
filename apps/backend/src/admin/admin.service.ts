@@ -134,18 +134,21 @@ export class AdminService {
       ),
     );
 
-    const deletedByUsers = deletedByIds.length > 0
-      ? await this.prisma.user.findMany({
-          where: { id: { in: deletedByIds } },
-          select: { id: true, name: true, role: true },
-        })
-      : [];
+    const deletedByUsers =
+      deletedByIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: deletedByIds } },
+            select: { id: true, name: true, role: true },
+          })
+        : [];
 
     const deletedByMap = new Map(deletedByUsers.map((u) => [u.id, u]));
 
     const listings = rawListings.map((l) => ({
       ...l,
-      deletedBy: l.deletedById ? deletedByMap.get(l.deletedById) ?? null : null,
+      deletedBy: l.deletedById
+        ? (deletedByMap.get(l.deletedById) ?? null)
+        : null,
     }));
 
     return {
@@ -207,8 +210,10 @@ export class AdminService {
           entityId: listingId,
         },
       });
-      await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
-      // eslint-disable-next-line no-empty
+      await this.notificationService.sendRealtimeNotification(
+        listing.landlordId,
+        notif,
+      );
     } catch {
       // Notification delivery is best-effort; the listing action has completed.
     }
@@ -273,8 +278,10 @@ export class AdminService {
           entityId: listingId,
         },
       });
-      await this.notificationService.sendRealtimeNotification(listing.landlordId, notif);
-      // eslint-disable-next-line no-empty
+      await this.notificationService.sendRealtimeNotification(
+        listing.landlordId,
+        notif,
+      );
     } catch {
       // Notification delivery is best-effort; the listing action has completed.
     }
@@ -799,7 +806,9 @@ export class AdminService {
       });
 
       if (blacklisted.phone) {
-        const user = await this.prisma.user.findFirst({ where: { phone: blacklisted.phone } });
+        const user = await this.prisma.user.findFirst({
+          where: { phone: blacklisted.phone },
+        });
         if (user) {
           try {
             const notif = await this.prisma.notification.create({
@@ -812,8 +821,10 @@ export class AdminService {
                 entityId: user.id,
               },
             });
-            await this.notificationService.sendRealtimeNotification(user.id, notif);
-          // eslint-disable-next-line no-empty
+            await this.notificationService.sendRealtimeNotification(
+              user.id,
+              notif,
+            );
           } catch {
             // Notification delivery is best-effort; unbanning must still succeed.
           }
@@ -881,7 +892,35 @@ export class AdminService {
 
     // Default active system filter words
     const defaultWords = [
-      ...['كس', 'شرموط', 'قحبة', 'خول', 'عرص', 'منيوك', 'منيوكة', 'ديوث', 'سكس', 'جنس', 'بورن', 'شذوذ', 'شاذ', 'لوطي', 'سحاق', 'زب', 'طيز', 'ابن الكلب', 'احا', 'أحا', 'شرموطة', 'عرصنة', 'منيكة', 'فاجرة', 'عاهرة', 'داعر', 'عهر'].map((w, i) => ({
+      ...[
+        'كس',
+        'شرموط',
+        'قحبة',
+        'خول',
+        'عرص',
+        'منيوك',
+        'منيوكة',
+        'ديوث',
+        'سكس',
+        'جنس',
+        'بورن',
+        'شذوذ',
+        'شاذ',
+        'لوطي',
+        'سحاق',
+        'زب',
+        'طيز',
+        'ابن الكلب',
+        'احا',
+        'أحا',
+        'شرموطة',
+        'عرصنة',
+        'منيكة',
+        'فاجرة',
+        'عاهرة',
+        'داعر',
+        'عهر',
+      ].map((w, i) => ({
         id: `ar-${i}`,
         phrase: w,
         normalized: BadWordsFilter.normalizeText(w),
@@ -890,7 +929,16 @@ export class AdminService {
         description: 'كلمة صريحة حظر مباشر',
         createdAt: new Date().toISOString(),
       })),
-      ...['في السر', 'سريه تامه', 'سرية تامة', 'مقابل فلوس', 'مقابل مال', 'للتعارف', 'واتساب فقط', 'خاص جدا'].map((w, i) => ({
+      ...[
+        'في السر',
+        'سريه تامه',
+        'سرية تامة',
+        'مقابل فلوس',
+        'مقابل مال',
+        'للتعارف',
+        'واتساب فقط',
+        'خاص جدا',
+      ].map((w, i) => ({
         id: `sensitive-${i}`,
         phrase: w,
         normalized: BadWordsFilter.normalizeText(w),
@@ -899,7 +947,22 @@ export class AdminService {
         description: 'عبارة تحايل حساس',
         createdAt: new Date().toISOString(),
       })),
-      ...['سكن', 'شقه', 'شقة', 'غرفه', 'غرفة', 'مذاكره', 'مذاكرة', 'جامعه', 'جامعة', 'سكن طالبات', 'زميله', 'زميلة', 'تجمع', 'دراسه'].map((w, i) => ({
+      ...[
+        'سكن',
+        'شقه',
+        'شقة',
+        'غرفه',
+        'غرفة',
+        'مذاكره',
+        'مذاكرة',
+        'جامعه',
+        'جامعة',
+        'سكن طالبات',
+        'زميله',
+        'زميلة',
+        'تجمع',
+        'دراسه',
+      ].map((w, i) => ({
         id: `whitelist-${i}`,
         phrase: w,
         normalized: BadWordsFilter.normalizeText(w),

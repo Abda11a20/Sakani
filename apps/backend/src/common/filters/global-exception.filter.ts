@@ -49,7 +49,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     );
 
     const extraProps =
-      typeof errorResponse === 'object' && errorResponse !== null && !Array.isArray(errorResponse)
+      typeof errorResponse === 'object' &&
+      errorResponse !== null &&
+      !Array.isArray(errorResponse)
         ? errorResponse
         : {};
 

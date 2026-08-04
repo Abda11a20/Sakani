@@ -1,11 +1,21 @@
 // apps/backend/src/dashboard/providers/urgent.provider.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ContractStatus, RequestStatus, ListingStatus, UserRole } from '@prisma/client';
+import {
+  ContractStatus,
+  RequestStatus,
+  ListingStatus,
+  UserRole,
+} from '@prisma/client';
 
 export interface UrgentItem {
   id: string;
-  type: 'CONTRACT_EXPIRING' | 'VIEWING_REQUEST_PENDING' | 'LISTING_UNAPPROVED' | 'LISTING_PAUSED' | 'REQUEST_ACCEPTED';
+  type:
+    | 'CONTRACT_EXPIRING'
+    | 'VIEWING_REQUEST_PENDING'
+    | 'LISTING_UNAPPROVED'
+    | 'LISTING_PAUSED'
+    | 'REQUEST_ACCEPTED';
   title: string;
   description: string;
   severity: 'high' | 'medium' | 'info';
@@ -59,7 +69,10 @@ export class DashboardUrgentProvider {
     // 2. Pending Viewing Requests
     const pendingRequests = await this.prisma.viewingRequest.findMany({
       where: { listing: { landlordId }, status: RequestStatus.pending },
-      include: { tenant: { select: { name: true } }, listing: { select: { title: true } } },
+      include: {
+        tenant: { select: { name: true } },
+        listing: { select: { title: true } },
+      },
       take: 3,
     });
 

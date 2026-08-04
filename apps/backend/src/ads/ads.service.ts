@@ -55,7 +55,8 @@ export class AdsService {
     }
 
     const now = new Date();
-    const currentMinutes = query.clientMinutes ?? (now.getHours() * 60 + now.getMinutes());
+    const currentMinutes =
+      query.clientMinutes ?? now.getHours() * 60 + now.getMinutes();
 
     // 4. Fetch candidate ads matching criteria
     const whereCondition: any = {
@@ -67,8 +68,12 @@ export class AdsService {
         deletedAt: null,
         startDate: { lte: now },
         OR: [{ endDate: null }, { endDate: { gte: now } }],
-        targetUserRole: { in: [TargetUserRole.ALL, query.userRole || TargetUserRole.ALL] },
-        targetDevice: { in: [DeviceTarget.ALL, query.deviceTarget || DeviceTarget.ALL] },
+        targetUserRole: {
+          in: [TargetUserRole.ALL, query.userRole || TargetUserRole.ALL],
+        },
+        targetDevice: {
+          in: [DeviceTarget.ALL, query.deviceTarget || DeviceTarget.ALL],
+        },
       },
     };
 
@@ -104,7 +109,10 @@ export class AdsService {
 
       // Check daily time bounds if specified
       if (ad.dailyStartMinutes !== null && ad.dailyEndMinutes !== null) {
-        if (currentMinutes < ad.dailyStartMinutes || currentMinutes > ad.dailyEndMinutes) {
+        if (
+          currentMinutes < ad.dailyStartMinutes ||
+          currentMinutes > ad.dailyEndMinutes
+        ) {
           return false;
         }
       }
@@ -118,16 +126,21 @@ export class AdsService {
     // 6. Smart Priority & Weighted Selection Algorithm
     // Score = (Priority * 0.4) + (CTR * 0.4) + (Freshness * 0.2)
     const validAdsWithScores = validAds.map((ad) => {
-      const ctr = ad.viewsCount > 0 ? (ad.clicksCount / ad.viewsCount) : 0;
+      const ctr = ad.viewsCount > 0 ? ad.clicksCount / ad.viewsCount : 0;
       const ctrScore = Math.min(ctr * 100, 100);
-      const daysOld = (Date.now() - new Date(ad.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      const daysOld =
+        (Date.now() - new Date(ad.createdAt).getTime()) / (1000 * 60 * 60 * 24);
       const freshnessScore = Math.max(100 - daysOld * 2, 10);
-      const smartScore = (ad.priority * 0.4) + (ctrScore * 0.4) + (freshnessScore * 0.2);
+      const smartScore =
+        ad.priority * 0.4 + ctrScore * 0.4 + freshnessScore * 0.2;
       const dynamicWeight = (ad.trafficWeight || 50) * (smartScore / 50);
       return { ad, dynamicWeight };
     });
 
-    const totalWeight = validAdsWithScores.reduce((sum, item) => sum + item.dynamicWeight, 0);
+    const totalWeight = validAdsWithScores.reduce(
+      (sum, item) => sum + item.dynamicWeight,
+      0,
+    );
     let randomNum = Math.random() * totalWeight;
     let selectedAd = validAdsWithScores[0].ad;
 
@@ -169,11 +182,24 @@ export class AdsService {
    */
   async recordImpression(
     adId: string,
-    reqDetails: { userId?: string; referrer?: string; deviceType?: DeviceTarget; ip?: string; userAgent?: string },
+    reqDetails: {
+      userId?: string;
+      referrer?: string;
+      deviceType?: DeviceTarget;
+      ip?: string;
+      userAgent?: string;
+    },
   ) {
     this.eventEmitter.emit(
       'ad.impression',
-      new AdImpressionEvent(adId, reqDetails.userId, reqDetails.referrer, reqDetails.deviceType, reqDetails.ip, reqDetails.userAgent),
+      new AdImpressionEvent(
+        adId,
+        reqDetails.userId,
+        reqDetails.referrer,
+        reqDetails.deviceType,
+        reqDetails.ip,
+        reqDetails.userAgent,
+      ),
     );
     return { success: true };
   }
@@ -183,11 +209,24 @@ export class AdsService {
    */
   async recordClick(
     adId: string,
-    reqDetails: { userId?: string; referrer?: string; deviceType?: DeviceTarget; ip?: string; userAgent?: string },
+    reqDetails: {
+      userId?: string;
+      referrer?: string;
+      deviceType?: DeviceTarget;
+      ip?: string;
+      userAgent?: string;
+    },
   ) {
     this.eventEmitter.emit(
       'ad.click',
-      new AdClickEvent(adId, reqDetails.userId, reqDetails.referrer, reqDetails.deviceType, reqDetails.ip, reqDetails.userAgent),
+      new AdClickEvent(
+        adId,
+        reqDetails.userId,
+        reqDetails.referrer,
+        reqDetails.deviceType,
+        reqDetails.ip,
+        reqDetails.userAgent,
+      ),
     );
 
     const ad = await this.prisma.advertisement.findUnique({
@@ -213,15 +252,21 @@ export class AdsService {
   /**
    * Create Campaign
    */
-  async createCampaign(dto: CreateCampaignDto, userId: string | { id: string; [key: string]: unknown }) {
+  async createCampaign(
+    dto: CreateCampaignDto,
+    userId: string | { id: string; [key: string]: unknown },
+  ) {
     const existing = await this.prisma.campaign.findUnique({
       where: { campaignCode: dto.campaignCode },
     });
     if (existing) {
-      throw new BadRequestException(`Campaign code ${dto.campaignCode} already exists.`);
+      throw new BadRequestException(
+        `Campaign code ${dto.campaignCode} already exists.`,
+      );
     }
 
-    const actualUserId = typeof userId === 'object' && userId?.id ? userId.id : userId;
+    const actualUserId =
+      typeof userId === 'object' && userId?.id ? userId.id : userId;
 
     return this.prisma.campaign.create({
       data: {
@@ -284,19 +329,32 @@ export class AdsService {
     const dataToUpdate: any = {};
     if (dto.name !== undefined) dataToUpdate.name = dto.name;
     if (dto.clientName !== undefined) dataToUpdate.clientName = dto.clientName;
-    if (dto.clientPhone !== undefined) dataToUpdate.clientPhone = dto.clientPhone;
-    if (dto.clientEmail !== undefined) dataToUpdate.clientEmail = dto.clientEmail;
+    if (dto.clientPhone !== undefined)
+      dataToUpdate.clientPhone = dto.clientPhone;
+    if (dto.clientEmail !== undefined)
+      dataToUpdate.clientEmail = dto.clientEmail;
     if (dto.price !== undefined) dataToUpdate.price = dto.price;
     if (dto.currency !== undefined) dataToUpdate.currency = dto.currency;
     if (dto.isPaid !== undefined) dataToUpdate.isPaid = dto.isPaid;
     if (dto.paymentMethod !== undefined) {
-      const validPaymentMethods = ['CASH', 'BANK_TRANSFER', 'INSTAPAY', 'VODAFONE_CASH', 'CREDIT_CARD', 'OTHER'];
-      dataToUpdate.paymentMethod = validPaymentMethods.includes(dto.paymentMethod)
+      const validPaymentMethods = [
+        'CASH',
+        'BANK_TRANSFER',
+        'INSTAPAY',
+        'VODAFONE_CASH',
+        'CREDIT_CARD',
+        'OTHER',
+      ];
+      dataToUpdate.paymentMethod = validPaymentMethods.includes(
+        dto.paymentMethod,
+      )
         ? dto.paymentMethod
         : 'OTHER';
     }
-    if (dto.startDate !== undefined) dataToUpdate.startDate = new Date(dto.startDate);
-    if (dto.endDate !== undefined) dataToUpdate.endDate = dto.endDate ? new Date(dto.endDate) : null;
+    if (dto.startDate !== undefined)
+      dataToUpdate.startDate = new Date(dto.startDate);
+    if (dto.endDate !== undefined)
+      dataToUpdate.endDate = dto.endDate ? new Date(dto.endDate) : null;
     if (dto.notes !== undefined) dataToUpdate.notes = dto.notes;
     if (dto.status !== undefined) dataToUpdate.status = dto.status;
     if (dto.budget !== undefined) dataToUpdate.budget = dto.budget;
@@ -346,7 +404,10 @@ export class AdsService {
       placement = await this.prisma.adPlacementConfig.create({
         data: {
           key: dto.placementKey,
-          name: dto.placementKey === 'POPUP' ? 'إعلان منبثق (Popup)' : dto.placementKey,
+          name:
+            dto.placementKey === 'POPUP'
+              ? 'إعلان منبثق (Popup)'
+              : dto.placementKey,
           enabled: true,
         },
       });
@@ -371,9 +432,18 @@ export class AdsService {
         dailyEndMinutes: dto.dailyEndMinutes,
         maxViews: dto.maxViews,
         maxClicks: dto.maxClicks,
-        perUserFrequency: (dto.perUserFrequency && ['EVERY_VISIT', 'EVERY_12_HOURS', 'DAILY', 'WEEKLY', 'MONTHLY', 'ONLY_ONCE'].includes(dto.perUserFrequency))
-          ? (dto.perUserFrequency as any)
-          : 'EVERY_12_HOURS',
+        perUserFrequency:
+          dto.perUserFrequency &&
+          [
+            'EVERY_VISIT',
+            'EVERY_12_HOURS',
+            'DAILY',
+            'WEEKLY',
+            'MONTHLY',
+            'ONLY_ONCE',
+          ].includes(dto.perUserFrequency)
+            ? (dto.perUserFrequency as any)
+            : 'EVERY_12_HOURS',
         maxDisplayPerSession: dto.maxDisplayPerSession ?? 1,
         isSkippable: dto.isSkippable ?? true,
         isClosable: dto.isClosable ?? true,
@@ -444,18 +514,29 @@ export class AdsService {
     const dataToUpdate: any = {};
     if (dto.title !== undefined) dataToUpdate.title = dto.title;
     if (dto.category !== undefined) dataToUpdate.category = dto.category;
-    if (dto.displayType !== undefined) dataToUpdate.displayType = dto.displayType;
+    if (dto.displayType !== undefined)
+      dataToUpdate.displayType = dto.displayType;
     if (dto.status !== undefined) dataToUpdate.status = dto.status;
-    if (dto.isSkippable !== undefined) dataToUpdate.isSkippable = dto.isSkippable;
+    if (dto.isSkippable !== undefined)
+      dataToUpdate.isSkippable = dto.isSkippable;
     if (dto.isClosable !== undefined) dataToUpdate.isClosable = dto.isClosable;
-    if (dto.skipSeconds !== undefined) dataToUpdate.skipSeconds = dto.skipSeconds;
+    if (dto.skipSeconds !== undefined)
+      dataToUpdate.skipSeconds = dto.skipSeconds;
     if (dto.perUserFrequency !== undefined) {
-      const validCaps = ['EVERY_VISIT', 'EVERY_12_HOURS', 'DAILY', 'WEEKLY', 'MONTHLY', 'ONLY_ONCE'];
+      const validCaps = [
+        'EVERY_VISIT',
+        'EVERY_12_HOURS',
+        'DAILY',
+        'WEEKLY',
+        'MONTHLY',
+        'ONLY_ONCE',
+      ];
       dataToUpdate.perUserFrequency = validCaps.includes(dto.perUserFrequency)
         ? dto.perUserFrequency
         : 'EVERY_VISIT';
     }
-    if (dto.maxDisplayPerSession !== undefined) dataToUpdate.maxDisplayPerSession = dto.maxDisplayPerSession;
+    if (dto.maxDisplayPerSession !== undefined)
+      dataToUpdate.maxDisplayPerSession = dto.maxDisplayPerSession;
 
     if (dto.placementKey) {
       let placement = await this.prisma.adPlacementConfig.findUnique({
@@ -465,7 +546,10 @@ export class AdsService {
         placement = await this.prisma.adPlacementConfig.create({
           data: {
             key: dto.placementKey,
-            name: dto.placementKey === 'POPUP' ? 'إعلان منبثق (Popup)' : dto.placementKey,
+            name:
+              dto.placementKey === 'POPUP'
+                ? 'إعلان منبثق (Popup)'
+                : dto.placementKey,
             enabled: true,
           },
         });
@@ -553,8 +637,12 @@ export class AdsService {
    * Super Admin Overview Dashboard Analytics
    */
   async getDashboardAnalytics() {
-    const totalCampaigns = await this.prisma.campaign.count({ where: { deletedAt: null } });
-    const totalAds = await this.prisma.advertisement.count({ where: { deletedAt: null } });
+    const totalCampaigns = await this.prisma.campaign.count({
+      where: { deletedAt: null },
+    });
+    const totalAds = await this.prisma.advertisement.count({
+      where: { deletedAt: null },
+    });
     const activeAds = await this.prisma.advertisement.count({
       where: { status: AdStatus.PUBLISHED, deletedAt: null },
     });
@@ -567,7 +655,8 @@ export class AdsService {
 
     const totalViews = aggregates._sum.viewsCount || 0;
     const totalClicks = aggregates._sum.clicksCount || 0;
-    const overallCtr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
+    const overallCtr =
+      totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
 
     // Fetch Ads with Performance Metrics
     const ads = await this.prisma.advertisement.findMany({
@@ -579,7 +668,8 @@ export class AdsService {
     });
 
     const adsWithMetrics = ads.map((ad) => {
-      const ctr = ad.viewsCount > 0 ? (ad.clicksCount / ad.viewsCount) * 100 : 0;
+      const ctr =
+        ad.viewsCount > 0 ? (ad.clicksCount / ad.viewsCount) * 100 : 0;
       const isPoorPerformance = ad.viewsCount >= 300 && ctr < 0.3;
       return {
         ...ad,
@@ -702,7 +792,9 @@ export class AdsService {
     });
 
     if (!targetVersion) {
-      throw new NotFoundException(`Version ${versionNumber} for ad ${adId} not found.`);
+      throw new NotFoundException(
+        `Version ${versionNumber} for ad ${adId} not found.`,
+      );
     }
 
     const updatedAd = await this.prisma.advertisement.update({
@@ -751,7 +843,8 @@ export class AdsService {
     }
 
     const now = new Date();
-    const currentMinutes = query.clientMinutes ?? (now.getHours() * 60 + now.getMinutes());
+    const currentMinutes =
+      query.clientMinutes ?? now.getHours() * 60 + now.getMinutes();
 
     const whereCondition: any = {
       placementId: placement.id,
@@ -780,42 +873,67 @@ export class AdsService {
         exclusionReasons.push(`الإعلان غير نشط (الحالة الحالية: ${ad.status})`);
       }
       if (ad.campaign.status !== AdStatus.PUBLISHED) {
-        exclusionReasons.push(`الحملة ليست نشطة (حالة الحملة الحالية: ${ad.campaign.status})`);
+        exclusionReasons.push(
+          `الحملة ليست نشطة (حالة الحملة الحالية: ${ad.campaign.status})`,
+        );
       }
       if (!ad.campaign.isPaid) {
         exclusionReasons.push(`الحملة غير مدفوعة (isPaid: false)`);
       }
       if (ad.campaign.startDate > now) {
-        exclusionReasons.push(`تاريخ بدء الحملة لم يبدأ بعد (${new Date(ad.campaign.startDate).toLocaleDateString('ar-EG')})`);
+        exclusionReasons.push(
+          `تاريخ بدء الحملة لم يبدأ بعد (${new Date(ad.campaign.startDate).toLocaleDateString('ar-EG')})`,
+        );
       }
       if (ad.campaign.endDate && new Date(ad.campaign.endDate) < now) {
-        exclusionReasons.push(`تاريخ انتهاء الحملة انتهى (${new Date(ad.campaign.endDate).toLocaleDateString('ar-EG')})`);
+        exclusionReasons.push(
+          `تاريخ انتهاء الحملة انتهى (${new Date(ad.campaign.endDate).toLocaleDateString('ar-EG')})`,
+        );
       }
-      if (ad.campaign.targetUserRole !== TargetUserRole.ALL && ad.campaign.targetUserRole !== (query.userRole || TargetUserRole.ALL)) {
-        exclusionReasons.push(`نوع المستخدم المستهدف لا يطابق الشروط (مطلوب: ${ad.campaign.targetUserRole})`);
+      if (
+        ad.campaign.targetUserRole !== TargetUserRole.ALL &&
+        ad.campaign.targetUserRole !== (query.userRole || TargetUserRole.ALL)
+      ) {
+        exclusionReasons.push(
+          `نوع المستخدم المستهدف لا يطابق الشروط (مطلوب: ${ad.campaign.targetUserRole})`,
+        );
       }
-      if (ad.campaign.targetDevice !== DeviceTarget.ALL && ad.campaign.targetDevice !== (query.deviceTarget || DeviceTarget.ALL)) {
-        exclusionReasons.push(`نوع الجهاز المستهدف لا يطابق الشروط (مطلوب: ${ad.campaign.targetDevice})`);
+      if (
+        ad.campaign.targetDevice !== DeviceTarget.ALL &&
+        ad.campaign.targetDevice !== (query.deviceTarget || DeviceTarget.ALL)
+      ) {
+        exclusionReasons.push(
+          `نوع الجهاز المستهدف لا يطابق الشروط (مطلوب: ${ad.campaign.targetDevice})`,
+        );
       }
       if (ad.maxViews && ad.viewsCount >= ad.maxViews) {
-        exclusionReasons.push(`تم الوصول للحد الأقصى للمشاهدات (${ad.viewsCount}/${ad.maxViews})`);
+        exclusionReasons.push(
+          `تم الوصول للحد الأقصى للمشاهدات (${ad.viewsCount}/${ad.maxViews})`,
+        );
       }
       if (ad.maxClicks && ad.clicksCount >= ad.maxClicks) {
-        exclusionReasons.push(`تم الوصول للحد الأقصى للنقرات (${ad.clicksCount}/${ad.maxClicks})`);
+        exclusionReasons.push(
+          `تم الوصول للحد الأقصى للنقرات (${ad.clicksCount}/${ad.maxClicks})`,
+        );
       }
       if (ad.dailyStartMinutes !== null && ad.dailyEndMinutes !== null) {
-        if (currentMinutes < ad.dailyStartMinutes || currentMinutes > ad.dailyEndMinutes) {
+        if (
+          currentMinutes < ad.dailyStartMinutes ||
+          currentMinutes > ad.dailyEndMinutes
+        ) {
           exclusionReasons.push(`خارج ساعات العرض اليومية المحددة للإعلان`);
         }
       }
 
       const isEligible = exclusionReasons.length === 0;
 
-      const ctr = ad.viewsCount > 0 ? (ad.clicksCount / ad.viewsCount) : 0;
+      const ctr = ad.viewsCount > 0 ? ad.clicksCount / ad.viewsCount : 0;
       const ctrScore = Math.min(ctr * 100, 100);
-      const daysOld = (Date.now() - new Date(ad.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      const daysOld =
+        (Date.now() - new Date(ad.createdAt).getTime()) / (1000 * 60 * 60 * 24);
       const freshnessScore = Math.max(100 - daysOld * 2, 10);
-      const smartScore = (ad.priority * 0.4) + (ctrScore * 0.4) + (freshnessScore * 0.2);
+      const smartScore =
+        ad.priority * 0.4 + ctrScore * 0.4 + freshnessScore * 0.2;
       const dynamicWeight = (ad.trafficWeight || 50) * (smartScore / 50);
 
       return {
@@ -841,7 +959,7 @@ export class AdsService {
     });
 
     const eligibleAds = evaluatedCandidates.filter((c) => c.isEligible);
-    let selectedAd = eligibleAds.length > 0 ? eligibleAds[0] : null;
+    const selectedAd = eligibleAds.length > 0 ? eligibleAds[0] : null;
 
     return {
       status: selectedAd ? 'SUCCESS_MATCHED' : 'NO_ELIGIBLE_ADS',

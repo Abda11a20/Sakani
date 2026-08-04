@@ -63,10 +63,7 @@ export class AdsAdminController {
    * Update campaign details (including isPaid status)
    */
   @Patch('campaigns/:id')
-  async updateCampaign(
-    @Param('id') id: string,
-    @Body() dto: any,
-  ) {
+  async updateCampaign(@Param('id') id: string, @Body() dto: any) {
     return this.adsService.updateCampaign(id, dto);
   }
 
@@ -84,10 +81,7 @@ export class AdsAdminController {
    * Update Advertisement details
    */
   @Patch(':id')
-  async updateAd(
-    @Param('id') adId: string,
-    @Body() dto: any,
-  ) {
+  async updateAd(@Param('id') adId: string, @Body() dto: any) {
     return this.adsService.updateAd(adId, dto);
   }
 

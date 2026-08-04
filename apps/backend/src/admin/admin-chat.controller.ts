@@ -91,6 +91,9 @@ export class AdminChatController {
     @CurrentUser() admin: SafeUser,
     @Param('id') conversationId: string,
   ) {
-    return this.conversationService.unblockConversation(conversationId, admin.id);
+    return this.conversationService.unblockConversation(
+      conversationId,
+      admin.id,
+    );
   }
 }

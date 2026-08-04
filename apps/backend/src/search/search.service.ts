@@ -58,7 +58,9 @@ export class SearchService {
         tanta: ['طنطا', 'Tanta'],
       };
 
-      const searchTerms = Array.from(new Set([q.trim(), ...(cityMap[lowerQ] || [])]));
+      const searchTerms = Array.from(
+        new Set([q.trim(), ...(cityMap[lowerQ] || [])]),
+      );
 
       where.OR = searchTerms.flatMap((term) => [
         { title: { contains: term, mode: 'insensitive' } },

@@ -1,7 +1,10 @@
 // apps/backend/src/location/providers/nominatim.provider.ts
 
 import { Injectable, Logger } from '@nestjs/common';
-import { GeocodingProvider, LocationResult } from '../interfaces/geocoding-provider.interface';
+import {
+  GeocodingProvider,
+  LocationResult,
+} from '../interfaces/geocoding-provider.interface';
 
 @Injectable()
 export class NominatimProvider implements GeocodingProvider {
@@ -20,13 +23,19 @@ export class NominatimProvider implements GeocodingProvider {
    */
   private cleanQuery(query: string): string {
     if (!query) return '';
-    
+
     // Remove common filler words
     const cleanStr = query
-      .replace(/(بجوار|أمام|بجانب|فوق|تحت|شقة|عمارة|دور|شارع|طريق|ميدان)\s+[^\s,]+/gi, (match) => {
-        // Keep the main name if useful, but strip filler prefixes
-        return match.replace(/^(بجوار|أمام|بجانب|فوق|تحت|شقة|عمارة|دور)\s+/gi, '');
-      })
+      .replace(
+        /(بجوار|أمام|بجانب|فوق|تحت|شقة|عمارة|دور|شارع|طريق|ميدان)\s+[^\s,]+/gi,
+        (match) => {
+          // Keep the main name if useful, but strip filler prefixes
+          return match.replace(
+            /^(بجوار|أمام|بجانب|فوق|تحت|شقة|عمارة|دور)\s+/gi,
+            '',
+          );
+        },
+      )
       .trim();
 
     // Deduplicate tokens
@@ -37,8 +46,21 @@ export class NominatimProvider implements GeocodingProvider {
 
     const uniqueTokens: string[] = [];
     for (const token of tokens) {
-      const normalized = token.toLowerCase().replace(/[أإآآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-      if (!uniqueTokens.some((ut) => ut.toLowerCase().replace(/[أإآآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي') === normalized)) {
+      const normalized = token
+        .toLowerCase()
+        .replace(/[أإآآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي');
+      if (
+        !uniqueTokens.some(
+          (ut) =>
+            ut
+              .toLowerCase()
+              .replace(/[أإآآ]/g, 'ا')
+              .replace(/ة/g, 'ه')
+              .replace(/ى/g, 'ي') === normalized,
+        )
+      ) {
         uniqueTokens.push(token);
       }
     }
@@ -72,7 +94,7 @@ export class NominatimProvider implements GeocodingProvider {
 
     try {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedQuery)}&format=json&limit=3&countrycodes=eg&accept-language=ar`;
-      
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Sakany-App-Production/1.0 (contact@sakany.app)',
@@ -96,7 +118,12 @@ export class NominatimProvider implements GeocodingProvider {
 
         // Strict Egypt bounds check & valid numeric checks
         if (this.isWithinEgypt(lat, lng)) {
-          const confidence = item.importance > 0.5 ? 'high' : item.importance > 0.3 ? 'medium' : 'low';
+          const confidence =
+            item.importance > 0.5
+              ? 'high'
+              : item.importance > 0.3
+                ? 'medium'
+                : 'low';
           results.push({
             lat,
             lng,
@@ -108,19 +135,24 @@ export class NominatimProvider implements GeocodingProvider {
 
       return results;
     } catch (error: any) {
-      this.logger.error(`Geocoding error for query "${rawQuery}": ${error?.message}`);
+      this.logger.error(
+        `Geocoding error for query "${rawQuery}": ${error?.message}`,
+      );
       return [];
     }
   }
 
-  async reverseGeocode(lat: number, lng: number): Promise<LocationResult | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number,
+  ): Promise<LocationResult | null> {
     if (!this.isWithinEgypt(lat, lng)) {
       return null;
     }
 
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`;
-      
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Sakany-App-Production/1.0 (contact@sakany.app)',

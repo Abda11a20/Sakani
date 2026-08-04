@@ -20,7 +20,9 @@ export class SearchQueryDto {
   q?: string;
 
   @IsOptional()
-  @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase() : value)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase() : value,
+  )
   @IsEnum(UnitType)
   unitType?: UnitType;
 
@@ -45,7 +47,9 @@ export class SearchQueryDto {
   maxPrice?: number;
 
   @IsOptional()
-  @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase() : value)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase() : value,
+  )
   @IsEnum(GenderTarget)
   genderTarget?: GenderTarget;
 
@@ -54,7 +58,13 @@ export class SearchQueryDto {
   amenities?: string; // comma-separated: "wifi,ac,elevator"
 
   @IsOptional()
-  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : undefined))
+  @Transform(({ value }) =>
+    value === 'true' || value === true
+      ? true
+      : value === 'false' || value === false
+        ? false
+        : undefined,
+  )
   @IsBoolean()
   isFurnished?: boolean;
 
