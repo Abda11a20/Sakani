@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { ActiveAdResponse } from '../../types/ad.types';
 
 interface Props {
@@ -9,8 +10,17 @@ interface Props {
 }
 
 export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const primaryMedia = ad.mediaItems?.[0];
   const cleanTitle = ad.title?.replace(/\s*\([A-Z0-9_]+\)$/gi, '') || '';
+
+  // Sync muted state directly to HTMLVideoElement DOM instance
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   return (
     <div className="w-full my-2 transition-all duration-300">
@@ -42,14 +52,28 @@ export const AdBannerRenderer: React.FC<Props> = ({ ad, onAdClick }) => {
         {primaryMedia && (
           <div className="relative w-full overflow-hidden rounded-lg bg-surface-secondary">
             {primaryMedia.type === 'VIDEO' ? (
-              <video
-                src={primaryMedia.url}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-32 sm:h-40 object-fill rounded-lg"
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  src={primaryMedia.url}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  className="w-full h-32 sm:h-40 object-fill rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMuted((prev) => !prev);
+                  }}
+                  className="absolute bottom-2 left-2 z-10 p-1.5 rounded-full bg-black/60 text-white backdrop-blur-md hover:bg-black/80 transition-all shadow-md"
+                  title={isMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
+                >
+                  {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                </button>
+              </>
             ) : (
               <img
                 src={primaryMedia.url}

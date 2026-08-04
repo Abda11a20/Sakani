@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { ActiveAdResponse } from '../../types/ad.types';
 
 interface Props {
@@ -10,8 +11,17 @@ interface Props {
 }
 
 export const AdPopupRenderer: React.FC<Props> = ({ ad, onAdClick, onClose }) => {
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const primaryMedia = ad.mediaItems?.[0];
   const cleanTitle = ad.title?.replace(/\s*\([A-Z0-9_]+\)$/gi, '') || '';
+
+  // Sync muted state directly to HTMLVideoElement DOM instance
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   // Smart Auto-Close Timer for Popup (8s for Images, 15s max safety for Videos)
   useEffect(() => {
@@ -46,14 +56,28 @@ export const AdPopupRenderer: React.FC<Props> = ({ ad, onAdClick, onClose }) => 
         {primaryMedia && (
           <div className="relative h-36 w-full overflow-hidden rounded-xl bg-gray-100">
             {primaryMedia.type === 'VIDEO' ? (
-              <video
-                src={primaryMedia.url}
-                autoPlay
-                muted
-                playsInline
-                onEnded={onClose}
-                className="w-full h-full object-cover"
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  src={primaryMedia.url}
+                  autoPlay
+                  muted={isMuted}
+                  playsInline
+                  onEnded={onClose}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMuted((prev) => !prev);
+                  }}
+                  className="absolute bottom-2 left-2 z-10 p-1.5 rounded-full bg-black/60 text-white backdrop-blur-md hover:bg-black/80 transition-all shadow-md"
+                  title={isMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
+                >
+                  {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                </button>
+              </>
             ) : (
               <img
                 src={primaryMedia.url}
