@@ -14,6 +14,7 @@ This document outlines the architectural blueprints, component relationships, da
 7. [Viewing Request & Contract Lifecycle State Machine](#7-viewing-request--contract-lifecycle-state-machine)
 8. [Realtime WebSocket Chat Architecture](#8-realtime-websocket-chat-architecture)
 9. [i18n Locale & Translation Resolution Pipeline](#9-i18n-locale--translation-resolution-pipeline)
+10. [Ad Engine Architecture & Smart Selection Flow](#10-ad-engine-architecture--smart-selection-flow)
 
 ---
 
@@ -291,3 +292,50 @@ graph LR
     Provider2 --> Hook
     Hook --> Component["Render Localized Component UI"]
 ```
+
+---
+
+## 10. Ad Engine Architecture & Smart Selection Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Browser / Client
+    participant Slot as AdSlot Component
+    participant Hook as useActiveAd Hook
+    participant BE as Ads Controller & Service
+    participant Engine as Smart Weighting Engine
+    participant DB as PostgreSQL (Ads & Campaigns)
+    participant Cache as AdCacheService (15s Memory)
+
+    User->>Slot: Page Render (HOME_HERO / POPUP / INTERSTITIAL)
+    Slot->>Hook: Initialize useActiveAd(placementKey)
+    
+    alt Frequency Cap Hit (Client-Side)
+        Hook->>Hook: Check perUserFrequency (EVERY_12_HOURS, DAILY, etc.) in localStorage
+        Hook-->>Slot: Return NULL (Zero-Footprint, No API Call)
+    else Eligible
+        Hook->>BE: GET /api/v1/ads/active?placementKey=POPUP
+        BE->>Cache: Check Memory Cache (key: active_ad_...)
+        alt Cache Hit
+            Cache-->>BE: Return Cached Winning Ad
+        else Cache Miss
+            BE->>DB: Query Published Ads (placement, startDate <= now <= endDate, isPaid=true)
+            DB-->>BE: Return Candidate Ads List
+            BE->>Engine: Calculate Smart Score = (Priority*0.4) + (CTR*0.4) + (Freshness*0.2)
+            Engine->>Engine: Execute Weighted Random Selection
+            Engine-->>Cache: Store Selected Ad in 15s Cache
+            Engine-->>BE: Selected Winning Ad
+        end
+        BE-->>Hook: Return ActiveAd Response
+        Hook->>BE: Asynchronously POST /ads/:id/impression
+        Hook-->>Slot: Render Ad (AdPopupRenderer / AdInterstitialRenderer / AdBannerRenderer)
+    end
+```
+
+### Architectural Principles of the Ad System:
+1. **Zero-Footprint Progressive Enhancement:** If no ad is eligible or global setting `adsEnabled` is `false`, `AdSlot` returns `NULL` without leaving any DOM wrapper or layout shift.
+2. **Smart Weighted Selection Algorithm:** Multi-candidate slots rotate ads based on a dynamic weight combining advertiser budget priority (40%), historical click-through rate CTR (40%), and ad freshness (20%).
+3. **Muted Video AutoPlay Standard:** Video ads auto-play muted by default (`playsInline`, `muted`) with an interactive glassmorphic audio control overlay for seamless cross-browser playback.
+4. **Super Admin Engine Simulator (`/admin/ads/debug`):** Real-time diagnostic tool providing candidate exclusion breakdowns for troubleshooting targeting and publisher rules.
+
