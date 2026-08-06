@@ -68,7 +68,8 @@ export class AdsAdminController {
    */
   @Post('migrate-legacy-media')
   async migrateLegacyMedia(@Body('limit') limit?: number) {
-    const result = await this.uploadsService.migrateLegacyAdvertisementMedia(limit);
+    const result =
+      await this.uploadsService.migrateLegacyAdvertisementMedia(limit);
     if (result.migrated > 0) {
       await this.adsService.clearActiveAdsCache();
     }

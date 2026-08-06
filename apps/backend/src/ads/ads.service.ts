@@ -171,16 +171,18 @@ export class AdsService {
       placementKey: query.placementKey,
       displayType: selectedAd.displayType,
       openMode: selectedAd.openMode,
-      target: selectedAd.target ? {
-        id: selectedAd.target.id,
-        type: selectedAd.target.type,
-        url: selectedAd.target.url,
-        phone: selectedAd.target.phone,
-        email: selectedAd.target.email,
-        whatsapp: selectedAd.target.whatsapp,
-        internalRoute: selectedAd.target.internalRoute,
-        appDeepLink: selectedAd.target.appDeepLink,
-      } : null,
+      target: selectedAd.target
+        ? {
+            id: selectedAd.target.id,
+            type: selectedAd.target.type,
+            url: selectedAd.target.url,
+            phone: selectedAd.target.phone,
+            email: selectedAd.target.email,
+            whatsapp: selectedAd.target.whatsapp,
+            internalRoute: selectedAd.target.internalRoute,
+            appDeepLink: selectedAd.target.appDeepLink,
+          }
+        : null,
       mediaItems: formattedMedia,
       isSkippable: selectedAd.isSkippable,
       isClosable: selectedAd.isClosable,

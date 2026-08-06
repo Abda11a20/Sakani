@@ -175,7 +175,9 @@ export class UploadsService {
         `Failed to upload advertisement media to ${provider}: ${error?.message || error}`,
         error?.stack,
       );
-      throw new InternalServerErrorException('Failed to upload advertisement media');
+      throw new InternalServerErrorException(
+        'Failed to upload advertisement media',
+      );
     }
   }
 
@@ -203,7 +205,15 @@ export class UploadsService {
       }
 
       const [, mimetype, encoded] = match;
-      if (!['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'].includes(mimetype)) {
+      if (
+        ![
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'video/mp4',
+          'video/webm',
+        ].includes(mimetype)
+      ) {
         skipped += 1;
         continue;
       }
