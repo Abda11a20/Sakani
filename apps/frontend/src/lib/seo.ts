@@ -14,6 +14,44 @@ interface GeneratePageMetadataOptions {
 }
 
 /**
+ * Strips non-content parameters (pagination, sorting, UI view mode) to produce a clean canonical URL.
+ */
+export function buildCanonicalUrl(
+  locale: string,
+  path: string,
+  queryParams?: Record<string, string>
+): string {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const baseCanonical = `${BASE_URL}/${locale}${cleanPath === "/" ? "" : cleanPath}`;
+
+  if (!queryParams || Object.keys(queryParams).length === 0) {
+    return baseCanonical;
+  }
+
+  // Filter out noise parameters (page, sort, view, limit, etc.)
+  const IGNORED_PARAMS = new Set([
+    "page",
+    "sort",
+    "view",
+    "limit",
+    "layout",
+    "offset",
+    "order",
+    "tab",
+  ]);
+
+  const filteredSearchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(queryParams)) {
+    if (!IGNORED_PARAMS.has(key.toLowerCase()) && value) {
+      filteredSearchParams.set(key, value);
+    }
+  }
+
+  const queryString = filteredSearchParams.toString();
+  return queryString ? `${baseCanonical}?${queryString}` : baseCanonical;
+}
+
+/**
  * دالة مساعدة محددة لتوليد Metadata ممتازة ودقيقة لكل صفحة، تشمل:
  * - Canonical URL مطلق
  * - الـ hreflang المتبادلة بين ar و en و x-default
@@ -28,11 +66,13 @@ export function buildPageMetadata({
   keywords,
   ogImage = "/og-image.png",
   noindex = false,
-}: GeneratePageMetadataOptions): Metadata {
+  queryParams,
+}: GeneratePageMetadataOptions & { queryParams?: Record<string, string> }): Metadata {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const arUrl = `${BASE_URL}/ar${cleanPath === "/" ? "" : cleanPath}`;
   const enUrl = `${BASE_URL}/en${cleanPath === "/" ? "" : cleanPath}`;
-  const currentUrl = locale === "ar" ? arUrl : enUrl;
+  const currentUrl = buildCanonicalUrl(locale, path, queryParams);
+
 
   const metadata: Metadata = {
     title,

@@ -4,22 +4,28 @@ import { MetadataRoute } from "next";
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ?? "https://sakani-backend-production.up.railway.app/api/v1";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Static pages ────────────────────────────────────────────────────────────
   const staticPages: MetadataRoute.Sitemap = [
     {
+      url: `${BASE_URL}`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
       url: `${BASE_URL}/ar`,
       lastModified: new Date(),
       changeFrequency: "daily",
-      priority: 1,
+      priority: 1.0,
     },
     {
       url: `${BASE_URL}/en`,
       lastModified: new Date(),
       changeFrequency: "daily",
-      priority: 1,
+      priority: 1.0,
     },
     {
       url: `${BASE_URL}/ar/search`,
@@ -37,13 +43,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${BASE_URL}/ar/how-it-works`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.7,
+      priority: 0.5,
     },
     {
       url: `${BASE_URL}/en/how-it-works`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.7,
+      priority: 0.5,
     },
   ];
 

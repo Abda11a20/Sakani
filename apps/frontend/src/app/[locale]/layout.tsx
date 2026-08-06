@@ -10,7 +10,9 @@ import Providers from "@/components/providers";
 
 import { Toaster } from "@/components/ui/toast";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
+import { SeoSchemas } from "@/components/seo/seo-schemas";
 import "../globals.css";
+
 
 // ── Google Fonts ──
 const cairo = Cairo({
@@ -103,7 +105,9 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <head>
+        <SeoSchemas locale={locale} />
         {/* Resource Hints & Early Connections */}
+
         <link rel="preconnect" href="https://sakani-backend-production.up.railway.app" />
         <link rel="dns-prefetch" href="https://sakani-backend-production.up.railway.app" />
         <link rel="preconnect" href="https://res.cloudinary.com" />

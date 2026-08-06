@@ -6,7 +6,9 @@ import { ListingDetailClient } from "./listing-detail-client";
 import type { Listing, Review } from "@/types";
 import { getCloudinaryUrl } from "@/lib/utils";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { buildPageMetadata } from "@/lib/seo";
+
 
 interface ListingPageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -151,30 +153,16 @@ export default async function ListingPage({ params }: ListingPageProps) {
     "location": propertyLocation,
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": locale === "ar" ? "الرئيسية" : "Home",
-        "item": `${APP_BASE}/${locale}`,
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": locale === "ar" ? "البحث" : "Search",
-        "item": `${APP_BASE}/${locale}/search`,
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": listing.title,
-        "item": `${APP_BASE}/${locale}/listings/${listing.id}`,
-      },
-    ],
-  };
+  const breadcrumbItems = [
+    { label: locale === "ar" ? "العقارات" : "Listings", href: `/${locale}/search` },
+    ...(listing.governorate
+      ? [{ label: listing.governorate, href: `/${locale}/search?governorate=${encodeURIComponent(listing.governorate)}` }]
+      : []),
+    ...(listing.district
+      ? [{ label: listing.district, href: `/${locale}/search?district=${encodeURIComponent(listing.district)}` }]
+      : []),
+    { label: listing.title },
+  ];
 
   return (
     <Suspense
@@ -184,7 +172,10 @@ export default async function ListingPage({ params }: ListingPageProps) {
         </div>
       }
     >
-      <JsonLd data={[productSchema, breadcrumbSchema]} />
+      <JsonLd data={[productSchema]} />
+      <div className="container mx-auto px-4 max-w-7xl">
+        <Breadcrumb locale={locale} items={breadcrumbItems} />
+      </div>
       <ListingDetailClient
         listing={listing}
         reviews={reviews}

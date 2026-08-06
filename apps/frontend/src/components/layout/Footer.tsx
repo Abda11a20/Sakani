@@ -31,9 +31,9 @@ export const Footer: React.FC = () => {
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
               {t("description")}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" style={{ direction: "ltr" }}>
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/profile.php?id=61593097584345"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-accent hover:text-text transition-colors"
@@ -57,7 +57,7 @@ export const Footer: React.FC = () => {
                 </svg>
               </a>
               <a
-                href={getWhatsAppLink("+201551876606")}
+                href={getWhatsAppLink("+201289631207")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-accent hover:text-text transition-colors"
@@ -97,12 +97,12 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="tel:+201551876606"
+                  href="tel:+201289631207"
                   className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors"
                   style={{ direction: "ltr" }}
                 >
                   <Phone size={15} className="shrink-0 text-gold" />
-                  <span>+20 155 187 6606</span>
+                  <span>+20 128 963 1207</span>
                 </a>
               </li>
               <li>

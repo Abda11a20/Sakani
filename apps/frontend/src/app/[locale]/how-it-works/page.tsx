@@ -184,17 +184,25 @@ export default async function HowItWorksPage({ params }: HowItWorksProps) {
           <p className="text-slate-500 mt-3 font-cairo text-sm leading-relaxed max-w-xl mx-auto">
             {t("ctaSubtitle")}
           </p>
-          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-4 mt-8 max-w-md mx-auto">
+          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-4 mt-8 max-w-lg mx-auto">
             <Link href={`/${locale}/search`} className="w-full sm:w-auto flex-1">
-              <Button className="w-full bg-[#1B4F8A] hover:bg-[#142E54] text-white font-bold font-cairo rounded-2xl h-12 px-6 flex items-center justify-center gap-2 shadow-sm transition-all">
-                <span>{t("ctaTenantBtn")}</span>
-                {isRtl ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
+              <Button
+                variant="primary"
+                size="lg"
+                rightIcon={isRtl ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
+                className="w-full bg-[#1B4F8A] hover:bg-[#142E54] text-white font-bold font-cairo rounded-2xl h-12 px-6 shadow-sm transition-all whitespace-nowrap"
+              >
+                {t("ctaTenantBtn")}
               </Button>
             </Link>
             <Link href={`/${locale}/dashboard/landlord/listings/add`} className="w-full sm:w-auto flex-1">
-              <Button variant="outline" className="w-full border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold font-cairo rounded-2xl h-12 px-6 flex items-center justify-center gap-2 transition-all">
-                <span>{t("ctaLandlordBtn")}</span>
-                <PlusCircle size={18} className="text-amber-600" />
+              <Button
+                variant="outline"
+                size="lg"
+                rightIcon={<PlusCircle size={18} className="text-amber-600" />}
+                className="w-full border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold font-cairo rounded-2xl h-12 px-6 transition-all whitespace-nowrap"
+              >
+                {t("ctaLandlordBtn")}
               </Button>
             </Link>
           </div>
