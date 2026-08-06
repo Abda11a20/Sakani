@@ -1,4 +1,5 @@
 // apps/backend/src/main.ts
+import './instrument';
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';

@@ -29,11 +29,13 @@ import { RentalHistoryModule } from './rental-history/rental-history.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RentalContractsModule } from './rental-contracts/rental-contracts.module';
 import { CommunityModule } from './community/community.module';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { LocationModule } from './location/location.module';
 import { AdsModule } from './ads/ads.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     LoggerModule,
     LocationModule,
     // إعداد متغيرات البيئة — متاحة في كل التطبيق

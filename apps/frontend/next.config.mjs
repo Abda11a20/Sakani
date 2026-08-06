@@ -22,12 +22,12 @@ const isDev = process.env.NODE_ENV === "development";
 
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accept.paymob.com;
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accept.paymob.com https://www.googletagmanager.com https://*.clarity.ms;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
   font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' data: blob: https: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com;
+  img-src 'self' data: blob: https: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com https://*.clarity.ms https://*.google-analytics.com;
   media-src 'self' data: blob: https:;
-  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org;
+  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io;
   frame-src 'self' https://accept.paymob.com;
   object-src 'none';
   base-uri 'self';
@@ -136,4 +136,13 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+import { withSentryConfig } from "@sentry/nextjs";
+
+export default withSentryConfig(
+  withNextIntl(nextConfig),
+  {
+    silent: true,
+    org: "sakani-fg",
+    project: "sakani-frontend",
+  }
+);
