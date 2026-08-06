@@ -31,7 +31,7 @@ export const Footer: React.FC = () => {
             <p className="text-white/70 text-sm leading-relaxed max-w-xs">
               {t("description")}
             </p>
-            <div className="flex items-center gap-3" style={{ direction: "ltr" }}>
+            <div className="flex items-center gap-3">
               <a
                 href="https://facebook.com"
                 target="_blank"
