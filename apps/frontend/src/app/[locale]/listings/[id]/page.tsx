@@ -74,8 +74,10 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
     title: `${listing.title} — سكني`,
     description,
     ogImage,
+    noindex: listing.status !== "active",
   });
 }
+
 
 export default async function ListingPage({ params }: ListingPageProps) {
   const { id, locale } = await params;

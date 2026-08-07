@@ -6,7 +6,6 @@ import { getTranslations } from "next-intl/server";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { HomeHowItWorksSection } from "@/components/home/HomeHowItWorksSection";
 import { HomeLandlordSection } from "@/components/home/HomeLandlordSection";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { listingRepository } from "@/features/listings";
 import { ListingCard } from "@/features/listings";
 import type { Listing } from "@/types";
@@ -22,9 +21,11 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app"
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "home" });
+  const title = t("metaTitle");
+  const description = t("metaDescription");
   return {
-    title: t("metaTitle"),
-    description: t("metaDescription"),
+    title,
+    description,
     alternates: {
       canonical: `${siteUrl}/${locale}`,
       languages: {
@@ -33,8 +34,31 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
         "x-default": `${siteUrl}/ar`,
       },
     },
+    openGraph: {
+      type: "website",
+      siteName: locale === "ar" ? "سكني — Sakani" : "Sakani",
+      title,
+      description,
+      url: `${siteUrl}/${locale}`,
+      locale: locale === "ar" ? "ar_EG" : "en_US",
+      images: [
+        {
+          url: `${siteUrl}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: locale === "ar" ? "سكني — منصة تأجير العقارات والسكن في مصر" : "Sakani — Housing & Rental Platform in Egypt",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${siteUrl}/og-image.png`],
+    },
   };
 }
+
 
 async function getFeaturedListings(): Promise<Listing[]> {
   try {
@@ -75,16 +99,8 @@ export default async function HomePage({ params }: HomePageProps) {
 
   const featuredListings = await getFeaturedListings();
 
-  const websiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": locale === "en" ? "Sakani" : "سكني — Sakani",
-    "url": `${siteUrl}/${locale}`,
-  };
-
   return (
     <main className="font-cairo bg-surface-secondary min-h-screen">
-      <JsonLd data={[websiteSchema]} />
       <AdSlot placementKey="INTERSTITIAL" />
       <HomeHeroSection locale={locale} />
       

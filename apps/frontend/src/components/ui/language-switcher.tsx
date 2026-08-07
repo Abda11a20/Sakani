@@ -19,8 +19,9 @@ export const LanguageSwitcher: React.FC = () => {
     segments[1] = nextLocale;
     const newPath = segments.join("/") || "/";
 
-    // Save in cookie
-    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    // Save in cookie with Secure flag on HTTPS
+    const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax${secure}`;
 
     router.replace(newPath);
   };

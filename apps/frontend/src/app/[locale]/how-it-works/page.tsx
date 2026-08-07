@@ -15,15 +15,27 @@ interface HowItWorksProps {
   params: Promise<{ locale: string }>;
 }
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
+
 export async function generateMetadata({ params }: HowItWorksProps) {
   const { locale } = await params;
   return {
     title: locale === "ar" ? "كيف يعمل سكني — دليل الاستخدام" : "How Sakani Works — Guide",
-    description: locale === "ar" 
-      ? "تعرف على خطوات استخدام منصة سكني للطلاب والشباب والملاك لتسهيل عملية الإيجار بأمان" 
+    description: locale === "ar"
+      ? "تعرف على خطوات استخدام منصة سكني للطلاب والشباب والملاك لتسهيل عملية الإيجار بأمان"
       : "Learn how to use Sakani platform for tenants and landlords to rent properties safely",
+    alternates: {
+      canonical: `${siteUrl}/${locale}/how-it-works`,
+      languages: {
+        ar: `${siteUrl}/ar/how-it-works`,
+        en: `${siteUrl}/en/how-it-works`,
+        "x-default": `${siteUrl}/ar/how-it-works`,
+      },
+    },
   };
 }
+
 
 export default async function HowItWorksPage({ params }: HowItWorksProps) {
   const { locale } = await params;

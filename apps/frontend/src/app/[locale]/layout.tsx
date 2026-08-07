@@ -33,14 +33,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://sakani-app.vercel.app"
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app"
   ),
   title: {
     default: "سكني — ابحث بثقة، اسكن بأمان",
     template: "%s | سكني",
   },
   description:
-    "منصة تأجير عقارات مصرية — ابحث عن شقق وأسرة بسهولة وأمان",
+    "سكني — منصة مصرية لتأجير الشقق والغرف والأسِرّة. ابحث عن شقة مفروشة أو سكن طلابي أو سكن مشترك في مصر بثقة وأمان.",
   keywords: ["تأجير", "شقق", "عقارات", "مصر", "سكن", "إيجار", "sakani", "rent Egypt"],
   authors: [{ name: "سكني" }],
   manifest: "/manifest.json",

@@ -4,7 +4,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 @Injectable()
 export class AuthThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Record<string, any>): Promise<string> {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+    const ip = req.ip || '127.0.0.1';
     let identifier = '';
 
     if (req.body) {

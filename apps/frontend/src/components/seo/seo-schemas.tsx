@@ -23,7 +23,7 @@ export const SeoSchemas: React.FC<SeoSchemasProps> = ({ locale }) => {
       width: 512,
       height: 512,
     },
-    image: `${baseUrl}/og-image.jpg`,
+    image: `${baseUrl}/og-image.png`,
     description: isRtl
       ? "منصة سَكني هي أسهل وأأمن طريقة لحجز وتأجير العقارات والأسرة والسكن الطلابي والشبابي في مصر مباشرة من الملاك بدون عمولات مبالغ فيها."
       : "Sakani is Egypt's leading student & youth housing rental platform connecting tenants directly with verified landlords.",
