@@ -102,13 +102,23 @@ const nextConfig = {
           },
         ],
       },
+      // Cache-Control للصور والخطوط والأيقونات الثابتة
+      {
+        source: "/:path*.(svg|png|jpg|jpeg|webp|avif|ico|woff|woff2)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       // Cache الصور
       {
         source: "/images/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=3600",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },

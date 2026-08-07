@@ -34,23 +34,9 @@ export const AdSlot: React.FC<Props> = ({ placementKey, className }) => {
   }
 
   // Progressive Enhancement / Layout Stability Guard:
-  // Reserve space while loading inline banners to eliminate layout shift (CLS)
+  // Return null while loading to prevent skeleton collapse and eliminate layout shift (CLS).
   if (isLoading) {
-    if (isOverlayPlacement) {
-      return null;
-    }
-    return (
-      <div className={className}>
-        <div className="w-full my-2 rounded-xl border border-border/80 bg-surface p-2 sm:p-2.5 space-y-1.5 animate-pulse">
-          <div className="flex items-center justify-between">
-            <div className="h-4 w-16 rounded-md bg-surface-secondary" />
-            <div className="h-4 w-14 rounded-md bg-surface-secondary" />
-          </div>
-          <div className="h-[18px] w-2/3 rounded bg-surface-secondary" />
-          <div className="h-32 sm:h-40 w-full rounded-lg bg-surface-secondary" />
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!ad) {

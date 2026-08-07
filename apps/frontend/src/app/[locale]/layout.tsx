@@ -18,16 +18,14 @@ import "../globals.css";
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   variable: "--font-cairo",
-  // Avoid a late font swap changing text height and shifting the page layout.
-  display: "optional",
+  display: "swap",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  // Keep first paint stable when the font is not immediately available.
-  display: "optional",
+  display: "swap",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
@@ -137,9 +135,9 @@ export default async function LocaleLayout({
         {/* Google Analytics 4 (GA4) */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || "G-H11PK0TB95"}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -148,7 +146,7 @@ export default async function LocaleLayout({
           `}
         </Script>
         {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
+        <Script id="microsoft-clarity" strategy="lazyOnload">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
