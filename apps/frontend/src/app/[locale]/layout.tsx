@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
+import { headers } from "next/headers";
 import Script from "next/script";
 import Providers from "@/components/providers";
 
@@ -94,6 +95,8 @@ export default async function LocaleLayout({
 
   const isRtl = locale === "ar";
   const messages = await getMessages();
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -120,6 +123,7 @@ export default async function LocaleLayout({
 
         {/* Service Worker registration */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
@@ -134,10 +138,11 @@ export default async function LocaleLayout({
         />
         {/* Google Analytics 4 (GA4) */}
         <Script
+          nonce={nonce}
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || "G-H11PK0TB95"}`}
           strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="lazyOnload">
+        <Script id="google-analytics" nonce={nonce} strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -146,7 +151,7 @@ export default async function LocaleLayout({
           `}
         </Script>
         {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="lazyOnload">
+        <Script id="microsoft-clarity" nonce={nonce} strategy="lazyOnload">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
