@@ -25,12 +25,12 @@ export default function middleware(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accept.paymob.com https://www.googletagmanager.com https://*.clarity.ms;
+    script-src 'self' 'nonce-${nonce}' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accept.paymob.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.clarity.ms;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
     font-src 'self' https://fonts.gstatic.com data:;
-    img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com https://*.clarity.ms https://*.google-analytics.com https://*.googletagmanager.com;
+    img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com https://*.clarity.ms https://*.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://www.google.com.eg;
     media-src 'self' data: blob: https://res.cloudinary.com;
-    connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io;
+    connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io;
     frame-src 'self' https://accept.paymob.com;
     object-src 'none';
     base-uri 'self';
