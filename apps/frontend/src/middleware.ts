@@ -30,7 +30,7 @@ export default function middleware(request: NextRequest) {
     font-src 'self' https://fonts.gstatic.com data:;
     img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com https://*.clarity.ms https://c.bing.com https://*.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://www.google.com.eg;
     media-src 'self' data: blob: https://res.cloudinary.com;
-    connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io;
+    connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io https://stats.g.doubleclick.net;
     frame-src 'self' https://accept.paymob.com;
     object-src 'none';
     base-uri 'self';
@@ -44,8 +44,8 @@ export default function middleware(request: NextRequest) {
 
   const response = handleNextIntlRouting(request);
 
-  // Set Report-Only CSP header during testing stage
-  response.headers.set("Content-Security-Policy-Report-Only", cspHeader);
+  // Set dynamic Enforcement CSP header with per-request nonce
+  response.headers.set("Content-Security-Policy", cspHeader);
   response.headers.set("x-nonce", nonce);
 
   const localeCookie = response.cookies.get("NEXT_LOCALE");

@@ -27,7 +27,7 @@ const cspHeader = `
   font-src 'self' https://fonts.gstatic.com data:;
   img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.dicebear.com https://accept.paymob.com https://*.tile.openstreetmap.org https://unpkg.com https://*.clarity.ms https://c.bing.com https://*.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://www.google.com.eg;
   media-src 'self' data: blob: https://res.cloudinary.com;
-  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io;
+  connect-src 'self' ${apiOrigin} https://accept.paymob.com https://*.pusher.com wss://*.pusher.com https://res.cloudinary.com https://nominatim.openstreetmap.org https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://*.sentry.io https://stats.g.doubleclick.net;
   frame-src 'self' https://accept.paymob.com;
   object-src 'none';
   base-uri 'self';
@@ -35,6 +35,7 @@ const cspHeader = `
   frame-ancestors 'self';
 `.replace(/\s{2,}/g, " ").trim();
 
+// Dynamic CSP with per-request Nonce is managed exclusively by middleware.ts (Single Source of Truth)
 const securityHeaders = [
   {
     key: "X-Frame-Options",
@@ -61,12 +62,8 @@ const securityHeaders = [
     value: "max-age=63072000; includeSubDomains; preload",
   },
   {
-    key: "Content-Security-Policy-Report-Only",
-    value: cspHeader,
-  },
-  {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self), payment=(self https://accept.paymob.com), fullscreen=(self)",
+    value: 'camera=(), microphone=(), geolocation=(self), payment=(self "https://accept.paymob.com"), fullscreen=(self)',
   },
   {
     key: "X-Permitted-Cross-Domain-Policies",
