@@ -32,8 +32,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AllowSoftDeleted } from './decorators/allow-soft-deleted.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '@prisma/client';
-
-type SafeUser = Omit<User, 'passwordHash'>;
+import type { SafeUser } from './auth.service';
 
 @ApiTags('Auth')
 @Controller('auth')

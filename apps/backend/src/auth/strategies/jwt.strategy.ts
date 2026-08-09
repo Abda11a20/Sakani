@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<Omit<User, 'passwordHash'>> {
+  async validate(payload: JwtPayload): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -30,7 +30,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('المستخدم غير موجود أو محظور');
     }
 
-    const { passwordHash: _passwordHash, ...safeUser } = user;
-    return safeUser;
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = user;
+    return {
+      ...safeUser,
+      hasSubmittedNationalId: !!user.nationalIdEnc,
+      isTelegramLinked: !!user.telegramChatId,
+    };
   }
 }

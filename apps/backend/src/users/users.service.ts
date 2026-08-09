@@ -22,7 +22,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-type SafeUser = Omit<User, 'passwordHash'>;
+import type { SafeUser } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -80,7 +80,7 @@ export class UsersService implements OnModuleInit {
   }
 
   // ── 1. Get Current User Profile ───────────────────────────────────────────
-  async getProfile(userId: string): Promise<SafeUser> {
+  async getProfile(userId: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -89,15 +89,19 @@ export class UsersService implements OnModuleInit {
       throw new NotFoundException('User not found');
     }
 
-    const { passwordHash: _ph, ...safeUser } = user;
-    return safeUser;
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = user;
+    return {
+      ...safeUser,
+      hasSubmittedNationalId: !!user.nationalIdEnc,
+      isTelegramLinked: !!user.telegramChatId,
+    };
   }
 
   // ── 2. Update Current User Profile ─────────────────────────────────────────
   async updateProfile(
     userId: string,
     dto: UpdateProfileDto,
-  ): Promise<SafeUser> {
+  ): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -113,8 +117,12 @@ export class UsersService implements OnModuleInit {
       },
     });
 
-    const { passwordHash: _ph, ...safeUser } = updatedUser;
-    return safeUser;
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = updatedUser;
+    return {
+      ...safeUser,
+      hasSubmittedNationalId: !!updatedUser.nationalIdEnc,
+      isTelegramLinked: !!updatedUser.telegramChatId,
+    };
   }
 
   // ── 2.5. Update OTP Channel ───────────────────────────────────────────────
@@ -153,8 +161,18 @@ export class UsersService implements OnModuleInit {
     ]);
 
     const safeUsers = users.map((user) => {
-      const { passwordHash: _ph, ...safeUser } = user;
-      return safeUser;
+      const {
+        passwordHash: _ph,
+        nationalIdEnc: _nid,
+        telegramChatId: _tg,
+        deletionReason: _dr,
+        ...safeUser
+      } = user;
+      return {
+        ...safeUser,
+        hasSubmittedNationalId: !!user.nationalIdEnc,
+        isTelegramLinked: !!user.telegramChatId,
+      };
     });
 
     return { users: safeUsers, total };

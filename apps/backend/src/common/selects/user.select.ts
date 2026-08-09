@@ -9,5 +9,4 @@ export const userPublicSelect = {
   nationalIdVerified: true,
   identityStatus: true,
   createdAt: true,
-  idCardPublicId: true,
 } satisfies Prisma.UserSelect;

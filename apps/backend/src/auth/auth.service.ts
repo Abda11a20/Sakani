@@ -37,7 +37,13 @@ import { TelegramService } from '../notifications/telegram.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
-type SafeUser = Omit<User, 'passwordHash'>;
+export type SafeUser = Omit<
+  User,
+  'passwordHash' | 'nationalIdEnc' | 'telegramChatId' | 'deletionReason'
+> & {
+  hasSubmittedNationalId?: boolean;
+  isTelegramLinked?: boolean;
+};
 
 const SALT_ROUNDS = 12;
 const OTP_EXPIRY_MINUTES = 10;
@@ -425,15 +431,20 @@ export class AuthService {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
     }
 
-    const { passwordHash: _ph, ...safeUser } = user;
-    const accessToken = this.generateAccessToken(safeUser);
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = user;
+    const sanitizedUser: SafeUser = {
+      ...safeUser,
+      hasSubmittedNationalId: !!user.nationalIdEnc,
+      isTelegramLinked: !!user.telegramChatId,
+    };
+    const accessToken = this.generateAccessToken(sanitizedUser);
     const refreshToken = await this.createDeviceSession(
       user.id,
       ip,
       deviceName,
     );
 
-    return { accessToken, refreshToken, user: safeUser };
+    return { accessToken, refreshToken, user: sanitizedUser };
   }
 
   // ── Refresh Token ──────────────────────────────────────────────────────────
@@ -456,8 +467,13 @@ export class AuthService {
       data: { lastSeen: new Date() },
     });
 
-    const { passwordHash: _ph, ...safeUser } = session.user;
-    const accessToken = this.generateAccessToken(safeUser);
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = session.user;
+    const sanitizedUser: SafeUser = {
+      ...safeUser,
+      hasSubmittedNationalId: !!session.user.nationalIdEnc,
+      isTelegramLinked: !!session.user.telegramChatId,
+    };
+    const accessToken = this.generateAccessToken(sanitizedUser);
 
     return { accessToken };
   }
@@ -687,11 +703,15 @@ export class AuthService {
   }
 
   // ── Get Current User ───────────────────────────────────────────────────────
-  async getMe(userId: string): Promise<SafeUser> {
+  async getMe(userId: string): Promise<any> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('المستخدم غير موجود');
-    const { passwordHash: _ph, ...safeUser } = user;
-    return safeUser;
+    const { passwordHash: _ph, nationalIdEnc: _nid, telegramChatId: _tg, deletionReason: _dr, ...safeUser } = user;
+    return {
+      ...safeUser,
+      hasSubmittedNationalId: !!user.nationalIdEnc,
+      isTelegramLinked: !!user.telegramChatId,
+    };
   }
 
   // ── Self-Service Account Restoration ───────────────────────────────────────

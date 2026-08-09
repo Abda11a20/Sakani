@@ -21,8 +21,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserRole } from '@prisma/client';
-
-type SafeUser = Omit<User, 'passwordHash'>;
+import type { SafeUser } from '../auth/auth.service';
 
 @ApiTags('Users')
 @Controller()

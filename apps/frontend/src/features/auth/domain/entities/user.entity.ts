@@ -12,6 +12,7 @@ export interface UserProps {
   avatarUrl?: string | null;
   idCardPublicId?: string | null;
   nationalIdEnc?: string | null;
+  hasSubmittedNationalId?: boolean;
   nationalIdVerified?: boolean | null;
   identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
   emailVerifiedAt?: string | null;
@@ -19,6 +20,7 @@ export interface UserProps {
   isActive?: boolean;
   otpChannel?: "EMAIL" | "TELEGRAM";
   telegramChatId?: string | null;
+  isTelegramLinked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,7 +48,7 @@ export class UserEntity {
     if (this.props.identityStatus === 'VERIFIED' || this.props.nationalIdVerified) return 'verified';
     if (this.props.identityStatus === 'PENDING') return 'pending';
     if (this.props.identityStatus === 'REJECTED') return 'rejected';
-    if (this.props.idCardPublicId || this.props.nationalIdEnc) {
+    if (this.props.idCardPublicId || this.props.hasSubmittedNationalId || this.props.nationalIdEnc) {
       if (this.props.idCardPublicId === 'REJECTED') return 'rejected';
       return 'pending';
     }
@@ -71,7 +73,7 @@ export class UserEntity {
    * Domain Business Rule: Has Telegram linked for OTP / Alerts
    */
   public hasTelegramLinked(): boolean {
-    return !!this.props.telegramChatId && this.props.otpChannel === "TELEGRAM";
+    return (!!this.props.isTelegramLinked || !!this.props.telegramChatId) && this.props.otpChannel === "TELEGRAM";
   }
 
   /**

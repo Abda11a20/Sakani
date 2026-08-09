@@ -13,6 +13,7 @@ export interface User {
   avatarPublicId?: string | null;
   idCardPublicId?: string | null;
   nationalIdEnc?: string | null;
+  hasSubmittedNationalId?: boolean;
   nationalIdVerified?: boolean;
   identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
   emailVerifiedAt: string | null;
@@ -20,6 +21,7 @@ export interface User {
   isActive?: boolean;
   otpChannel?: "EMAIL" | "TELEGRAM";
   telegramChatId?: string | null;
+  isTelegramLinked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +32,7 @@ export const getIdentityVerificationStatus = (user?: {
   identityStatus?: "NONE" | "PENDING" | "VERIFIED" | "REJECTED" | null;
   idCardPublicId?: string | null;
   nationalIdEnc?: string | null;
+  hasSubmittedNationalId?: boolean;
   nationalIdVerified?: boolean | null;
 } | null): IdentityVerificationStatus => {
   if (!user) return "unverified";
@@ -37,7 +40,7 @@ export const getIdentityVerificationStatus = (user?: {
   if (user.identityStatus === "PENDING") return "pending";
   if (user.identityStatus === "REJECTED") return "rejected";
   if (user.identityStatus === "NONE") return "unverified";
-  if (user.idCardPublicId || user.nationalIdEnc) {
+  if (user.idCardPublicId || user.hasSubmittedNationalId || user.nationalIdEnc) {
     if (user.idCardPublicId === "REJECTED") return "rejected";
     return "pending";
   }
