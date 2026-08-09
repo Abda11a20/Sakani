@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { HomeHowItWorksSection } from "@/components/home/HomeHowItWorksSection";
 import { HomeLandlordSection } from "@/components/home/HomeLandlordSection";
+import { CityLandingSection } from "@/components/home/CityLandingSection";
 import { listingRepository } from "@/features/listings";
 import { ListingCard } from "@/features/listings";
 import type { Listing } from "@/types";
@@ -170,6 +171,8 @@ export default async function HomePage({ params }: HomePageProps) {
           </div>
         </div>
       </section>
+
+      <CityLandingSection locale={locale} />
 
       <section className="bg-surface px-4 py-12 md:py-16" aria-labelledby="home-seo-title">
         <div className="container mx-auto max-w-4xl">

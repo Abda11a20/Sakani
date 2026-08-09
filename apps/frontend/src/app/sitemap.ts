@@ -1,5 +1,6 @@
 // apps/frontend/src/app/sitemap.ts
 import { MetadataRoute } from "next";
+import { CITY_PAGES } from "@/lib/seo/city-pages";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://sakanieg.vercel.app";
@@ -9,12 +10,6 @@ const API_URL =
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Static pages ────────────────────────────────────────────────────────────
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: `${BASE_URL}`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
     {
       url: `${BASE_URL}/ar`,
       lastModified: new Date(),
@@ -76,7 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (res.ok) {
       const json = await res.json();
       const listings: Array<{ id: string; updatedAt: string }> =
-        json?.items ?? json?.data ?? [];
+        json?.listings ?? json?.items ?? json?.data ?? [];
       listingPages = listings.flatMap((listing) => [
         {
           url: `${BASE_URL}/ar/listings/${listing.id}`,
@@ -96,5 +91,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // In case API is unavailable during build, skip dynamic pages
   }
 
-  return [...staticPages, ...listingPages];
+  const cityPages = await Promise.all(
+    CITY_PAGES.map(async (city) => {
+      const searchUrl = new URL(`${API_URL}/search`);
+      searchUrl.searchParams.set("limit", "1");
+      searchUrl.searchParams.set("governorate", city.filters.governorate);
+      if (city.filters.district) {
+        searchUrl.searchParams.set("district", city.filters.district);
+      }
+
+      try {
+        const response = await fetch(searchUrl.toString(), {
+          next: { revalidate: 3600 },
+        });
+        if (!response.ok) return [];
+
+        const data = await response.json();
+        if (typeof data?.total !== "number" || data.total === 0) return [];
+
+        return (["ar", "en"] as const).map((locale) => ({
+          url: `${BASE_URL}/${locale}/rentals/${city.slug}`,
+          lastModified: new Date(),
+          changeFrequency: "daily" as const,
+          priority: 0.8,
+        }));
+      } catch {
+        return [];
+      }
+    })
+  );
+
+  return [...staticPages, ...listingPages, ...cityPages.flat()];
 }

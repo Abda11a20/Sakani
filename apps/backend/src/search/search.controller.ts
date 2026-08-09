@@ -20,6 +20,11 @@ export class SearchController {
     return this.searchService.getPopularDistricts();
   }
 
+  @Get('location-counts')
+  async getLocationCounts() {
+    return this.searchService.getLocationCounts();
+  }
+
   @Get('suggested/:listingId')
   async getSuggestedListings(@Param('listingId') listingId: string) {
     return this.searchService.getSuggestedListings(listingId);

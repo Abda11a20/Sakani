@@ -198,6 +198,24 @@ export class SearchService {
     }));
   }
 
+  async getLocationCounts() {
+    const results = await this.prisma.listing.groupBy({
+      by: ['governorate', 'district'],
+      where: {
+        status: ListingStatus.active,
+        isDeleted: false,
+        unitType: { in: [UnitType.apartment, UnitType.bed] },
+      },
+      _count: { id: true },
+    });
+
+    return results.map((result) => ({
+      governorate: result.governorate,
+      district: result.district,
+      count: result._count.id,
+    }));
+  }
+
   async getSuggestedListings(listingId: string) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },

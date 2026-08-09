@@ -16,6 +16,7 @@ interface SearchResultsGridProps {
   loading: boolean;
   sortBy: string;
   isAuthenticated: boolean;
+  heading?: string;
   onSortChange: (sortBy: SearchFilters["sortBy"]) => void;
   onResetFilters: () => void;
 }
@@ -26,6 +27,7 @@ export function SearchResultsGrid({
   loading,
   sortBy,
   isAuthenticated,
+  heading,
   onSortChange,
   onResetFilters,
 }: SearchResultsGridProps) {
@@ -49,6 +51,10 @@ export function SearchResultsGrid({
               <span className="text-text-secondary">
                 {isEn ? "Searching..." : "جارٍ البحث..."}
               </span>
+            ) : heading ? (
+              <>
+                {heading} <span className="text-primary">({total})</span>
+              </>
             ) : isEn ? (
               <>
                 Found <span className="text-primary">{total}</span> {total === 1 ? "result" : "results"}

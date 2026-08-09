@@ -58,11 +58,16 @@ interface SearchPageClientProps {
   locale?: string;
   initialFilters?: Record<string, string>;
   isAuthenticated?: boolean;
+  cityContext?: {
+    baseFilters: Pick<SearchFilters, "governorate" | "district">;
+    resultsHeading: string;
+  };
 }
 
 export function SearchPageClient({
   initialFilters = {},
   isAuthenticated = false,
+  cityContext,
 }: SearchPageClientProps) {
   const parseFilters = (): SearchFilters => {
     const minP = initialFilters.minPrice;
@@ -175,7 +180,12 @@ export function SearchPageClient({
   };
 
   const handleReset = () => {
-    const empty: SearchFilters = { sortBy: "newest", page: 1, limit: 10 };
+    const empty: SearchFilters = {
+      ...cityContext?.baseFilters,
+      sortBy: "newest",
+      page: 1,
+      limit: 10,
+    };
     setFilters(empty);
     setPendingFilters(empty);
     setDebouncedFilters(empty);
@@ -216,6 +226,7 @@ export function SearchPageClient({
               loading={isFetching}
               sortBy={filters.sortBy ?? "newest"}
               isAuthenticated={isAuthenticated}
+              heading={cityContext?.resultsHeading}
               onSortChange={(sortBy) => handleFilterChange({ sortBy, page: 1 })}
               onResetFilters={handleReset}
             />
